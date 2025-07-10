@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAD Test Admin Dashboard</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+    
+    <!-- Shared CSS Infrastructure -->
+    <link rel="stylesheet" href="shared/css/variables.css">
+    <link rel="stylesheet" href="shared/css/base.css">
+    <link rel="stylesheet" href="shared/css/components.css">
+    <link rel="stylesheet" href="shared/css/themes.css">
+    <link rel="stylesheet" href="shared/css/responsive.css">
+    
+    <!-- Admin-specific CSS -->
+    <link rel="stylesheet" href="admin/css/admin-dashboard.css">
+    <link rel="stylesheet" href="admin/css/sections.css">
+    <link rel="stylesheet" href="admin/css/tables.css">
+    <link rel="stylesheet" href="admin/css/forms.css">
+    
+    <!-- Preload critical components for performance -->
+    <link rel="preload" href="admin/components/sidebar.html" as="fetch" crossorigin="anonymous">
+    <link rel="preload" href="admin/components/header.html" as="fetch" crossorigin="anonymous">
+    <link rel="preload" href="admin/sections/overview.html" as="fetch" crossorigin="anonymous">
+    
+    <!-- Meta tags for better SEO and sharing -->
+    <meta name="description" content="NAD Test Cycle Admin Dashboard - Manage tests, users, supplements, and system health">
+    <meta name="keywords" content="NAD, admin, dashboard, test management, cellular energy">
+    <meta name="author" content="NAD Test Cycle">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Open Graph tags for social sharing -->
+    <meta property="og:title" content="NAD Test Admin Dashboard">
+    <meta property="og:description" content="Complete administration interface for NAD Test Cycle management">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mynadtest.info/admin-dashboard.html">
+</head>
+<body class="admin-body">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-logo">🧬</div>
+            <h2>NAD Admin Dashboard</h2>
+            <div class="loading-spinner"></div>
+            <p id="loading-status">Initializing dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Main Admin Container -->
+    <div id="admin-container" class="admin-container" style="display: none;">
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-overlay" class="mobile-overlay" onclick="AdminDashboard.toggleMobileMenu()"></div>
+        
+        <!-- Sidebar Container -->
+        <aside id="sidebar-container" class="sidebar-container" role="navigation">
+            <!-- Sidebar will be loaded here -->
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content" role="main">
+            <!-- Header Container -->
+            <header id="header-container" class="header-container">
+                <!-- Header will be loaded here -->
+            </header>
+
+            <!-- Breadcrumb Navigation -->
+            <nav id="breadcrumb-container" class="breadcrumb-container" aria-label="Breadcrumb">
+                <div class="breadcrumb">
+                    <a href="#" onclick="AdminDashboard.navigateToSection('overview')" class="breadcrumb-item">
+                        🏠 Dashboard
+                    </a>
+                    <span id="breadcrumb-current" class="breadcrumb-current"></span>
+                </div>
+            </nav>
+
+            <!-- Global Alert Container -->
+            <div id="global-alert-container" class="global-alert-container" role="alert" aria-live="polite">
+                <!-- Alerts will be displayed here -->
+            </div>
+
+            <!-- Stats Cards Container (shown on overview) -->
+            <section id="stats-container" class="stats-container">
+                <!-- Stats cards will be loaded here -->
+            </section>
+
+            <!-- Main Content Section -->
+            <section id="content-container" class="content-container" role="main">
+                <!-- Dynamic content sections will be loaded here -->
+            </section>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="footer-content">
+                    <div class="footer-info">
+                        <p><strong>NAD Test Cycle Admin Dashboard</strong> | Version 1.0.0</p>
+                        <p>Connected to: <code id="api-endpoint">https://mynadtest.info</code></p>
+                    </div>
+                    <div class="footer-status">
+                        <span class="status-indicator" id="connection-status">
+                            <span class="status-dot status-success"></span>
+                            <span>System Operational</span>
+                        </span>
+                        <span class="last-updated">
+                            Last Updated: <span id="last-updated-time">--</span>
+                        </span>
+                    </div>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modal-container" class="modal-container">
+        <!-- Modals will be rendered here -->
+    </div>
+
+    <!-- Debug Panel (development only) -->
+    <div id="debug-panel" class="debug-panel" style="display: none;">
+        <div class="debug-header">
+            <h4>🐛 Debug Panel</h4>
+            <button onclick="AdminDashboard.toggleDebugPanel()" class="debug-close">×</button>
+        </div>
+        <div class="debug-content">
+            <div class="debug-section">
+                <h5>Current State</h5>
+                <pre id="debug-state">Loading...</pre>
+            </div>
+            <div class="debug-section">
+                <h5>Recent Actions</h5>
+                <ul id="debug-actions"></ul>
+            </div>
+            <div class="debug-section">
+                <h5>Performance</h5>
+                <ul id="debug-performance"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shared JavaScript Infrastructure -->
+    <script src="shared/js/core.js"></script>
+    <script src="shared/js/api-client.js"></script>
+    <script src="shared/js/components.js"></script>
+    <script src="shared/js/utils.js"></script>
+    <script src="shared/js/error-handler.js"></script>
+
+    <!-- Admin JavaScript -->
+    <script src="admin/js/navigation.js"></script>
+    <script src="admin/js/data-management.js"></script>
+
+    <!-- Main Admin Dashboard Controller -->
+    <script>
+        /**
+         * NAD Admin Dashboard - Main Controller
+         * Manages component loading, navigation, and application state
+         */
+        class NADAdminDashboard {
+            constructor() {
+                this.currentSection = 'overview';
+                this.componentsLoaded = new Set();
+                this.sectionHistory = [];
+                this.globalData = {
+                    stats: {},
+                    user: null,
+                    permissions: [],
+                    lastRefresh: null
+                };
+                this.config = {
+                    apiBase: 'https://mynadtest.info',
+                    refreshInterval: 5 * 60 * 1000, // 5 minutes
+                    debugMode: window.location.hostname === 'localhost',
+                    version: '1.0.0'
+                };
+                
+                this.init();
+            }
+
+            /**
+             * Initialize the dashboard
+             */
+            async init() {
+                try {
+                    this.updateLoadingStatus('Loading core components...');
+                    
+                    // Initialize error handling
+                    this.setupErrorHandling();
+                    
+                    // Load essential components
+                    await this.loadEssentialComponents();
+                    
+                    // Initialize navigation
+                    this.initializeNavigation();
+                    
+                    // Setup keyboard shortcuts
+                    this.setupKeyboardShortcuts();
+                    
+                    // Load initial section
+                    const urlSection = this.getUrlSection();
+                    await this.navigateToSection(urlSection);
+                    
+                    // Setup auto-refresh
+                    this.setupAutoRefresh();
+                    
+                    // Hide loading screen and show dashboard
+                    this.showDashboard();
+                    
+                    // Load additional components in background
+                    this.loadBackgroundComponents();
+                    
+                    console.log('✅ NAD Admin Dashboard initialized successfully');
+                    
+                } catch (error) {
+                    this.handleInitializationError(error);
+                }
+            }
+
+            /**
+             * Update loading screen status
+             */
+            updateLoadingStatus(message) {
+                const statusElement = document.getElementById('loading-status');
+                if (statusElement) {
+                    statusElement.textContent = message;
+                }
+            }
+
+            /**
+             * Load essential components required for initial dashboard display
+             */
+            async loadEssentialComponents() {
+                const essentialComponents = [
+                    { path: 'admin/components/sidebar.html', container: 'sidebar-container' },
+                    { path: 'admin/components/header.html', container: 'header-container' },
+                    { path: 'shared/components/alert-system.html', container: 'global-alert-container' }
+                ];
+
+                this.updateLoadingStatus('Loading navigation components...');
+                
+                for (const component of essentialComponents) {
+                    try {
+                        await ComponentLoader.loadComponent(
+                            component.path,
+                            document.getElementById(component.container)
+                        );
+                        this.componentsLoaded.add(component.path);
+                    } catch (error) {
+                        console.warn(`Failed to load component: ${component.path}`, error);
+                    }
+                }
+
+                // Initialize sidebar navigation after loading
+                this.initializeSidebar();
+            }
+
+            /**
+             * Initialize sidebar functionality
+             */
+            initializeSidebar() {
+                // Add active class to current section
+                this.updateSidebarActiveState();
+                
+                // Setup mobile menu functionality
+                const mobileToggle = document.querySelector('.mobile-menu-toggle');
+                if (mobileToggle) {
+                    mobileToggle.addEventListener('click', () => this.toggleMobileMenu());
+                }
+            }
+
+            /**
+             * Update sidebar active state
+             */
+            updateSidebarActiveState() {
+                // Remove active class from all nav items
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                
+                // Add active class to current section
+                const currentNavLink = document.querySelector(`[data-section="${this.currentSection}"]`);
+                if (currentNavLink) {
+                    currentNavLink.classList.add('active');
+                }
+            }
+
+            /**
+             * Initialize navigation system
+             */
+            initializeNavigation() {
+                // Setup section navigation
+                document.addEventListener('click', (event) => {
+                    const navLink = event.target.closest('[data-section]');
+                    if (navLink) {
+                        event.preventDefault();
+                        const section = navLink.dataset.section;
+                        this.navigateToSection(section);
+                    }
+                });
+
+                // Handle browser back/forward buttons
+                window.addEventListener('popstate', (event) => {
+                    const section = event.state?.section || 'overview';
+                    this.navigateToSection(section, false);
+                });
+            }
+
+            /**
+             * Navigate to a specific section
+             */
+            async navigateToSection(sectionName, updateHistory = true) {
+                try {
+                    if (sectionName === this.currentSection) return;
+                    
+                    this.updateLoadingStatus(`Loading ${sectionName} section...`);
+                    
+                    // Add to history
+                    if (updateHistory) {
+                        this.sectionHistory.push(this.currentSection);
+                        history.pushState({ section: sectionName }, '', `?section=${sectionName}`);
+                    }
+                    
+                    // Update current section
+                    this.currentSection = sectionName;
+                    
+                    // Update breadcrumb
+                    this.updateBreadcrumb(sectionName);
+                    
+                    // Load section content
+                    await this.loadSection(sectionName);
+                    
+                    // Update sidebar active state
+                    this.updateSidebarActiveState();
+                    
+                    // Update page title
+                    document.title = `NAD Admin - ${this.getSectionTitle(sectionName)}`;
+                    
+                    // Track navigation
+                    this.trackNavigation(sectionName);
+                    
+                } catch (error) {
+                    console.error('Navigation error:', error);
+                    this.showAlert('Failed to load section. Please try again.', 'error');
+                }
+            }
+
+            /**
+             * Load a specific section
+             */
+            async loadSection(sectionName) {
+                const validSections = ['overview', 'tests', 'users', 'supplements', 'analytics', 'system'];
+                
+                if (!validSections.includes(sectionName)) {
+                    throw new Error(`Invalid section: ${sectionName}`);
+                }
+
+                // Show/hide stats container based on section
+                const statsContainer = document.getElementById('stats-container');
+                if (statsContainer) {
+                    statsContainer.style.display = sectionName === 'overview' ? 'block' : 'none';
+                }
+
+                // Load stats cards for overview section
+                if (sectionName === 'overview' && !this.componentsLoaded.has('stats-cards')) {
+                    await this.loadStatsCards();
+                }
+
+                // Load section content
+                const sectionPath = `admin/sections/${sectionName}.html`;
+                await ComponentLoader.loadSection(
+                    sectionPath,
+                    document.getElementById('content-container')
+                );
+
+                // Load section-specific JavaScript if available
+                await this.loadSectionScript(sectionName);
+
+                // Initialize section-specific functionality
+                this.initializeSection(sectionName);
+                
+                // Refresh section data
+                await this.refreshSectionData(sectionName);
+            }
+
+            /**
+             * Load stats cards component
+             */
+            async loadStatsCards() {
+                try {
+                    await ComponentLoader.loadComponent(
+                        'admin/components/stats-cards.html',
+                        document.getElementById('stats-container')
+                    );
+                    this.componentsLoaded.add('stats-cards');
+                    
+                    // Load dashboard stats
+                    await this.loadDashboardStats();
+                } catch (error) {
+                    console.warn('Failed to load stats cards:', error);
+                }
+            }
+
+            /**
+             * Load dashboard statistics
+             */
+            async loadDashboardStats() {
+                try {
+                    const response = await ApiClient.get('/api/dashboard/stats');
+                    if (response.success) {
+                        this.globalData.stats = response.data.stats;
+                        this.updateStatsDisplay(response.data.stats);
+                    }
+                } catch (error) {
+                    console.warn('Failed to load dashboard stats:', error);
+                    this.showAlert('Unable to load dashboard statistics', 'warning');
+                }
+            }
+
+            /**
+             * Update stats display
+             */
+            updateStatsDisplay(stats) {
+                const statElements = {
+                    'total-tests': stats.total_tests || 0,
+                    'activated-tests': stats.activated_tests || 0,
+                    'completed-tests': stats.completed_tests || 0,
+                    'pending-tests': (stats.total_tests || 0) - (stats.activated_tests || 0)
+                };
+
+                Object.entries(statElements).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        // Animate number change
+                        this.animateNumber(element, parseInt(element.textContent) || 0, value);
+                    }
+                });
+
+                // Update last refresh time
+                this.globalData.lastRefresh = new Date();
+                this.updateLastRefreshTime();
+            }
+
+            /**
+             * Animate number changes
+             */
+            animateNumber(element, start, end, duration = 1000) {
+                const startTime = performance.now();
+                const animate = (currentTime) => {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    const current = Math.round(start + (end - start) * progress);
+                    element.textContent = current;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                };
+                requestAnimationFrame(animate);
+            }
+
+            /**
+             * Load section-specific JavaScript
+             */
+            async loadSectionScript(sectionName) {
+                const scriptPath = `admin/js/sections/${sectionName}.js`;
+                
+                // Check if script already loaded
+                if (document.querySelector(`script[src="${scriptPath}"]`)) {
+                    return;
+                }
+
+                try {
+                    const script = document.createElement('script');
+                    script.src = scriptPath;
+                    script.async = true;
+                    
+                    return new Promise((resolve, reject) => {
+                        script.onload = () => resolve();
+                        script.onerror = () => reject(new Error(`Failed to load ${scriptPath}`));
+                        document.head.appendChild(script);
+                    });
+                } catch (error) {
+                    console.warn(`Section script not available: ${scriptPath}`);
+                }
+            }
+
+            /**
+             * Initialize section-specific functionality
+             */
+            initializeSection(sectionName) {
+                // Dispatch section loaded event
+                const event = new CustomEvent('sectionLoaded', {
+                    detail: { section: sectionName, dashboard: this }
+                });
+                document.dispatchEvent(event);
+
+                // Call section-specific initialization if available
+                const initFunctionName = `init${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)}Section`;
+                if (typeof window[initFunctionName] === 'function') {
+                    window[initFunctionName](this);
+                }
+            }
+
+            /**
+             * Refresh section data
+             */
+            async refreshSectionData(sectionName) {
+                try {
+                    switch (sectionName) {
+                        case 'overview':
+                            await this.loadDashboardStats();
+                            break;
+                        case 'tests':
+                            if (typeof window.refreshTestsData === 'function') {
+                                await window.refreshTestsData();
+                            }
+                            break;
+                        case 'users':
+                            if (typeof window.refreshUsersData === 'function') {
+                                await window.refreshUsersData();
+                            }
+                            break;
+                        // Add other sections as needed
+                    }
+                } catch (error) {
+                    console.warn(`Failed to refresh ${sectionName} data:`, error);
+                }
+            }
+
+            /**
+             * Update breadcrumb navigation
+             */
+            updateBreadcrumb(sectionName) {
+                const breadcrumbCurrent = document.getElementById('breadcrumb-current');
+                if (breadcrumbCurrent) {
+                    if (sectionName === 'overview') {
+                        breadcrumbCurrent.style.display = 'none';
+                    } else {
+                        breadcrumbCurrent.style.display = 'inline';
+                        breadcrumbCurrent.textContent = ` → ${this.getSectionTitle(sectionName)}`;
+                    }
+                }
+            }
+
+            /**
+             * Get section title for display
+             */
+            getSectionTitle(sectionName) {
+                const titles = {
+                    'overview': 'Dashboard Overview',
+                    'tests': 'Test Management',
+                    'users': 'User Management',
+                    'supplements': 'Supplement Management',
+                    'analytics': 'Analytics & Reports',
+                    'system': 'System Health'
+                };
+                return titles[sectionName] || sectionName;
+            }
+
+            /**
+             * Get current section from URL
+             */
+            getUrlSection() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const section = urlParams.get('section') || 'overview';
+                return section;
+            }
+
+            /**
+             * Setup keyboard shortcuts
+             */
+            setupKeyboardShortcuts() {
+                document.addEventListener('keydown', (event) => {
+                    // Ctrl/Cmd + R: Refresh current section
+                    if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+                        event.preventDefault();
+                        this.refreshDashboard();
+                    }
+                    
+                    // Ctrl/Cmd + /: Show help
+                    if ((event.ctrlKey || event.metaKey) && event.key === '/') {
+                        event.preventDefault();
+                        this.showKeyboardShortcuts();
+                    }
+                    
+                    // Escape: Close mobile menu or modals
+                    if (event.key === 'Escape') {
+                        this.closeMobileMenu();
+                        this.closeModals();
+                    }
+                    
+                    // Ctrl/Cmd + D: Toggle debug panel (development)
+                    if ((event.ctrlKey || event.metaKey) && event.key === 'd' && this.config.debugMode) {
+                        event.preventDefault();
+                        this.toggleDebugPanel();
+                    }
+                });
+            }
+
+            /**
+             * Setup auto-refresh functionality
+             */
+            setupAutoRefresh() {
+                setInterval(() => {
+                    if (this.currentSection === 'overview') {
+                        this.loadDashboardStats();
+                    }
+                }, this.config.refreshInterval);
+            }
+
+            /**
+             * Setup error handling
+             */
+            setupErrorHandling() {
+                window.addEventListener('error', (event) => {
+                    console.error('Global error:', event.error);
+                    this.showAlert('An unexpected error occurred. Please refresh the page.', 'error');
+                });
+
+                window.addEventListener('unhandledrejection', (event) => {
+                    console.error('Unhandled promise rejection:', event.reason);
+                    this.showAlert('A network error occurred. Please check your connection.', 'warning');
+                });
+            }
+
+            /**
+             * Load background components for performance
+             */
+            async loadBackgroundComponents() {
+                const backgroundComponents = [
+                    'admin/components/data-table.html',
+                    'admin/components/bulk-actions.html',
+                    'admin/components/user-form.html',
+                    'shared/components/modal-dialogs.html'
+                ];
+
+                for (const componentPath of backgroundComponents) {
+                    try {
+                        // Load component but don't insert into DOM yet
+                        const response = await fetch(componentPath);
+                        if (response.ok) {
+                            await response.text();
+                            this.componentsLoaded.add(componentPath);
+                        }
+                    } catch (error) {
+                        console.warn(`Failed to preload component: ${componentPath}`);
+                    }
+                }
+            }
+
+            /**
+             * Show the dashboard after loading
+             */
+            showDashboard() {
+                const loadingScreen = document.getElementById('loading-screen');
+                const adminContainer = document.getElementById('admin-container');
+                
+                if (loadingScreen && adminContainer) {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        adminContainer.style.display = 'grid';
+                        adminContainer.style.opacity = '0';
+                        
+                        // Fade in dashboard
+                        requestAnimationFrame(() => {
+                            adminContainer.style.transition = 'opacity 0.5s ease';
+                            adminContainer.style.opacity = '1';
+                        });
+                    }, 300);
+                }
+                
+                // Update last updated time
+                this.updateLastRefreshTime();
+                
+                // Show welcome message
+                setTimeout(() => {
+                    this.showAlert('✅ Admin dashboard loaded successfully!', 'success', 3000);
+                }, 1000);
+            }
+
+            /**
+             * Handle initialization errors
+             */
+            handleInitializationError(error) {
+                console.error('Dashboard initialization failed:', error);
+                
+                const loadingStatus = document.getElementById('loading-status');
+                if (loadingStatus) {
+                    loadingStatus.innerHTML = `
+                        <div style="color: #dc3545; margin-top: 20px;">
+                            <h3>❌ Failed to load dashboard</h3>
+                            <p>${error.message}</p>
+                            <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 15px;">
+                                🔄 Retry
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+
+            /**
+             * Toggle mobile menu
+             */
+            toggleMobileMenu() {
+                const sidebar = document.getElementById('sidebar-container');
+                const overlay = document.getElementById('mobile-overlay');
+                
+                if (sidebar && overlay) {
+                    const isOpen = sidebar.classList.contains('mobile-open');
+                    
+                    if (isOpen) {
+                        sidebar.classList.remove('mobile-open');
+                        overlay.classList.remove('active');
+                        document.body.classList.remove('mobile-menu-open');
+                    } else {
+                        sidebar.classList.add('mobile-open');
+                        overlay.classList.add('active');
+                        document.body.classList.add('mobile-menu-open');
+                    }
+                }
+            }
+
+            /**
+             * Close mobile menu
+             */
+            closeMobileMenu() {
+                const sidebar = document.getElementById('sidebar-container');
+                const overlay = document.getElementById('mobile-overlay');
+                
+                if (sidebar && overlay) {
+                    sidebar.classList.remove('mobile-open');
+                    overlay.classList.remove('active');
+                    document.body.classList.remove('mobile-menu-open');
+                }
+            }
+
+            /**
+             * Close all modals
+             */
+            closeModals() {
+                const modals = document.querySelectorAll('.modal.active');
+                modals.forEach(modal => {
+                    modal.classList.remove('active');
+                });
+            }
+
+            /**
+             * Show global alert
+             */
+            showAlert(message, type = 'info', duration = 5000) {
+                const container = document.getElementById('global-alert-container');
+                if (!container) return;
+
+                const alertId = 'alert-' + Date.now();
+                const alert = document.createElement('div');
+                alert.id = alertId;
+                alert.className = `alert alert-${type}`;
+                alert.innerHTML = `
+                    <span class="alert-icon">${this.getAlertIcon(type)}</span>
+                    <span class="alert-message">${message}</span>
+                    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+                `;
+
+                container.appendChild(alert);
+
+                // Auto-remove after duration
+                if (duration > 0) {
+                    setTimeout(() => {
+                        if (alert.parentNode) {
+                            alert.style.opacity = '0';
+                            alert.style.transform = 'translateX(-100%)';
+                            setTimeout(() => alert.remove(), 300);
+                        }
+                    }, duration);
+                }
+            }
+
+            /**
+             * Get alert icon for type
+             */
+            getAlertIcon(type) {
+                const icons = {
+                    'success': '✅',
+                    'error': '❌',
+                    'warning': '⚠️',
+                    'info': 'ℹ️'
+                };
+                return icons[type] || 'ℹ️';
+            }
+
+            /**
+             * Refresh entire dashboard
+             */
+            async refreshDashboard() {
+                this.showAlert('🔄 Refreshing dashboard...', 'info', 2000);
+                
+                try {
+                    await this.refreshSectionData(this.currentSection);
+                    this.showAlert('✅ Dashboard refreshed successfully!', 'success');
+                } catch (error) {
+                    console.error('Refresh error:', error);
+                    this.showAlert('❌ Failed to refresh dashboard', 'error');
+                }
+            }
+
+            /**
+             * Show keyboard shortcuts help
+             */
+            showKeyboardShortcuts() {
+                const shortcuts = `
+Keyboard Shortcuts:
+
+Ctrl/Cmd + R: Refresh Dashboard
+Ctrl/Cmd + /: Show This Help
+Escape: Close Menus/Modals
+${this.config.debugMode ? 'Ctrl/Cmd + D: Toggle Debug Panel' : ''}
+
+Navigation:
+Click sidebar items to switch sections
+Use breadcrumb navigation
+                `.trim();
+                
+                alert(shortcuts);
+            }
+
+            /**
+             * Toggle debug panel
+             */
+            toggleDebugPanel() {
+                if (!this.config.debugMode) return;
+                
+                const debugPanel = document.getElementById('debug-panel');
+                if (debugPanel) {
+                    const isVisible = debugPanel.style.display !== 'none';
+                    debugPanel.style.display = isVisible ? 'none' : 'block';
+                    
+                    if (!isVisible) {
+                        this.updateDebugPanel();
+                    }
+                }
+            }
+
+            /**
+             * Update debug panel content
+             */
+            updateDebugPanel() {
+                const debugState = document.getElementById('debug-state');
+                const debugActions = document.getElementById('debug-actions');
+                const debugPerformance = document.getElementById('debug-performance');
+
+                if (debugState) {
+                    debugState.textContent = JSON.stringify({
+                        currentSection: this.currentSection,
+                        componentsLoaded: Array.from(this.componentsLoaded),
+                        globalData: this.globalData
+                    }, null, 2);
+                }
+
+                if (debugActions) {
+                    debugActions.innerHTML = this.sectionHistory
+                        .slice(-5)
+                        .map(section => `<li>Navigated to: ${section}</li>`)
+                        .join('');
+                }
+
+                if (debugPerformance) {
+                    const memory = performance.memory;
+                    debugPerformance.innerHTML = `
+                        <li>Used JS Heap: ${(memory?.usedJSHeapSize / 1048576).toFixed(2)} MB</li>
+                        <li>Total JS Heap: ${(memory?.totalJSHeapSize / 1048576).toFixed(2)} MB</li>
+                        <li>Components Loaded: ${this.componentsLoaded.size}</li>
+                        <li>Last Refresh: ${this.globalData.lastRefresh?.toLocaleTimeString() || 'Never'}</li>
+                    `;
+                }
+            }
+
+            /**
+             * Update last refresh time display
+             */
+            updateLastRefreshTime() {
+                const lastUpdatedElement = document.getElementById('last-updated-time');
+                if (lastUpdatedElement) {
+                    lastUpdatedElement.textContent = new Date().toLocaleTimeString();
+                }
+            }
+
+            /**
+             * Track navigation for analytics
+             */
+            trackNavigation(sectionName) {
+                // Add your analytics tracking here
+                console.log(`Navigation: ${sectionName}`);
+                
+                // Update debug panel if visible
+                if (this.config.debugMode) {
+                    this.updateDebugPanel();
+                }
+            }
+
+            /**
+             * Get current dashboard state
+             */
+            getState() {
+                return {
+                    currentSection: this.currentSection,
+                    componentsLoaded: Array.from(this.componentsLoaded),
+                    globalData: this.globalData,
+                    sectionHistory: this.sectionHistory,
+                    lastRefresh: this.globalData.lastRefresh
+                };
+            }
+
+            /**
+             * Export dashboard data
+             */
+            exportDashboardData() {
+                const exportData = {
+                    timestamp: new Date().toISOString(),
+                    section: this.currentSection,
+                    stats: this.globalData.stats,
+                    system_info: {
+                        api_base: this.config.apiBase,
+                        version: this.config.version,
+                        user_agent: navigator.userAgent,
+                        page_url: window.location.href
+                    }
+                };
+                
+                const filename = `nad_dashboard_export_${new Date().toISOString().split('T')[0]}.json`;
+                this.downloadFile(exportData, filename);
+                
+                this.showAlert('📤 Dashboard data exported successfully!', 'success');
+            }
+
+            /**
+             * Download file helper
+             */
+            downloadFile(data, filename, type = 'application/json') {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
+
+            /**
+             * Print current section
+             */
+            printCurrentSection() {
+                // Hide unnecessary elements for printing
+                const elementsToHide = ['.sidebar-container', '.header-container', '.footer'];
+                elementsToHide.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(el => el.style.display = 'none');
+                });
+
+                // Print
+                window.print();
+
+                // Restore elements after printing
+                setTimeout(() => {
+                    elementsToHide.forEach(selector => {
+                        const elements = document.querySelectorAll(selector);
+                        elements.forEach(el => el.style.display = '');
+                    });
+                }, 1000);
+            }
+
+            /**
+             * Handle API errors globally
+             */
+            handleApiError(error, context = '') {
+                console.error(`API Error ${context}:`, error);
+                
+                if (error.status === 401) {
+                    this.showAlert('Session expired. Please log in again.', 'warning');
+                    // Redirect to login if needed
+                } else if (error.status === 403) {
+                    this.showAlert('Access denied. Insufficient permissions.', 'error');
+                } else if (error.status >= 500) {
+                    this.showAlert('Server error. Please try again later.', 'error');
+                } else {
+                    this.showAlert(`Error: ${error.message || 'Unknown error occurred'}`, 'error');
+                }
+            }
+
+            /**
+             * Update connection status indicator
+             */
+            updateConnectionStatus(isOnline = true) {
+                const statusIndicator = document.getElementById('connection-status');
+                if (statusIndicator) {
+                    const dot = statusIndicator.querySelector('.status-dot');
+                    const text = statusIndicator.querySelector('span:last-child');
+                    
+                    if (dot && text) {
+                        if (isOnline) {
+                            dot.className = 'status-dot status-success';
+                            text.textContent = 'System Operational';
+                        } else {
+                            dot.className = 'status-dot status-error';
+                            text.textContent = 'Connection Lost';
+                        }
+                    }
+                }
+            }
+
+            /**
+             * Check system health
+             */
+            async checkSystemHealth() {
+                try {
+                    const response = await ApiClient.get('/health');
+                    this.updateConnectionStatus(true);
+                    return response.success;
+                } catch (error) {
+                    this.updateConnectionStatus(false);
+                    return false;
+                }
+            }
+
+            /**
+             * Setup periodic health checks
+             */
+            setupHealthChecks() {
+                // Check health every 2 minutes
+                setInterval(() => {
+                    this.checkSystemHealth();
+                }, 2 * 60 * 1000);
+            }
+        }
+
+        // Initialize dashboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.AdminDashboard = new NADAdminDashboard();
+            
+            // Setup online/offline detection
+            window.addEventListener('online', () => {
+                AdminDashboard.updateConnectionStatus(true);
+                AdminDashboard.showAlert('🌐 Connection restored', 'success', 3000);
+            });
+            
+            window.addEventListener('offline', () => {
+                AdminDashboard.updateConnectionStatus(false);
+                AdminDashboard.showAlert('📡 Connection lost - working offline', 'warning');
+            });
+        });
+
+        // Global helper functions for backwards compatibility
+        function showAlert(message, type, duration) {
+            if (window.AdminDashboard) {
+                window.AdminDashboard.showAlert(message, type, duration);
+            }
+        }
+
+        function navigateToSection(section) {
+            if (window.AdminDashboard) {
+                window.AdminDashboard.navigateToSection(section);
+            }
+        }
+
+        function refreshDashboard() {
+            if (window.AdminDashboard) {
+                window.AdminDashboard.refreshDashboard();
+            }
+        }
+
+        function exportDashboardData() {
+            if (window.AdminDashboard) {
+                window.AdminDashboard.exportDashboardData();
+            }
+        }
+
+        function printCurrentSection() {
+            if (window.AdminDashboard) {
+                window.AdminDashboard.printCurrentSection();
+            }
+        }
+
+        // Make functions globally accessible for component scripts
+        window.showAlert = showAlert;
+        window.navigateToSection = navigateToSection;
+        window.refreshDashboard = refreshDashboard;
+        window.exportDashboardData = exportDashboardData;
+        window.printCurrentSection = printCurrentSection;
+    </script>
+
+    <!-- Section-specific JavaScript loading will be handled dynamically -->
+    
+    <!-- Performance monitoring (development only) -->
+    <script>
+        if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+            // Performance monitoring
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    const perfData = performance.getEntriesByType('navigation')[0];
+                    console.log('📊 Page Performance:', {
+                        'DOM Content Loaded': `${perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart}ms`,
+                        'Load Complete': `${perfData.loadEventEnd - perfData.loadEventStart}ms`,
+                        'Total Load Time': `${perfData.loadEventEnd - perfData.fetchStart}ms`
+                    });
+                }, 0);
+            });
+        }
+    </script>
+
+    <!-- Service Worker for offline support (optional) -->
+    <script>
+        if ('serviceWorker' in navigator && location.protocol === 'https:') {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(registration => {
+                    console.log('ServiceWorker registered:', registration);
+                })
+                .catch(error => {
+                    console.log('ServiceWorker registration failed:', error);
+                });
+        }
+    </script>
+</body>
+</html>

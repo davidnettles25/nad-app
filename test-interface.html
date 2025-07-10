@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAD Test Cycle - Development Environment</title>
+    
+    <!-- Shared CSS -->
+    <link rel="stylesheet" href="shared/css/variables.css">
+    <link rel="stylesheet" href="shared/css/base.css">
+    <link rel="stylesheet" href="shared/css/components.css">
+    
+    <!-- Test-specific CSS -->
+    <link rel="stylesheet" href="test/css/test-interface.css">
+    <link rel="stylesheet" href="test/css/debug.css">
+    <link rel="stylesheet" href="test/css/testing-tools.css">
+</head>
+<body>
+    <div class="test-container">
+        <div id="header-container"></div>
+        
+        <!-- Environment Status Bar -->
+        <div id="status-bar-container"></div>
+        
+        <!-- Main Testing Interface -->
+        <div class="test-grid">
+            <div id="navigation-container"></div>
+            <div id="content-container"></div>
+            <div id="debug-container"></div>
+        </div>
+        
+        <!-- Results Footer -->
+        <div id="results-container"></div>
+    </div>
+    
+    <!-- Debug overlay -->
+    <div id="debug-overlay" class="debug-overlay"></div>
+    
+    <!-- Shared JS -->
+    <script src="shared/js/core.js"></script>
+    <script src="shared/js/api-client.js"></script>
+    <script src="shared/js/components.js"></script>
+    <script src="shared/js/error-handler.js"></script>
+    
+    <!-- Test-specific JS -->
+    <script src="test/js/test-interface.js"></script>
+    <script src="test/js/debug-tools.js"></script>
+</body>
+</html>

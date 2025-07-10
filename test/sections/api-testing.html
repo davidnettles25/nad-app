@@ -1,0 +1,47 @@
+<div class="test-section" id="api-testing">
+    <div class="section-header">
+        <h2>📡 API Endpoint Testing</h2>
+        <p>Test all NAD API endpoints and view responses</p>
+    </div>
+
+    <div class="api-test-grid">
+        <div class="endpoint-list">
+            <h3>Available Endpoints</h3>
+            <div id="endpoint-list-container"></div>
+        </div>
+        
+        <div class="test-controls">
+            <h3>Test Controls</h3>
+            <div class="test-form">
+                <div class="form-group">
+                    <label>Method:</label>
+                    <select id="http-method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Endpoint:</label>
+                    <input type="text" id="endpoint-url" placeholder="/api/dashboard/stats">
+                </div>
+                
+                <div class="form-group">
+                    <label>Request Body (JSON):</label>
+                    <textarea id="request-body" rows="6" placeholder='{"key": "value"}'></textarea>
+                </div>
+                
+                <button class="test-btn primary" onclick="executeApiTest()">
+                    🚀 Execute Test
+                </button>
+            </div>
+        </div>
+        
+        <div class="test-results">
+            <h3>Response</h3>
+            <div id="api-response-container"></div>
+        </div>
+    </div>
+</div>
