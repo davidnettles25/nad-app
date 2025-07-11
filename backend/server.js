@@ -949,92 +949,334 @@ app.post('/api/users/:customerId/activate-tests', async (req, res) => {
 // SUPPLEMENT MANAGEMENT ENDPOINTS
 // ============================================================================
 
+// ==================================================
+// Server-side API endpoint for supplements
+// Add this to your Node.js server.js file
+// ==================================================
+
+// Supplements API endpoints
 app.get('/api/supplements', async (req, res) => {
     try {
-        const [supplements] = await db.execute(`SELECT * FROM nad_supplements ORDER BY name ASC`);
-        res.json({ success: true, supplements: supplements });
-    } catch (error) {
-        console.error('Error fetching supplements:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-app.get('/api/supplements/:id', async (req, res) => {
-    try {
-        const [supplement] = await db.execute(`SELECT * FROM nad_supplements WHERE id = ?`, [req.params.id]);
-        if (supplement.length === 0) {
-            return res.status(404).json({ success: false, error: 'Supplement not found' });
-        }
-        res.json({ success: true, supplement: supplement[0] });
-    } catch (error) {
-        console.error('Error fetching supplement:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-app.post('/api/supplements', async (req, res) => {
-    try {
-        const { name, description, default_dose, unit } = req.body;
-        if (!name) {
-            return res.status(400).json({ success: false, error: 'Supplement name is required' });
-        }
+        console.log('📡 GET /api/supplements - Loading all supplements');
         
-        const [result] = await db.execute(`
-            INSERT INTO nad_supplements (name, description, default_dose, unit, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, 1, NOW(), NOW())
-        `, [name, description || '', default_dose || '', unit || 'mg']);
+        const query = `
+            SELECT 
+                id,
+                name,
+                category,
+                description,
+                default_dose,
+                unit,
+                min_dose,
+                max_dose,
+                notes,
+                is_active,
+                is_featured,
+                created_at,
+                updated_at
+            FROM nad_supplements 
+            ORDER BY name ASC
+        `;
+        
+        const [supplements] = await db.execute(query);
+        
+        console.log(`✅ Found ${supplements.length} supplements`);
         
         res.json({
             success: true,
-            message: 'Supplement created successfully',
-            supplement_id: result.insertId
+            supplements: supplements,
+            count: supplements.length
         });
+        
     } catch (error) {
-        console.error('Error creating supplement:', error);
-        res.status(500).json({ success: false, error: error.message });
+        console.error('❌ Error loading supplements:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load supplements',
+            message: error.message
+        });
     }
 });
 
-app.put('/api/supplements/:id', async (req, res) => {
+// Create new supplement
+app.post('/api/supplements', async (req, res) => {
     try {
-        const { name, description, default_dose, unit, is_active } = req.body;
-        const supplementId = req.params.id;
+        console.log('📡 POST /api/supplements - Creating supplement');
+        console.log('📝 Request body:', req.body);
         
-        const [existing] = await db.execute(`SELECT id FROM nad_supplements WHERE id = ?`, [supplementId]);
+        const {
+            name,
+            category,
+            description = '',
+            default_dose = null,
+            unit = 'mg',
+            min_dose = null,
+            max_dose = null,
+            notes = '',
+            is_active = 1,
+            is_featured = 0
+        } = req.body;
         
-        if (existing.length === 0) {
-            return res.status(404).json({ success: false, error: 'Supplement not found' });
+        // Validation
+        if (!name || !category) {
+            return res.status(400).json({
+                success: false,
+                error: 'Name and category are required'
+            });
         }
         
-        await db.execute(`
-            UPDATE nad_supplements 
-            SET name = ?, description = ?, default_dose = ?, unit = ?, is_active = ?, updated_at = NOW()
-            WHERE id = ?
-        `, [name, description || '', default_dose || '', unit || 'mg', is_active ? 1 : 0, supplementId]);
+        // Check if supplement name already exists
+        const [existing] = await db.execute(
+            'SELECT id FROM nad_supplements WHERE name = ?',
+            [name]
+        );
         
-        res.json({ success: true, message: 'Supplement updated successfully' });
+        if (existing.length > 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'A supplement with this name already exists'
+            });
+        }
+        
+        // Insert new supplement
+        const query = `
+            INSERT INTO nad_supplements (
+                name, category, description, default_dose, unit,
+                min_dose, max_dose, notes, is_active, is_featured,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        `;
+        
+        const [result] = await db.execute(query, [
+            name,
+            category,
+            description,
+            default_dose,
+            unit,
+            min_dose,
+            max_dose,
+            notes,
+            is_active ? 1 : 0,
+            is_featured ? 1 : 0
+        ]);
+        
+        const supplementId = result.insertId;
+        
+        console.log(`✅ Created supplement with ID: ${supplementId}`);
+        
+        // Return the created supplement
+        const [newSupplement] = await db.execute(
+            'SELECT * FROM nad_supplements WHERE id = ?',
+            [supplementId]
+        );
+        
+        res.status(201).json({
+            success: true,
+            message: 'Supplement created successfully',
+            supplement: newSupplement[0],
+            id: supplementId
+        });
+        
     } catch (error) {
-        console.error('Error updating supplement:', error);
-        res.status(500).json({ success: false, error: error.message });
+        console.error('❌ Error creating supplement:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create supplement',
+            message: error.message
+        });
     }
 });
 
+// Update supplement
+app.put('/api/supplements/:id', async (req, res) => {
+    try {
+        const supplementId = req.params.id;
+        console.log(`📡 PUT /api/supplements/${supplementId} - Updating supplement`);
+        console.log('📝 Request body:', req.body);
+        
+        const {
+            name,
+            category,
+            description = '',
+            default_dose = null,
+            unit = 'mg',
+            min_dose = null,
+            max_dose = null,
+            notes = '',
+            is_active = 1,
+            is_featured = 0
+        } = req.body;
+        
+        // Validation
+        if (!name || !category) {
+            return res.status(400).json({
+                success: false,
+                error: 'Name and category are required'
+            });
+        }
+        
+        // Check if supplement exists
+        const [existing] = await db.execute(
+            'SELECT id FROM nad_supplements WHERE id = ?',
+            [supplementId]
+        );
+        
+        if (existing.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Supplement not found'
+            });
+        }
+        
+        // Check if name conflicts with another supplement
+        const [nameConflict] = await db.execute(
+            'SELECT id FROM nad_supplements WHERE name = ? AND id != ?',
+            [name, supplementId]
+        );
+        
+        if (nameConflict.length > 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'A supplement with this name already exists'
+            });
+        }
+        
+        // Update supplement
+        const query = `
+            UPDATE nad_supplements SET
+                name = ?,
+                category = ?,
+                description = ?,
+                default_dose = ?,
+                unit = ?,
+                min_dose = ?,
+                max_dose = ?,
+                notes = ?,
+                is_active = ?,
+                is_featured = ?,
+                updated_at = NOW()
+            WHERE id = ?
+        `;
+        
+        await db.execute(query, [
+            name,
+            category,
+            description,
+            default_dose,
+            unit,
+            min_dose,
+            max_dose,
+            notes,
+            is_active ? 1 : 0,
+            is_featured ? 1 : 0,
+            supplementId
+        ]);
+        
+        console.log(`✅ Updated supplement ID: ${supplementId}`);
+        
+        // Return the updated supplement
+        const [updatedSupplement] = await db.execute(
+            'SELECT * FROM nad_supplements WHERE id = ?',
+            [supplementId]
+        );
+        
+        res.json({
+            success: true,
+            message: 'Supplement updated successfully',
+            supplement: updatedSupplement[0]
+        });
+        
+    } catch (error) {
+        console.error('❌ Error updating supplement:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update supplement',
+            message: error.message
+        });
+    }
+});
+
+// Delete supplement
 app.delete('/api/supplements/:id', async (req, res) => {
     try {
         const supplementId = req.params.id;
+        console.log(`📡 DELETE /api/supplements/${supplementId} - Deleting supplement`);
         
-        const [existing] = await db.execute(`SELECT id FROM nad_supplements WHERE id = ?`, [supplementId]);
+        // Check if supplement exists
+        const [existing] = await db.execute(
+            'SELECT name FROM nad_supplements WHERE id = ?',
+            [supplementId]
+        );
+        
         if (existing.length === 0) {
-            return res.status(404).json({ success: false, error: 'Supplement not found' });
+            return res.status(404).json({
+                success: false,
+                error: 'Supplement not found'
+            });
         }
         
-        await db.execute(`DELETE FROM nad_supplements WHERE id = ?`, [supplementId]);
-        res.json({ success: true, message: 'Supplement deleted successfully' });
+        const supplementName = existing[0].name;
+        
+        // Delete supplement
+        await db.execute('DELETE FROM nad_supplements WHERE id = ?', [supplementId]);
+        
+        console.log(`✅ Deleted supplement: ${supplementName}`);
+        
+        res.json({
+            success: true,
+            message: `Supplement "${supplementName}" deleted successfully`
+        });
+        
     } catch (error) {
-        console.error('Error deleting supplement:', error);
-        res.status(500).json({ success: false, error: error.message });
+        console.error('❌ Error deleting supplement:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete supplement',
+            message: error.message
+        });
     }
 });
+
+// Get supplement usage statistics
+app.get('/api/supplements/:id/usage', async (req, res) => {
+    try {
+        const supplementId = req.params.id;
+        console.log(`📡 GET /api/supplements/${supplementId}/usage - Getting usage stats`);
+        
+        // Get usage statistics from nad_user_supplements table
+        const [usage] = await db.execute(`
+            SELECT 
+                COUNT(*) as total_uses,
+                COUNT(DISTINCT customer_id) as active_users,
+                AVG(dose) as average_dose,
+                MAX(created_at) as last_used
+            FROM nad_user_supplements 
+            WHERE supplement_name = (
+                SELECT name FROM nad_supplements WHERE id = ?
+            )
+        `, [supplementId]);
+        
+        res.json({
+            success: true,
+            usage: usage[0] || {
+                total_uses: 0,
+                active_users: 0,
+                average_dose: null,
+                last_used: null
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting supplement usage:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get supplement usage',
+            message: error.message
+        });
+    }
+});
+
+console.log('✅ Supplements API endpoints loaded');
 
 // ============================================================================
 // LAB INTERFACE ENDPOINTS

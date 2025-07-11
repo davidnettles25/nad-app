@@ -628,26 +628,51 @@ function showSupplementAlert(message, type = 'info') {
     }
 }
 
-// Fixed saveSupplementForm function for decomposed admin structure
-// This should replace the existing function in your supplements.js or admin.html
-
+// Debug version of saveSupplementForm to identify the issue
 async function saveSupplementForm(event) {
-    // Handle both event and direct calls (fixes preventDefault error)
+    // Handle event
     if (event && typeof event.preventDefault === 'function') {
         event.preventDefault();
     }
     
     console.log('💊 Starting supplement save process...');
     
-    // Get form data
-    const form = document.getElementById('supplement-form');
-    if (!form) {
-        console.error('❌ Supplement form not found');
-        showSupplementAlert('❌ Form not found', 'error');
+    // Debug: Check what we're getting
+    const formElement = document.getElementById('supplement-form');
+    console.log('🔍 Form element found:', formElement);
+    console.log('🔍 Form element type:', typeof formElement);
+    console.log('🔍 Form element tagName:', formElement?.tagName);
+    console.log('🔍 Form element constructor:', formElement?.constructor.name);
+    
+    // Check if it's actually a form
+    if (!formElement) {
+        console.error('❌ No element found with ID "supplement-form"');
+        showSupplementAlert('❌ Form not found - check if supplements section is loaded', 'error');
         return;
     }
     
-    const formData = new FormData(form);
+    if (formElement.tagName !== 'FORM') {
+        console.error('❌ Element found but it\'s not a FORM tag:', formElement.tagName);
+        showSupplementAlert('❌ Form element is not a form tag', 'error');
+        return;
+    }
+    
+    // Try to get FormData
+    let formData;
+    try {
+        formData = new FormData(formElement);
+        console.log('✅ FormData created successfully');
+    } catch (formDataError) {
+        console.error('❌ FormData creation failed:', formDataError);
+        showSupplementAlert('❌ Could not read form data', 'error');
+        return;
+    }
+    
+    // Debug: List all form fields
+    console.log('📝 Form fields found:');
+    for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}: ${value}`);
+    }
     
     // Extract form values
     const id = formData.get('id');
@@ -757,6 +782,29 @@ async function saveSupplementForm(event) {
         if (saveText) saveText.textContent = 'Save Supplement';
     }
 }
+
+// Debug function to check form availability
+function debugSupplementForm() {
+    console.log('🔍 Debugging supplement form...');
+    
+    // Check if form exists
+    const form = document.getElementById('supplement-form');
+    console.log('Form element:', form);
+    
+    // Check all elements with 'supplement' in the ID
+    const supplementElements = document.querySelectorAll('[id*="supplement"]');
+    console.log('All supplement elements:', supplementElements);
+    
+    // Check if supplements section is visible
+    const supplementsSection = document.getElementById('supplements');
+    console.log('Supplements section:', supplementsSection);
+    console.log('Supplements section visible:', supplementsSection?.style.display !== 'none');
+    
+    // List all forms on the page
+    const allForms = document.querySelectorAll('form');
+    console.log('All forms on page:', allForms);
+}
+
 function editSupplement(id) { showAlert(`Editing supplement ${id} (placeholder)`, 'info'); }
 function deleteSupplement(id) { 
     if (confirm(`Delete supplement ${id}?`)) {
@@ -869,6 +917,9 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         showAlert('✅ Dashboard loaded successfully! All management functions are operational.', 'success');
     }, 1000);
+    
+    // Run debug function to check form availability
+    setTimeout(debugSupplementForm, 2000); // Wait 2 seconds for components to load
 });
 
 // Ensure showSupplementAlert function exists
