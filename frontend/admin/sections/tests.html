@@ -1,0 +1,99 @@
+<div id="tests" class="content-section">
+    <div class="card">
+        <h3>🧪 Test Management</h3>
+        
+        <div id="test-alert"></div>
+        
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-number primary" id="test-total-count">0</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number success" id="test-activated-count">0</div>
+                <div class="stat-label">Activated</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number warning" id="test-pending-count">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number info" id="test-completed-count">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+        </div>
+
+        <div class="filters-section">
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label for="test-search">Search Tests</label>
+                    <input type="text" id="test-search" placeholder="Search by Test ID...">
+                </div>
+                <div class="form-group">
+                    <label for="status-filter">Status Filter</label>
+                    <select id="status-filter">
+                        <option value="">All Statuses</option>
+                        <option value="not_activated">Not Activated</option>
+                        <option value="activated">Activated</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadTestsFromAPI()">🔄 Refresh Tests</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="bulk-actions" class="bulk-actions">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span id="selected-count">0 tests selected</span>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="bulkActivateSelected()" id="bulk-activate-btn" disabled>
+                        ⚡ Activate Selected
+                    </button>
+                    <button class="btn btn-danger" onclick="bulkDeactivateSelected()" id="bulk-deactivate-btn" disabled>
+                        ❌ Deactivate Selected
+                    </button>
+                    <button class="btn" onclick="clearSelection()">
+                        🔄 Clear Selection
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="search-controls">
+            <button class="btn" onclick="loadTestsFromAPI()">🔄 Load Tests</button>
+            <button class="btn btn-success" onclick="activateAllPendingTests()">⚡ Activate All Pending</button>
+            <button class="btn btn-danger" onclick="deactivateAllActivatedTests()">❌ Deactivate All</button>
+            <button class="btn btn-warning" onclick="exportTests()">📊 Export</button>
+        </div>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">
+                        <input type="checkbox" class="select-all-checkbox" id="select-all-checkbox">
+                    </th>
+                    <th>Test ID</th>
+                    <th>Status</th>
+                    <th>Customer ID</th>
+                    <th>Order ID</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tests-table-body">
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 20px;">
+                        <div class="empty-state">
+                            <div class="icon">🧪</div>
+                            <h4>Loading Tests...</h4>
+                            <p>Fetching test data from API</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

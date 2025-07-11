@@ -1,0 +1,50 @@
+<div id="overview" class="content-section active">
+    <div class="stats-overview">
+        <div class="stat-card">
+            <div class="stat-number primary" id="total-tests">0</div>
+            <div class="stat-label">Total Tests Generated</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number warning" id="completed-tests">0</div>
+            <div class="stat-label">Tests Completed</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number info" id="pending-tests">0</div>
+            <div class="stat-label">Pending Tests</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number success" id="active-users">0</div>
+            <div class="stat-label">Activated Tests</div>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <div class="action-card" onclick="refreshData()">
+            <h4>🔄 Refresh Data</h4>
+            <p>Update from live API</p>
+        </div>
+        <div class="action-card" onclick="showSection('tests')">
+            <h4>🧪 Manage Tests</h4>
+            <p>View all tests</p>
+        </div>
+        <div class="action-card" onclick="activateAllTests()">
+            <h4>⚡ Activate Tests</h4>
+            <p>Activate pending tests</p>
+        </div>
+        <div class="action-card" onclick="showSection('system')">
+            <h4>⚙️ System Status</h4>
+            <p>API health check</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>📈 Current Status</h3>
+        <div style="background: #e3f2fd; padding: 20px; border-radius: 12px;">
+            <h4 style="color: #1976d2; margin-bottom: 10px;">✅ System Status: All Good</h4>
+            <p style="margin-bottom: 10px;"><strong>Your NAD Test system is running perfectly!</strong></p>
+            <p style="font-size: 14px; color: #666;" id="overview-stats">
+                Loading system statistics...
+            </p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,105 @@
+<div id="supplements" class="content-section">
+    <div class="card">
+        <h3>💊 Supplement Management</h3>
+        
+        <div id="supplement-alert"></div>
+        
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-number primary" id="supplement-total-count">0</div>
+                <div class="stat-label">Total Supplements</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number success" id="supplement-active-count">0</div>
+                <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number info" id="supplement-categories-count">0</div>
+                <div class="stat-label">Categories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number warning" id="supplement-inactive-count">0</div>
+                <div class="stat-label">Inactive</div>
+            </div>
+        </div>
+        
+        <div class="search-controls">
+            <input type="text" id="supplement-search" placeholder="Search supplements...">
+            <button class="btn" onclick="loadSupplements()">🔄 Refresh</button>
+            <button class="btn" onclick="showAddSupplementForm()">➕ Add Supplement</button>
+        </div>
+
+        <div id="supplement-form" class="user-form" style="display: none;">
+            <h4 id="supplement-form-title">Add New Supplement</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="supplement-name">Name *</label>
+                    <input type="text" id="supplement-name" placeholder="Enter supplement name">
+                </div>
+                <div class="form-group">
+                    <label for="supplement-category">Category *</label>
+                    <select id="supplement-category">
+                        <option value="">Select category...</option>
+                        <option value="vitamins">Vitamins</option>
+                        <option value="minerals">Minerals</option>
+                        <option value="antioxidants">Antioxidants</option>
+                        <option value="herbs">Herbs</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="supplement-description">Description</label>
+                <textarea id="supplement-description" rows="3" placeholder="Enter description..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="supplement-dose">Default Dose</label>
+                    <input type="number" id="supplement-dose" placeholder="Enter dose" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="supplement-unit">Unit</label>
+                    <select id="supplement-unit">
+                        <option value="mg">mg</option>
+                        <option value="g">g</option>
+                        <option value="mcg">mcg</option>
+                        <option value="IU">IU</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="supplement-active" checked> Active
+                </label>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn" onclick="saveSupplementForm()">Save Supplement</button>
+                <button class="btn" onclick="hideSupplementForm()" style="background: #6c757d;">Cancel</button>
+            </div>
+            <input type="hidden" id="supplement-id" value="">
+        </div>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Default Dose</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="supplements-table-body">
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px;">
+                        <div class="empty-state">
+                            <div class="icon">💊</div>
+                            <h4>Loading Supplements...</h4>
+                            <p>Fetching supplement data from API</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

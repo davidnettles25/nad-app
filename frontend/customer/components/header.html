@@ -1,0 +1,32 @@
+<header class="nad-customer-header">
+    <div class="header-brand">
+        <h1>🧬 NAD+ Test Portal</h1>
+        <p>Cellular Energy Analysis Portal</p>
+    </div>
+    <div class="header-progress">
+        <div class="step-indicator">
+            <div class="step active" id="step-1">1</div>
+            <div class="step" id="step-2">2</div>
+            <div class="step" id="step-3">3</div>
+        </div>
+    </div>
+</header>
+<style>
+.nad-customer-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+.header-brand h1 { font-size: 2.5em; margin-bottom: 10px; }
+.header-brand p { font-size: 1.2em; opacity: 0.9; }
+.step-indicator { display: flex; justify-content: center; margin-top: 20px; }
+.step {
+    width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center; margin: 0 5px;
+    font-weight: 600; transition: all 0.3s ease;
+}
+.step.active { background: white; color: #667eea; transform: scale(1.1); }
+</style>

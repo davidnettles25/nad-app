@@ -1,0 +1,29 @@
+<header class="nad-admin-header">
+    <div class="header-brand">
+        <h1>🔧 NAD Admin Dashboard</h1>
+        <p>Real-time management dashboard</p>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-secondary" onclick="refreshData()">🔄 Refresh</button>
+        <span class="user-info">Administrator</span>
+    </div>
+</header>
+<style>
+.nad-admin-header {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+.header-brand h1 { color: #333; font-size: 2.2em; margin-bottom: 5px; }
+.header-brand p { color: #666; margin: 0; }
+.header-actions { display: flex; gap: 15px; align-items: center; }
+.btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; }
+.btn-secondary { background: #6c757d; color: white; }
+.user-info { color: #666; font-weight: 500; }
+</style>

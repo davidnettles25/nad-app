@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAD Modules Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🧪 NAD Admin Modules Test</h1>
+    
+    <div class="test-section info">
+        <h3>Module Loading Status</h3>
+        <div id="module-status">Loading...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>🔧 Configuration Test</h3>
+        <button onclick="testConfig()">Test Config</button>
+        <div id="config-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>📡 API Test</h3>
+        <button onclick="testAPI()">Test API Connection</button>
+        <button onclick="testDashboard()">Test Dashboard</button>
+        <div id="api-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>🛠️ Utilities Test</h3>
+        <button onclick="testUtils()">Test Utilities</button>
+        <button onclick="testValidation()">Test Validation</button>
+        <div id="utils-results"></div>
+    </div>
+
+    <!-- Load modules in correct order -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/utils.js"></script>
+    
+    <script>
+        // Check module loading
+        document.addEventListener('DOMContentLoaded', function() {
+            const status = document.getElementById('module-status');
+            const modules = [
+                { name: 'NAD_CONFIG', obj: window.NAD_CONFIG },
+                { name: 'NAD_API', obj: window.NAD_API },
+                { name: 'NAD_UTILS', obj: window.NAD_UTILS }
+            ];
+            
+            let statusHtml = '';
+            let allLoaded = true;
+            
+            modules.forEach(module => {
+                if (module.obj) {
+                    statusHtml += `✅ ${module.name} loaded successfully<br>`;
+                } else {
+                    statusHtml += `❌ ${module.name} failed to load<br>`;
+                    allLoaded = false;
+                }
+            });
+            
+            status.innerHTML = statusHtml;
+            status.className = allLoaded ? 'success' : 'error';
+        });
+        
+        function testConfig() {
+            const results = document.getElementById('config-results');
+            let html = '<h4>Configuration Test Results:</h4>';
+            
+            try {
+                html += `<p>✅ API Base: ${NAD_CONFIG.API_BASE}</p>`;
+                html += `<p>✅ Database: ${NAD_CONFIG.DATABASE.NAME}</p>`;
+                html += `<p>✅ Endpoints loaded: ${Object.keys(NAD_CONFIG.ENDPOINTS).length}</p>`;
+                html += `<p>✅ User roles: ${Object.keys(NAD_CONFIG.USER_ROLES).length}</p>`;
+                
+                // Test utility functions
+                const testUrl = NAD_CONFIG.utils.getEndpoint('DASHBOARD_STATS');
+                html += `<p>✅ URL builder: ${testUrl}</p>`;
+                
+                const testId = NAD_CONFIG.utils.formatTestId(new Date(), 1234);
+                html += `<p>✅ Test ID format: ${testId}</p>`;
+                
+                results.innerHTML = html;
+                results.className = 'success';
+            } catch (error) {
+                results.innerHTML = `<p>❌ Config test failed: ${error.message}</p>`;
+                results.className = 'error';
+            }
+        }
+        
+        async function testAPI() {
+            const results = document.getElementById('api-results');
+            results.innerHTML = '<p>🔄 Testing API connectivity...</p>';
+            results.className = 'info';
+            
+            try {
+                const connectionTest = await NAD_API.testConnection();
+                
+                let html = '<h4>API Connection Test Results:</h4>';
+                for (const [endpoint, result] of Object.entries(connectionTest)) {
+                    const status = result.success ? '✅' : '❌';
+                    html += `<p>${status} ${endpoint}: ${result.success ? 'OK' : result.error}</p>`;
+                }
+                
+                results.innerHTML = html;
+                results.className = 'success';
+            } catch (error) {
+                results.innerHTML = `<p>❌ API test failed: ${error.message}</p>`;
+                results.className = 'error';
+            }
+        }
+        
+        async function testDashboard() {
+            const results = document.getElementById('api-results');
+            results.innerHTML = '<p>🔄 Testing dashboard API...</p>';
+            
+            try {
+                const dashboardData = await NAD_API.getDashboardStats();
+                
+                if (dashboardData.success) {
+                    const stats = dashboardData.data.stats || dashboardData.data;
+                    let html = '<h4>Dashboard API Test:</h4>';
+                    html += `<p>✅ Total Tests: ${stats.total_tests || 'N/A'}</p>`;
+                    html += `<p>✅ Activated Tests: ${stats.activated_tests || 'N/A'}</p>`;
+                    html += `<p>✅ Completed Tests: ${stats.completed_tests || 'N/A'}</p>`;
+                    
+                    results.innerHTML = html;
+                    results.className = 'success';
+                } else {
+                    results.innerHTML = `<p>❌ Dashboard API returned error: ${dashboardData.error}</p>`;
+                    results.className = 'error';
+                }
+            } catch (error) {
+                results.innerHTML = `<p>❌ Dashboard test failed: ${error.message}</p>`;
+                results.className = 'error';
+            }
+        }
+        
+        function testUtils() {
+            const results = document.getElementById('utils-results');
+            let html = '<h4>Utilities Test Results:</h4>';
+            
+            try {
+                // Test date formatting
+                const now = new Date();
+                html += `<p>✅ Date format: ${NAD_UTILS.formatDate(now)}</p>`;
+                html += `<p>✅ DateTime format: ${NAD_UTILS.formatDateTime(now)}</p>`;
+                
+                // Test number formatting
+                html += `<p>✅ Number format: ${NAD_UTILS.formatNumber(12345)}</p>`;
+                html += `<p>✅ Percentage: ${NAD_UTILS.formatPercentage(75, 100)}</p>`;
+                
+                // Test text utilities
+                html += `<p>✅ Truncate: ${NAD_UTILS.truncateText('This is a very long text that should be truncated', 20)}</p>`;
+                html += `<p>✅ Role format: ${NAD_UTILS.formatRole('lab_technician')}</p>`;
+                
+                // Test score utilities
+                const scoreRange = NAD_UTILS.getScoreRange(85);
+                html += `<p>✅ Score range (85): ${scoreRange.label} (${scoreRange.color})</p>`;
+                
+                results.innerHTML = html;
+                results.className = 'success';
+            } catch (error) {
+                results.innerHTML = `<p>❌ Utils test failed: ${error.message}</p>`;
+                results.className = 'error';
+            }
+        }
+        
+        function testValidation() {
+            const results = document.getElementById('utils-results');
+            let html = '<h4>Validation Test Results:</h4>';
+            
+            try {
+                // Test email validation
+                html += `<p>✅ Valid email: ${NAD_UTILS.isValidEmail('test@example.com')}</p>`;
+                html += `<p>✅ Invalid email: ${NAD_UTILS.isValidEmail('invalid-email')}</p>`;
+                
+                // Test test ID validation
+                html += `<p>✅ Valid test ID: ${NAD_UTILS.isValidTestId('NAD-20250101-1234')}</p>`;
+                html += `<p>✅ Invalid test ID: ${NAD_UTILS.isValidTestId('INVALID-ID')}</p>`;
+                
+                // Test score validation
+                html += `<p>✅ Valid score: ${NAD_UTILS.isValidScore(85)}</p>`;
+                html += `<p>✅ Invalid score: ${NAD_UTILS.isValidScore(150)}</p>`;
+                
+                // Test customer ID validation
+                html += `<p>✅ Valid customer ID: ${NAD_UTILS.isValidCustomerId(1001)}</p>`;
+                html += `<p>✅ Invalid customer ID: ${NAD_UTILS.isValidCustomerId(-1)}</p>`;
+                
+                results.innerHTML = html;
+                results.className = 'success';
+            } catch (error) {
+                results.innerHTML = `<p>❌ Validation test failed: ${error.message}</p>`;
+                results.className = 'error';
+            }
+        }
+    </script>
+</body>
+</html>

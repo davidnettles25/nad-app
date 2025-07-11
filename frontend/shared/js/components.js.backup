@@ -1,0 +1,169 @@
+/**
+ * NAD Test Cycle - Component Loading System
+ * File: /opt/bitnami/apache/htdocs/shared/js/components.js
+ * 
+ * Dynamic component loading and management system for modular HTML structure
+ * Supports all NAD interfaces: Admin, Customer, Lab, Test
+ */
+
+class NADComponentLoader {
+    constructor() {
+        this.loadedComponents = new Map();
+        this.componentCache = new Map();
+        this.loadingPromises = new Map();
+        this.config = {
+            baseUrl: '/nad-app',
+            enableCache: true,
+            enableDebug: false,
+            retryAttempts: 3,
+            retryDelay: 1000,
+            timeout: 10000
+        };
+        
+        this.initializeLoader();
+    }
+
+    /**
+     * Initialize the component loader
+     */
+    initializeLoader() {
+        this.log('🚀 NAD Component Loader initializing...');
+        
+        // Set up global error handling
+        this.setupErrorHandling();
+        
+        // Auto-load components on DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.autoLoadComponents());
+        } else {
+            this.autoLoadComponents();
+        }
+        
+        this.log('✅ NAD Component Loader ready');
+    }
+
+    /**
+     * Set up global error handling
+     */
+    setupErrorHandling() {
+        window.addEventListener('error', (event) => {
+            if (event.filename && event.filename.includes('/')) {
+                this.error('Global error in NAD component:', event.error);
+            }
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            if (event.reason && event.reason.toString().includes('NAD')) {
+                this.error('Unhandled promise rejection in NAD component:', event.reason);
+            }
+        });
+    }
+
+    /**
+     * Load a component by path
+     * @param {string} componentPath - Path to component (e.g., 'admin/components/header.html')
+     * @param {Object} options - Loading options
+     * @returns {Promise<string>} Component HTML content
+     */
+    async loadComponent(componentPath, options = {}) {
+        const normalizedPath = this.normalizePath(componentPath);
+        const cacheKey = this.getCacheKey(normalizedPath, options);
+        
+        this.log(`📦 Loading component: ${normalizedPath}`);
+
+        // Return cached component if available
+        if (this.config.enableCache && this.componentCache.has(cacheKey)) {
+            this.log(`💾 Using cached component: ${normalizedPath}`);
+            return this.componentCache.get(cacheKey);
+        }
+
+        // Return existing loading promise if component is already being loaded
+        if (this.loadingPromises.has(cacheKey)) {
+            this.log(`⏳ Component already loading: ${normalizedPath}`);
+            return this.loadingPromises.get(cacheKey);
+        }
+
+        // Create loading promise
+        const loadingPromise = this.fetchComponent(normalizedPath, options);
+        this.loadingPromises.set(cacheKey, loadingPromise);
+
+        try {
+            const content = await loadingPromise;
+            
+            // Cache the component
+            if (this.config.enableCache) {
+                this.componentCache.set(cacheKey, content);
+            }
+            
+            this.log(`✅ Component loaded: ${normalizedPath}`);
+            return content;
+            
+        } catch (error) {
+            this.error(`❌ Failed to load component: ${normalizedPath}`, error);
+            throw error;
+        } finally {
+            this.loadingPromises.delete(cacheKey);
+        }
+    }
+
+    /**
+     * Fetch component with retry logic
+     */
+    async fetchComponent(componentPath, options = {}) {
+        const url = this.buildComponentUrl(componentPath);
+        
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return await response.text();
+        } catch (error) {
+            throw new Error(`Failed to load: ${error.message}`);
+        }
+    }
+
+    /**
+     * Inject component into DOM element
+     */
+    async injectComponent(componentPath, target, options = {}) {
+        const targetElement = typeof target === 'string' ? document.querySelector(target) : target;
+        
+        if (!targetElement) {
+            throw new Error(`Target element not found: ${target}`);
+        }
+        
+        const content = await this.loadComponent(componentPath, options);
+        targetElement.innerHTML = content;
+        return targetElement;
+    }
+
+    /**
+     * Auto-load components based on data attributes
+     */
+    async autoLoadComponents() {
+        const componentElements = document.querySelectorAll('[data-nad-component]');
+        
+        for (const element of componentElements) {
+            try {
+                const componentPath = element.getAttribute('data-nad-component');
+                await this.injectComponent(componentPath, element);
+            } catch (error) {
+                this.error('Failed to auto-load component:', error);
+                element.innerHTML = '<div class="nad-component-error">Failed to load component</div>';
+            }
+        }
+    }
+
+    // Utility methods
+    normalizePath(path) { return path.replace(/^\/+|\/+$/g, ''); }
+    getCacheKey(path, options) { return `${path}::${JSON.stringify(options)}`; }
+    buildComponentUrl(path) { return `${this.config.baseUrl}/${path}`; }
+    log(...args) { if (this.config.enableDebug) console.log('[NAD]', ...args); }
+    error(...args) { console.error('[NAD]', ...args); }
+}
+
+// Global instance
+window.NADComponents = new NADComponentLoader();
+window.loadComponent = (path, options) => window.NADComponents.loadComponent(path, options);
+window.injectComponent = (path, target, options) => window.NADComponents.injectComponent(path, target, options);
+
+console.log('✅ NAD Component Loading System ready!');
