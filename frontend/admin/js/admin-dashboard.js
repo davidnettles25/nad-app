@@ -628,70 +628,42 @@ function showSupplementAlert(message, type = 'info') {
     }
 }
 
-// Debug version of saveSupplementForm to identify the issue
+// Fixed saveSupplementForm to work with DIV-based forms
 async function saveSupplementForm(event) {
     // Handle event
-    if (event && typeof event.preventDefault === 'function') {
+    if (event && event.preventDefault) {
         event.preventDefault();
     }
     
     console.log('💊 Starting supplement save process...');
     
-    // Debug: Check what we're getting
-    const formElement = document.getElementById('supplement-form');
-    console.log('🔍 Form element found:', formElement);
-    console.log('🔍 Form element type:', typeof formElement);
-    console.log('🔍 Form element tagName:', formElement?.tagName);
-    console.log('🔍 Form element constructor:', formElement?.constructor.name);
+    // Find form container (could be div or form)
+    const formContainer = document.getElementById('supplement-form');
     
-    // Check if it's actually a form
-    if (!formElement) {
+    if (!formContainer) {
         console.error('❌ No element found with ID "supplement-form"');
         showSupplementAlert('❌ Form not found - check if supplements section is loaded', 'error');
         return;
     }
     
-    if (formElement.tagName !== 'FORM') {
-        console.error('❌ Element found but it\'s not a FORM tag:', formElement.tagName);
-        showSupplementAlert('❌ Form element is not a form tag', 'error');
-        return;
-    }
+    console.log('✅ Form container found:', formContainer.tagName);
     
-    // Try to get FormData
-    let formData;
-    try {
-        formData = new FormData(formElement);
-        console.log('✅ FormData created successfully');
-    } catch (formDataError) {
-        console.error('❌ FormData creation failed:', formDataError);
-        showSupplementAlert('❌ Could not read form data', 'error');
-        return;
-    }
-    
-    // Debug: List all form fields
-    console.log('📝 Form fields found:');
-    for (let [key, value] of formData.entries()) {
-        console.log(`  ${key}: ${value}`);
-    }
-    
-    // Extract form values
-    const id = formData.get('id');
-    const isEdit = id && id !== '';
-    
+    // Get form data from individual inputs instead of FormData
     const supplementData = {
-        name: formData.get('name')?.trim(),
-        category: formData.get('category'),
-        description: formData.get('description')?.trim() || '',
-        default_dose: formData.get('default_dose') || null,
-        unit: formData.get('unit') || 'mg',
-        min_dose: formData.get('min_dose') || null,
-        max_dose: formData.get('max_dose') || null,
-        notes: formData.get('notes')?.trim() || '',
-        is_active: formData.has('is_active') ? 1 : 0,
-        is_featured: formData.has('is_featured') ? 1 : 0
+        id: document.getElementById('supplement-id')?.value || '',
+        name: document.getElementById('supplement-name')?.value?.trim() || '',
+        category: document.getElementById('supplement-category')?.value || '',
+        description: document.getElementById('supplement-description')?.value?.trim() || '',
+        default_dose: document.getElementById('supplement-dose')?.value || null,
+        unit: document.getElementById('supplement-unit')?.value || 'mg',
+        min_dose: document.getElementById('supplement-min-dose')?.value || null,
+        max_dose: document.getElementById('supplement-max-dose')?.value || null,
+        notes: document.getElementById('supplement-notes')?.value?.trim() || '',
+        is_active: document.getElementById('supplement-active')?.checked ? 1 : 0,
+        is_featured: document.getElementById('supplement-featured')?.checked ? 1 : 0
     };
     
-    console.log('📝 Supplement data to save:', supplementData);
+    console.log('📝 Supplement data collected:', supplementData);
     
     // Validation
     if (!supplementData.name || !supplementData.category) {
@@ -699,12 +671,16 @@ async function saveSupplementForm(event) {
         return;
     }
     
+    // Check if this is an edit or new supplement
+    const isEdit = supplementData.id && supplementData.id !== '';
+    
     try {
         showSupplementAlert('🔄 Saving supplement...', 'info');
         
         // Update UI state
         const saveBtn = document.querySelector('#supplement-form button[type="submit"]') || 
-                       document.querySelector('#supplement-form .btn-primary');
+                       document.querySelector('#supplement-form .btn-primary') ||
+                       document.querySelector('button[onclick*="saveSupplementForm"]');
         const spinner = document.getElementById('supplement-save-spinner');
         const saveText = document.getElementById('supplement-save-text');
         
@@ -714,10 +690,16 @@ async function saveSupplementForm(event) {
         
         // API configuration
         const API_BASE = window.API_BASE || 'https://mynadtest.info';
-        const url = isEdit ? `${API_BASE}/api/supplements/${id}` : `${API_BASE}/api/supplements`;
+        const url = isEdit ? `${API_BASE}/api/supplements/${supplementData.id}` : `${API_BASE}/api/supplements`;
         const method = isEdit ? 'PUT' : 'POST';
         
         console.log(`📡 Making ${method} request to: ${url}`);
+        
+        // Remove ID from data for POST requests
+        const dataToSend = { ...supplementData };
+        if (!isEdit) {
+            delete dataToSend.id;
+        }
         
         // Make API request
         const response = await fetch(url, {
@@ -726,7 +708,7 @@ async function saveSupplementForm(event) {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify(supplementData)
+            body: JSON.stringify(dataToSend)
         });
         
         console.log('📡 Response status:', response.status);
@@ -756,6 +738,13 @@ async function saveSupplementForm(event) {
             // Hide form
             if (typeof hideSupplementForm === 'function') {
                 hideSupplementForm();
+            } else {
+                // Try to hide form container
+                const formModal = document.getElementById('supplement-form-container') || 
+                                 document.getElementById('supplement-modal');
+                if (formModal) {
+                    formModal.style.display = 'none';
+                }
             }
             
             // Reload supplements list
@@ -773,7 +762,8 @@ async function saveSupplementForm(event) {
     } finally {
         // Reset UI state
         const saveBtn = document.querySelector('#supplement-form button[type="submit"]') || 
-                       document.querySelector('#supplement-form .btn-primary');
+                       document.querySelector('#supplement-form .btn-primary') ||
+                       document.querySelector('button[onclick*="saveSupplementForm"]');
         const spinner = document.getElementById('supplement-save-spinner');
         const saveText = document.getElementById('supplement-save-text');
         
@@ -783,26 +773,29 @@ async function saveSupplementForm(event) {
     }
 }
 
-// Debug function to check form availability
-function debugSupplementForm() {
-    console.log('🔍 Debugging supplement form...');
+// Debug function to check form structure
+function debugSupplementFormStructure() {
+    console.log('🔍 Form Structure Debug:');
     
-    // Check if form exists
-    const form = document.getElementById('supplement-form');
-    console.log('Form element:', form);
+    const container = document.getElementById('supplement-form');
+    console.log('Container element:', container);
+    console.log('Container tag:', container?.tagName);
     
-    // Check all elements with 'supplement' in the ID
-    const supplementElements = document.querySelectorAll('[id*="supplement"]');
-    console.log('All supplement elements:', supplementElements);
+    // Check for form inputs
+    const inputs = [
+        'supplement-name',
+        'supplement-category', 
+        'supplement-description',
+        'supplement-dose',
+        'supplement-unit',
+        'supplement-active',
+        'supplement-featured'
+    ];
     
-    // Check if supplements section is visible
-    const supplementsSection = document.getElementById('supplements');
-    console.log('Supplements section:', supplementsSection);
-    console.log('Supplements section visible:', supplementsSection?.style.display !== 'none');
-    
-    // List all forms on the page
-    const allForms = document.querySelectorAll('form');
-    console.log('All forms on page:', allForms);
+    inputs.forEach(id => {
+        const element = document.getElementById(id);
+        console.log(`${id}:`, element ? '✅ Found' : '❌ Missing', element?.type || element?.tagName);
+    });
 }
 
 function editSupplement(id) { showAlert(`Editing supplement ${id} (placeholder)`, 'info'); }
@@ -918,8 +911,12 @@ document.addEventListener('DOMContentLoaded', function() {
         showAlert('✅ Dashboard loaded successfully! All management functions are operational.', 'success');
     }, 1000);
     
-    // Run debug function to check form availability
-    setTimeout(debugSupplementForm, 2000); // Wait 2 seconds for components to load
+    // Run debug function to check form structure
+    setTimeout(() => {
+        if (document.getElementById('supplement-form')) {
+            debugSupplementFormStructure();
+        }
+    }, 2000); // Wait 2 seconds for components to load
 });
 
 // Ensure showSupplementAlert function exists
