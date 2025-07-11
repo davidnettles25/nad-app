@@ -1276,7 +1276,41 @@ app.get('/api/supplements/:id/usage', async (req, res) => {
     }
 });
 
+// GET /api/supplements/:id - Get single supplement
+app.get('/api/supplements/:id', async (req, res) => {
+    try {
+        const supplementId = req.params.id;
+        console.log(`📡 GET /api/supplements/${supplementId} - Getting single supplement`);
+        
+        const [supplement] = await db.execute(
+            'SELECT * FROM nad_supplements WHERE id = ?',
+            [supplementId]
+        );
+        
+        if (supplement.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Supplement not found'
+            });
+        }
+        
+        res.json({
+            success: true,
+            supplement: supplement[0]
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting supplement:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get supplement',
+            message: error.message
+        });
+    }
+});
+
 console.log('✅ Supplements API endpoints loaded');
+console.log('✅ Supplement CRUD endpoints loaded (GET, POST, PUT, DELETE)');
 
 // ============================================================================
 // LAB INTERFACE ENDPOINTS

@@ -798,12 +798,320 @@ function debugSupplementFormStructure() {
     });
 }
 
-function editSupplement(id) { showAlert(`Editing supplement ${id} (placeholder)`, 'info'); }
-function deleteSupplement(id) { 
-    if (confirm(`Delete supplement ${id}?`)) {
-        showAlert(`Deleting supplement ${id} (placeholder)`, 'info'); 
+// ==================================================
+// Supplement Edit Functions
+// Add these to your admin-dashboard.js
+// ==================================================
+
+// Edit supplement function
+async function editSupplement(id) {
+    console.log(`📝 Editing supplement ID: ${id}`);
+    
+    try {
+        // Find the supplement in the current data
+        let supplement = null;
+        
+        // First try to find it in allSupplements array if it exists
+        if (typeof allSupplements !== 'undefined' && allSupplements.length > 0) {
+            supplement = allSupplements.find(s => s.id == id);
+        }
+        
+        // If not found in array, fetch from API
+        if (!supplement) {
+            console.log('🔍 Fetching supplement from API...');
+            const API_BASE = window.API_BASE || 'https://mynadtest.info';
+            const response = await fetch(`${API_BASE}/api/supplements/${id}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                supplement = data.supplement || data;
+            }
+        }
+        
+        if (!supplement) {
+            showSupplementAlert('❌ Supplement not found', 'error');
+            return;
+        }
+        
+        console.log('📝 Supplement data for editing:', supplement);
+        
+        // Show the supplement form
+        if (typeof showAddSupplementForm === 'function') {
+            showAddSupplementForm();
+        } else {
+            // Show form container
+            const formContainer = document.getElementById('supplement-form-container') || 
+                                 document.getElementById('supplement-modal');
+            if (formContainer) {
+                formContainer.style.display = 'block';
+            }
+        }
+        
+        // Wait a moment for form to be visible
+        setTimeout(() => {
+            populateSupplementForm(supplement);
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ Error loading supplement for edit:', error);
+        showSupplementAlert('❌ Failed to load supplement for editing', 'error');
     }
 }
+
+// Populate supplement form with data for editing
+function populateSupplementForm(supplement) {
+    console.log('📝 Populating form with:', supplement);
+    
+    // Update form title
+    const formTitle = document.getElementById('supplement-form-title');
+    if (formTitle) {
+        formTitle.textContent = 'Edit Supplement';
+    }
+    
+    // Populate form fields
+    const fields = {
+        'supplement-id': supplement.id,
+        'supplement-name': supplement.name,
+        'supplement-category': supplement.category,
+        'supplement-description': supplement.description || '',
+        'supplement-dose': supplement.default_dose || '',
+        'supplement-unit': supplement.unit || 'mg',
+        'supplement-min-dose': supplement.min_dose || '',
+        'supplement-max-dose': supplement.max_dose || '',
+        'supplement-notes': supplement.notes || ''
+    };
+    
+    // Set text/select inputs
+    Object.entries(fields).forEach(([fieldId, value]) => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.value = value || '';
+            console.log(`✅ Set ${fieldId} = ${value}`);
+        } else {
+            console.warn(`⚠️ Field not found: ${fieldId}`);
+        }
+    });
+    
+    // Set checkboxes
+    const activeCheckbox = document.getElementById('supplement-active');
+    if (activeCheckbox) {
+        activeCheckbox.checked = supplement.is_active == 1;
+    }
+    
+    const featuredCheckbox = document.getElementById('supplement-featured');
+    if (featuredCheckbox) {
+        featuredCheckbox.checked = supplement.is_featured == 1;
+    }
+    
+    // Update save button text
+    const saveText = document.getElementById('supplement-save-text');
+    if (saveText) {
+        saveText.textContent = 'Update Supplement';
+    }
+    
+    // Focus on name field
+    const nameField = document.getElementById('supplement-name');
+    if (nameField) {
+        nameField.focus();
+        nameField.select();
+    }
+    
+    console.log('✅ Form populated successfully');
+}
+
+// Clear supplement form (for new supplements)
+function clearSupplementForm() {
+    console.log('🧹 Clearing supplement form...');
+    
+    // Update form title
+    const formTitle = document.getElementById('supplement-form-title');
+    if (formTitle) {
+        formTitle.textContent = 'Add New Supplement';
+    }
+    
+    // Clear form fields
+    const fields = [
+        'supplement-id',
+        'supplement-name',
+        'supplement-category', 
+        'supplement-description',
+        'supplement-dose',
+        'supplement-min-dose',
+        'supplement-max-dose',
+        'supplement-notes'
+    ];
+    
+    fields.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.value = '';
+        }
+    });
+    
+    // Reset unit to default
+    const unitField = document.getElementById('supplement-unit');
+    if (unitField) {
+        unitField.value = 'mg';
+    }
+    
+    // Reset checkboxes
+    const activeCheckbox = document.getElementById('supplement-active');
+    if (activeCheckbox) {
+        activeCheckbox.checked = true; // Default to active
+    }
+    
+    const featuredCheckbox = document.getElementById('supplement-featured');
+    if (featuredCheckbox) {
+        featuredCheckbox.checked = false; // Default to not featured
+    }
+    
+    // Update save button text
+    const saveText = document.getElementById('supplement-save-text');
+    if (saveText) {
+        saveText.textContent = 'Save Supplement';
+    }
+    
+    console.log('✅ Form cleared successfully');
+}
+
+// Delete supplement function
+async function deleteSupplement(id) {
+    // Find supplement name for confirmation
+    let supplementName = 'this supplement';
+    
+    if (typeof allSupplements !== 'undefined' && allSupplements.length > 0) {
+        const supplement = allSupplements.find(s => s.id == id);
+        if (supplement) {
+            supplementName = supplement.name;
+        }
+    }
+    
+    // Confirm deletion
+    if (!confirm(`Delete "${supplementName}"?\n\nThis action cannot be undone and will remove all associated data.`)) {
+        return;
+    }
+    
+    try {
+        showSupplementAlert('🔄 Deleting supplement...', 'info');
+        
+        const API_BASE = window.API_BASE || 'https://mynadtest.info';
+        const response = await fetch(`${API_BASE}/api/supplements/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showSupplementAlert(`✅ Supplement "${supplementName}" deleted successfully!`, 'success');
+            
+            // Reload supplements list
+            if (typeof loadSupplements === 'function') {
+                loadSupplements();
+            }
+        } else {
+            throw new Error(data.error || 'Failed to delete supplement');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error deleting supplement:', error);
+        showSupplementAlert(`❌ Failed to delete supplement: ${error.message}`, 'error');
+    }
+}
+
+// Toggle supplement active status
+async function toggleSupplementStatus(id, isActive) {
+    try {
+        // Find supplement
+        let supplement = null;
+        if (typeof allSupplements !== 'undefined' && allSupplements.length > 0) {
+            supplement = allSupplements.find(s => s.id == id);
+        }
+        
+        if (!supplement) {
+            showSupplementAlert('❌ Supplement not found', 'error');
+            return;
+        }
+        
+        const action = isActive ? 'activate' : 'deactivate';
+        showSupplementAlert(`🔄 ${action.charAt(0).toUpperCase() + action.slice(1)}ing supplement...`, 'info');
+        
+        const API_BASE = window.API_BASE || 'https://mynadtest.info';
+        const response = await fetch(`${API_BASE}/api/supplements/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                ...supplement, 
+                is_active: isActive ? 1 : 0 
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showSupplementAlert(`✅ Supplement ${action}d successfully!`, 'success');
+            
+            // Reload supplements list
+            if (typeof loadSupplements === 'function') {
+                loadSupplements();
+            }
+        } else {
+            throw new Error(data.error || `Failed to ${action} supplement`);
+        }
+        
+    } catch (error) {
+        console.error(`❌ Error toggling supplement status:`, error);
+        showSupplementAlert(`❌ Failed to update supplement status: ${error.message}`, 'error');
+    }
+}
+
+// Activate supplement (wrapper function)
+async function activateSupplement(id) {
+    await toggleSupplementStatus(id, true);
+}
+
+// Deactivate supplement (wrapper function) 
+async function deactivateSupplement(id) {
+    await toggleSupplementStatus(id, false);
+}
+
+// Enhanced show add supplement form function
+function showAddSupplementForm() {
+    console.log('📝 Showing add supplement form...');
+    
+    // Clear form first
+    clearSupplementForm();
+    
+    // Show form container
+    const formContainer = document.getElementById('supplement-form-container') || 
+                         document.getElementById('supplement-modal');
+    if (formContainer) {
+        formContainer.style.display = 'block';
+    }
+    
+    // Focus on name field
+    setTimeout(() => {
+        const nameField = document.getElementById('supplement-name');
+        if (nameField) {
+            nameField.focus();
+        }
+    }, 100);
+}
+
+// Hide supplement form
+function hideSupplementForm() {
+    console.log('❌ Hiding supplement form...');
+    
+    const formContainer = document.getElementById('supplement-form-container') || 
+                         document.getElementById('supplement-modal');
+    if (formContainer) {
+        formContainer.style.display = 'none';
+    }
+    
+    // Clear form
+    clearSupplementForm();
+}
+
+console.log('✅ Supplement edit functions loaded');
 
 // Analytics Actions
 function exportAnalytics() { showAlert('Exporting analytics (placeholder)', 'info'); }
@@ -1025,6 +1333,11 @@ window.hideSupplementForm = hideSupplementForm;
 window.saveSupplementForm = saveSupplementForm;
 window.editSupplement = editSupplement;
 window.deleteSupplement = deleteSupplement;
+window.populateSupplementForm = populateSupplementForm;
+window.clearSupplementForm = clearSupplementForm;
+window.toggleSupplementStatus = toggleSupplementStatus;
+window.activateSupplement = activateSupplement;
+window.deactivateSupplement = deactivateSupplement;
 
 // Analytics
 window.exportAnalytics = exportAnalytics;
