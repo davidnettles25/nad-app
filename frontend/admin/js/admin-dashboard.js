@@ -628,16 +628,28 @@ function showSupplementAlert(message, type = 'info') {
     }
 }
 
+// Fixed saveSupplementForm function for decomposed admin structure
+// This should replace the existing function in your supplements.js or admin.html
+
 async function saveSupplementForm(event) {
-    event.preventDefault();
+    // Handle both event and direct calls (fixes preventDefault error)
+    if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+    }
     
     console.log('💊 Starting supplement save process...');
     
     // Get form data
     const form = document.getElementById('supplement-form');
+    if (!form) {
+        console.error('❌ Supplement form not found');
+        showSupplementAlert('❌ Form not found', 'error');
+        return;
+    }
+    
     const formData = new FormData(form);
     
-    // Extract form values with proper field names
+    // Extract form values
     const id = formData.get('id');
     const isEdit = id && id !== '';
     
@@ -666,7 +678,8 @@ async function saveSupplementForm(event) {
         showSupplementAlert('🔄 Saving supplement...', 'info');
         
         // Update UI state
-        const saveBtn = document.querySelector('#supplement-form button[type="submit"]');
+        const saveBtn = document.querySelector('#supplement-form button[type="submit"]') || 
+                       document.querySelector('#supplement-form .btn-primary');
         const spinner = document.getElementById('supplement-save-spinner');
         const saveText = document.getElementById('supplement-save-text');
         
@@ -674,7 +687,8 @@ async function saveSupplementForm(event) {
         if (spinner) spinner.innerHTML = '<span class="loading-spinner">⏳</span>';
         if (saveText) saveText.textContent = isEdit ? 'Updating...' : 'Creating...';
         
-        // Determine API endpoint and method
+        // API configuration
+        const API_BASE = window.API_BASE || 'https://mynadtest.info';
         const url = isEdit ? `${API_BASE}/api/supplements/${id}` : `${API_BASE}/api/supplements`;
         const method = isEdit ? 'PUT' : 'POST';
         
@@ -695,18 +709,29 @@ async function saveSupplementForm(event) {
         // Parse response
         let data;
         try {
-            data = await response.json();
+            const responseText = await response.text();
+            console.log('📡 Raw response:', responseText);
+            
+            if (responseText) {
+                data = JSON.parse(responseText);
+            } else {
+                throw new Error('Empty response from server');
+            }
         } catch (parseError) {
-            console.error('❌ Failed to parse response as JSON:', parseError);
+            console.error('❌ Failed to parse response:', parseError);
             throw new Error('Invalid response from server');
         }
         
-        console.log('📡 Response data:', data);
+        console.log('📡 Parsed response:', data);
         
         if (response.ok && (data.success || data.id)) {
             const successMessage = `✅ Supplement "${supplementData.name}" ${isEdit ? 'updated' : 'created'} successfully!`;
             showSupplementAlert(successMessage, 'success');
-            hideSupplementForm();
+            
+            // Hide form
+            if (typeof hideSupplementForm === 'function') {
+                hideSupplementForm();
+            }
             
             // Reload supplements list
             if (typeof loadSupplements === 'function') {
@@ -722,7 +747,8 @@ async function saveSupplementForm(event) {
         showSupplementAlert(`❌ Failed to save supplement: ${error.message}`, 'error');
     } finally {
         // Reset UI state
-        const saveBtn = document.querySelector('#supplement-form button[type="submit"]');
+        const saveBtn = document.querySelector('#supplement-form button[type="submit"]') || 
+                       document.querySelector('#supplement-form .btn-primary');
         const spinner = document.getElementById('supplement-save-spinner');
         const saveText = document.getElementById('supplement-save-text');
         
@@ -844,6 +870,79 @@ document.addEventListener('DOMContentLoaded', function() {
         showAlert('✅ Dashboard loaded successfully! All management functions are operational.', 'success');
     }, 1000);
 });
+
+// Ensure showSupplementAlert function exists
+if (typeof showSupplementAlert !== 'function') {
+    function showSupplementAlert(message, type = 'info') {
+        console.log(`📢 Alert: ${message}`);
+        
+        // Remove existing alerts
+        const existingAlert = document.getElementById('supplement-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // Create new alert
+        const alertDiv = document.createElement('div');
+        alertDiv.id = 'supplement-alert';
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 400px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-weight: 500;
+            animation: slideIn 0.3s ease-out;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+        
+        // Set colors based on type
+        switch(type) {
+            case 'success':
+                alertDiv.style.backgroundColor = '#d4edda';
+                alertDiv.style.color = '#155724';
+                alertDiv.style.border = '1px solid #c3e6cb';
+                break;
+            case 'error':
+                alertDiv.style.backgroundColor = '#f8d7da';
+                alertDiv.style.color = '#721c24';
+                alertDiv.style.border = '1px solid #f5c6cb';
+                break;
+            case 'warning':
+                alertDiv.style.backgroundColor = '#fff3cd';
+                alertDiv.style.color = '#856404';
+                alertDiv.style.border = '1px solid #ffeaa7';
+                break;
+            default: // info
+                alertDiv.style.backgroundColor = '#d1ecf1';
+                alertDiv.style.color = '#0c5460';
+                alertDiv.style.border = '1px solid #bee5eb';
+        }
+        
+        alertDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" 
+                        style="background: none; border: none; font-size: 18px; cursor: pointer; padding: 0 5px; color: inherit;">×</button>
+            </div>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remove after 5 seconds for success/info messages
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    }
+}
 
 // Make functions globally accessible
 window.showSection = showSection;
