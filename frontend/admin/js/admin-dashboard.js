@@ -559,7 +559,178 @@ function hideSupplementForm() {
     const form = document.getElementById('supplement-form');
     if (form) form.style.display = 'none';
 }
-function saveSupplementForm() { showAlert('Saving supplement (placeholder)', 'info'); }
+function showSupplementAlert(message, type = 'info') {
+    console.log(`📢 Alert: ${message}`);
+    
+    // Remove existing alerts
+    const existingAlert = document.getElementById('supplement-alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    
+    // Create new alert
+    const alertDiv = document.createElement('div');
+    alertDiv.id = 'supplement-alert';
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        max-width: 400px;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-weight: 500;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    // Set colors based on type
+    switch(type) {
+        case 'success':
+            alertDiv.style.backgroundColor = '#d4edda';
+            alertDiv.style.color = '#155724';
+            alertDiv.style.border = '1px solid #c3e6cb';
+            break;
+        case 'error':
+            alertDiv.style.backgroundColor = '#f8d7da';
+            alertDiv.style.color = '#721c24';
+            alertDiv.style.border = '1px solid #f5c6cb';
+            break;
+        case 'warning':
+            alertDiv.style.backgroundColor = '#fff3cd';
+            alertDiv.style.color = '#856404';
+            alertDiv.style.border = '1px solid #ffeaa7';
+            break;
+        default: // info
+            alertDiv.style.backgroundColor = '#d1ecf1';
+            alertDiv.style.color = '#0c5460';
+            alertDiv.style.border = '1px solid #bee5eb';
+    }
+    
+    alertDiv.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: none; border: none; font-size: 18px; cursor: pointer; padding: 0 5px;">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds for success/info messages
+    if (type === 'success' || type === 'info') {
+        setTimeout(() => {
+            if (alertDiv.parentElement) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+}
+
+async function saveSupplementForm(event) {
+    event.preventDefault();
+    
+    console.log('💊 Starting supplement save process...');
+    
+    // Get form data
+    const form = document.getElementById('supplement-form');
+    const formData = new FormData(form);
+    
+    // Extract form values with proper field names
+    const id = formData.get('id');
+    const isEdit = id && id !== '';
+    
+    const supplementData = {
+        name: formData.get('name')?.trim(),
+        category: formData.get('category'),
+        description: formData.get('description')?.trim() || '',
+        default_dose: formData.get('default_dose') || null,
+        unit: formData.get('unit') || 'mg',
+        min_dose: formData.get('min_dose') || null,
+        max_dose: formData.get('max_dose') || null,
+        notes: formData.get('notes')?.trim() || '',
+        is_active: formData.has('is_active') ? 1 : 0,
+        is_featured: formData.has('is_featured') ? 1 : 0
+    };
+    
+    console.log('📝 Supplement data to save:', supplementData);
+    
+    // Validation
+    if (!supplementData.name || !supplementData.category) {
+        showSupplementAlert('❌ Please fill in all required fields (Name and Category)', 'error');
+        return;
+    }
+    
+    try {
+        showSupplementAlert('🔄 Saving supplement...', 'info');
+        
+        // Update UI state
+        const saveBtn = document.querySelector('#supplement-form button[type="submit"]');
+        const spinner = document.getElementById('supplement-save-spinner');
+        const saveText = document.getElementById('supplement-save-text');
+        
+        if (saveBtn) saveBtn.disabled = true;
+        if (spinner) spinner.innerHTML = '<span class="loading-spinner">⏳</span>';
+        if (saveText) saveText.textContent = isEdit ? 'Updating...' : 'Creating...';
+        
+        // Determine API endpoint and method
+        const url = isEdit ? `${API_BASE}/api/supplements/${id}` : `${API_BASE}/api/supplements`;
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        console.log(`📡 Making ${method} request to: ${url}`);
+        
+        // Make API request
+        const response = await fetch(url, {
+            method: method,
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(supplementData)
+        });
+        
+        console.log('📡 Response status:', response.status);
+        
+        // Parse response
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseError) {
+            console.error('❌ Failed to parse response as JSON:', parseError);
+            throw new Error('Invalid response from server');
+        }
+        
+        console.log('📡 Response data:', data);
+        
+        if (response.ok && (data.success || data.id)) {
+            const successMessage = `✅ Supplement "${supplementData.name}" ${isEdit ? 'updated' : 'created'} successfully!`;
+            showSupplementAlert(successMessage, 'success');
+            hideSupplementForm();
+            
+            // Reload supplements list
+            if (typeof loadSupplements === 'function') {
+                loadSupplements();
+            }
+        } else {
+            const errorMessage = data.error || data.message || `Failed to ${isEdit ? 'update' : 'create'} supplement`;
+            throw new Error(errorMessage);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error saving supplement:', error);
+        showSupplementAlert(`❌ Failed to save supplement: ${error.message}`, 'error');
+    } finally {
+        // Reset UI state
+        const saveBtn = document.querySelector('#supplement-form button[type="submit"]');
+        const spinner = document.getElementById('supplement-save-spinner');
+        const saveText = document.getElementById('supplement-save-text');
+        
+        if (saveBtn) saveBtn.disabled = false;
+        if (spinner) spinner.innerHTML = '';
+        if (saveText) saveText.textContent = 'Save Supplement';
+    }
+}
 function editSupplement(id) { showAlert(`Editing supplement ${id} (placeholder)`, 'info'); }
 function deleteSupplement(id) { 
     if (confirm(`Delete supplement ${id}?`)) {
@@ -569,6 +740,65 @@ function deleteSupplement(id) {
 
 // Analytics Actions
 function exportAnalytics() { showAlert('Exporting analytics (placeholder)', 'info'); }
+
+// Check if API_BASE is properly defined
+if (typeof API_BASE === 'undefined') {
+    console.error('❌ API_BASE is not defined! Setting default...');
+    window.API_BASE = 'https://mynadtest.info';
+}
+
+console.log('🔗 API Base URL:', API_BASE);
+
+// Test API connectivity
+async function testSupplementsAPI() {
+    try {
+        console.log('🧪 Testing supplements API...');
+        const response = await fetch(`${API_BASE}/api/supplements`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        });
+        
+        console.log('📡 API Test Response:', response.status, response.statusText);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('✅ API is working! Response:', data);
+        } else {
+            console.warn('⚠️ API returned error status:', response.status);
+        }
+    } catch (error) {
+        console.error('❌ API test failed:', error);
+    }
+}
+
+function validateSupplementForm() {
+    const requiredFields = [
+        { id: 'supplement-name', name: 'name' },
+        { id: 'supplement-category', name: 'category' },
+        { id: 'supplement-dose', name: 'default_dose' },
+        { id: 'supplement-unit', name: 'unit' }
+    ];
+    
+    const missingFields = [];
+    
+    requiredFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (!element) {
+            missingFields.push(field.id);
+            console.error(`❌ Missing form field: ${field.id}`);
+        } else {
+            // Ensure field has correct name attribute
+            element.name = field.name;
+        }
+    });
+    
+    if (missingFields.length > 0) {
+        showSupplementAlert(`❌ Missing form fields: ${missingFields.join(', ')}`, 'error');
+        return false;
+    }
+    
+    return true;
+}
 
 // General Functions
 function refreshData() {
