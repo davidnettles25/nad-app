@@ -803,7 +803,7 @@ function debugSupplementFormStructure() {
 // Add these to your admin-dashboard.js
 // ==================================================
 
-// Edit supplement function
+// Enhanced edit supplement function with better form detection
 async function editSupplement(id) {
     console.log(`📝 Editing supplement ID: ${id}`);
     
@@ -835,17 +835,8 @@ async function editSupplement(id) {
         
         console.log('📝 Supplement data for editing:', supplement);
         
-        // Show the supplement form
-        if (typeof showAddSupplementForm === 'function') {
-            showAddSupplementForm();
-        } else {
-            // Show form container
-            const formContainer = document.getElementById('supplement-form-container') || 
-                                 document.getElementById('supplement-modal');
-            if (formContainer) {
-                formContainer.style.display = 'block';
-            }
-        }
+        // Enhanced form showing with better debugging
+        showSupplementFormForEdit();
         
         // Wait a moment for form to be visible
         setTimeout(() => {
@@ -1081,18 +1072,19 @@ function showAddSupplementForm() {
     // Clear form first
     clearSupplementForm();
     
-    // Show form container
-    const formContainer = document.getElementById('supplement-form-container') || 
-                         document.getElementById('supplement-modal');
-    if (formContainer) {
-        formContainer.style.display = 'block';
-    }
+    // Use the same enhanced showing logic
+    showSupplementFormForEdit();
     
-    // Focus on name field
+    // Update title for new supplement
     setTimeout(() => {
-        const nameField = document.getElementById('supplement-name');
-        if (nameField) {
-            nameField.focus();
+        const formTitle = document.getElementById('supplement-form-title');
+        if (formTitle) {
+            formTitle.textContent = 'Add New Supplement';
+        }
+        
+        const saveText = document.getElementById('supplement-save-text');
+        if (saveText) {
+            saveText.textContent = 'Save Supplement';
         }
     }, 100);
 }
@@ -1111,7 +1103,250 @@ function hideSupplementForm() {
     clearSupplementForm();
 }
 
+// ==================================================
+// Enhanced functions to debug and fix form visibility
+// ==================================================
+
+// Enhanced form showing function with debugging
+function showSupplementFormForEdit() {
+    console.log('📝 Showing supplement form for edit...');
+    
+    // List of possible form container IDs to try
+    const possibleContainers = [
+        'supplement-form-container',
+        'supplement-modal', 
+        'add-supplement-modal',
+        'supplement-form-modal',
+        'supplement-popup',
+        'modal-supplement',
+        'supplement-dialog'
+    ];
+    
+    let formContainer = null;
+    
+    // Try to find any of these containers
+    for (const containerId of possibleContainers) {
+        const element = document.getElementById(containerId);
+        if (element) {
+            console.log(`✅ Found form container: ${containerId}`, element);
+            formContainer = element;
+            break;
+        } else {
+            console.log(`❌ Container not found: ${containerId}`);
+        }
+    }
+    
+    // If no container found, look for any element containing "supplement" and "form" or "modal"
+    if (!formContainer) {
+        console.log('🔍 Searching for supplement form containers by class/attribute...');
+        
+        const allElements = document.querySelectorAll('*');
+        for (const element of allElements) {
+            const id = element.id || '';
+            const className = element.className || '';
+            
+            if ((id.includes('supplement') && (id.includes('form') || id.includes('modal'))) ||
+                (className.includes('supplement') && (className.includes('form') || className.includes('modal')))) {
+                console.log(`🎯 Found potential container:`, element);
+                formContainer = element;
+                break;
+            }
+        }
+    }
+    
+    // If still no container found, create a simple modal
+    if (!formContainer) {
+        console.log('⚠️ No form container found, creating temporary modal...');
+        createTemporarySupplementModal();
+        formContainer = document.getElementById('temp-supplement-modal');
+    }
+    
+    if (formContainer) {
+        // Show the container using multiple methods
+        console.log('📺 Making form container visible...');
+        
+        // Method 1: Set display style
+        formContainer.style.display = 'block';
+        formContainer.style.visibility = 'visible';
+        formContainer.style.opacity = '1';
+        
+        // Method 2: Remove hidden classes
+        formContainer.classList.remove('hidden', 'd-none', 'hide');
+        formContainer.classList.add('show', 'visible');
+        
+        // Method 3: Set z-index to ensure it's on top
+        formContainer.style.zIndex = '10000';
+        formContainer.style.position = 'fixed';
+        
+        console.log('✅ Form container should now be visible');
+        
+        // Focus on the form
+        setTimeout(() => {
+            const nameField = document.getElementById('supplement-name');
+            if (nameField) {
+                nameField.focus();
+                nameField.select();
+            }
+        }, 200);
+    } else {
+        console.error('❌ Could not find or create form container');
+        showSupplementAlert('❌ Could not open edit form. Please try refreshing the page.', 'error');
+    }
+}
+
+// Create a temporary modal if none exists
+function createTemporarySupplementModal() {
+    console.log('🏗️ Creating temporary supplement modal...');
+    
+    const modal = document.createElement('div');
+    modal.id = 'temp-supplement-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 20px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 80%; overflow-y: auto;">
+            <h3 id="supplement-form-title">Edit Supplement</h3>
+            <div id="supplement-form">
+                <div style="margin-bottom: 15px;">
+                    <label>Name *</label><br>
+                    <input type="text" id="supplement-name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label>Category *</label><br>
+                    <select id="supplement-category" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Select category...</option>
+                        <option value="Vitamins">Vitamins</option>
+                        <option value="Minerals">Minerals</option>
+                        <option value="Antioxidants">Antioxidants</option>
+                        <option value="Essential Fatty Acids">Essential Fatty Acids</option>
+                        <option value="Probiotics">Probiotics</option>
+                        <option value="Herbs">Herbs</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label>Description</label><br>
+                    <textarea id="supplement-description" rows="2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label>Dose</label><br>
+                        <input type="number" id="supplement-dose" step="0.1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Unit</label><br>
+                        <select id="supplement-unit" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="mg">mg</option>
+                            <option value="g">g</option>
+                            <option value="mcg">mcg</option>
+                            <option value="IU">IU</option>
+                            <option value="ml">ml</option>
+                            <option value="drops">drops</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label>
+                        <input type="checkbox" id="supplement-active" checked> Active
+                    </label>
+                    &nbsp;&nbsp;
+                    <label>
+                        <input type="checkbox" id="supplement-featured"> Featured
+                    </label>
+                </div>
+                
+                <div style="text-align: right;">
+                    <button onclick="hideSupplementForm()" style="padding: 8px 16px; margin-right: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button onclick="saveSupplementForm()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        <span id="supplement-save-spinner"></span>
+                        <span id="supplement-save-text">Update Supplement</span>
+                    </button>
+                </div>
+                
+                <input type="hidden" id="supplement-id" value="">
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    console.log('✅ Temporary modal created');
+}
+
+// Enhanced hide function
+function hideSupplementForm() {
+    console.log('❌ Hiding supplement form...');
+    
+    // Try multiple container IDs
+    const possibleContainers = [
+        'supplement-form-container',
+        'supplement-modal', 
+        'add-supplement-modal',
+        'temp-supplement-modal'
+    ];
+    
+    for (const containerId of possibleContainers) {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.style.display = 'none';
+            container.classList.add('hidden');
+            console.log(`✅ Hidden container: ${containerId}`);
+        }
+    }
+    
+    // Remove temporary modal if it exists
+    const tempModal = document.getElementById('temp-supplement-modal');
+    if (tempModal) {
+        tempModal.remove();
+        console.log('✅ Removed temporary modal');
+    }
+}
+
+// Debug function to check what form elements exist
+function debugSupplementFormElements() {
+    console.log('🔍 Debugging supplement form elements...');
+    
+    // Check for all possible form-related elements
+    const formRelatedElements = document.querySelectorAll('[id*="supplement"], [class*="supplement"], [id*="modal"], [class*="modal"]');
+    
+    console.log('📋 Found form-related elements:', formRelatedElements);
+    
+    formRelatedElements.forEach((element, index) => {
+        console.log(`${index + 1}. ${element.tagName} - ID: ${element.id} - Classes: ${element.className}`);
+    });
+    
+    return formRelatedElements;
+}
+
+// Add debug button (temporary)
+function addDebugButton() {
+    if (document.getElementById('debug-form-btn')) return;
+    
+    const debugBtn = document.createElement('button');
+    debugBtn.id = 'debug-form-btn';
+    debugBtn.textContent = '🔍 Debug Form';
+    debugBtn.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 9999; padding: 5px 10px; background: #ff6b6b; color: white; border: none; border-radius: 4px; cursor: pointer;';
+    debugBtn.onclick = debugSupplementFormElements;
+    document.body.appendChild(debugBtn);
+}
+
 console.log('✅ Supplement edit functions loaded');
+console.log('✅ Enhanced supplement form functions loaded');
 
 // Analytics Actions
 function exportAnalytics() { showAlert('Exporting analytics (placeholder)', 'info'); }
@@ -1225,6 +1460,9 @@ document.addEventListener('DOMContentLoaded', function() {
             debugSupplementFormStructure();
         }
     }, 2000); // Wait 2 seconds for components to load
+    
+    // Add debug button
+    setTimeout(addDebugButton, 1000);
 });
 
 // Ensure showSupplementAlert function exists
@@ -1338,6 +1576,10 @@ window.clearSupplementForm = clearSupplementForm;
 window.toggleSupplementStatus = toggleSupplementStatus;
 window.activateSupplement = activateSupplement;
 window.deactivateSupplement = deactivateSupplement;
+window.showSupplementFormForEdit = showSupplementFormForEdit;
+window.createTemporarySupplementModal = createTemporarySupplementModal;
+window.debugSupplementFormElements = debugSupplementFormElements;
+window.addDebugButton = addDebugButton;
 
 // Analytics
 window.exportAnalytics = exportAnalytics;
