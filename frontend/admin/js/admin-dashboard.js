@@ -1811,6 +1811,7 @@ window.activateSupplement = activateSupplement;
 window.deactivateSupplement = deactivateSupplement;
 window.showSupplementFormForEdit = showSupplementFormForEdit;
 window.createTemporarySupplementModal = createTemporarySupplementModal;
+window.createEnhancedSupplementModal = createEnhancedSupplementModal;
 window.debugSupplementFormElements = debugSupplementFormElements;
 window.addDebugButton = addDebugButton;
 
@@ -1818,3 +1819,395 @@ window.addDebugButton = addDebugButton;
 window.exportAnalytics = exportAnalytics;
 
 console.log('🚀 NAD Admin Dashboard Complete!');
+
+// ==================================================
+// Add this NEW function to your admin-dashboard.js
+// Don't replace anything - just add this at the end
+// ==================================================
+
+// Enhanced modal creation with NEW name
+function createEnhancedSupplementModal() {
+    console.log('🏗️ Creating enhanced supplement modal...');
+    
+    // Remove old modal if it exists
+    const oldModal = document.getElementById('temp-supplement-modal');
+    if (oldModal) {
+        oldModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = 'temp-supplement-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(3px);
+        animation: fadeIn 0.3s ease-out;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            border: 1px solid #e0e0e0;
+        ">
+            <!-- Close button -->
+            <button onclick="hideSupplementForm()" style="
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 50%;
+                width: 30px;
+                height: 30px;
+                cursor: pointer;
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #6c757d;
+                transition: all 0.2s;
+            " onmouseover="this.style.background='#e9ecef'" onmouseout="this.style.background='#f8f9fa'">
+                ×
+            </button>
+            
+            <!-- Form Header -->
+            <div style="margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #f8f9fa;">
+                <h3 id="supplement-form-title" style="
+                    margin: 0;
+                    color: #333;
+                    font-size: 24px;
+                    font-weight: 600;
+                ">Edit Supplement</h3>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
+                    Update supplement information and settings
+                </p>
+            </div>
+            
+            <!-- Form Content -->
+            <div id="supplement-form">
+                <!-- Name Field -->
+                <div style="margin-bottom: 20px;">
+                    <label style="
+                        display: block;
+                        margin-bottom: 8px;
+                        font-weight: 600;
+                        color: #333;
+                        font-size: 14px;
+                    ">Name *</label>
+                    <input type="text" id="supplement-name" placeholder="Enter supplement name..." style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 2px solid #e9ecef;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        transition: border-color 0.2s;
+                        box-sizing: border-box;
+                    " onfocus="this.style.borderColor='#007bff'" onblur="this.style.borderColor='#e9ecef'">
+                </div>
+                
+                <!-- Category Field -->
+                <div style="margin-bottom: 20px;">
+                    <label style="
+                        display: block;
+                        margin-bottom: 8px;
+                        font-weight: 600;
+                        color: #333;
+                        font-size: 14px;
+                    ">Category *</label>
+                    <select id="supplement-category" style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 2px solid #e9ecef;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        background: white;
+                        box-sizing: border-box;
+                    ">
+                        <option value="">Select category...</option>
+                        <option value="Vitamins">Vitamins</option>
+                        <option value="Minerals">Minerals</option>
+                        <option value="Antioxidants">Antioxidants</option>
+                        <option value="Essential Fatty Acids">Essential Fatty Acids</option>
+                        <option value="Digestive Health">Digestive Health</option>
+                        <option value="Anti-inflammatory">Anti-inflammatory</option>
+                        <option value="Herbs">Herbs</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <!-- Description Field -->
+                <div style="margin-bottom: 20px;">
+                    <label style="
+                        display: block;
+                        margin-bottom: 8px;
+                        font-weight: 600;
+                        color: #333;
+                        font-size: 14px;
+                    ">Description</label>
+                    <textarea id="supplement-description" rows="3" placeholder="Brief description of the supplement..." style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 2px solid #e9ecef;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        resize: vertical;
+                        box-sizing: border-box;
+                        font-family: inherit;
+                    "></textarea>
+                </div>
+                
+                <!-- Dose and Unit Fields -->
+                <div style="display: grid; grid-template-columns: 1fr 120px; gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-weight: 600;
+                            color: #333;
+                            font-size: 14px;
+                        ">Default Dose</label>
+                        <input type="number" id="supplement-dose" step="0.1" min="0" placeholder="0" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 2px solid #e9ecef;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            box-sizing: border-box;
+                        ">
+                    </div>
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-weight: 600;
+                            color: #333;
+                            font-size: 14px;
+                        ">Unit</label>
+                        <select id="supplement-unit" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 2px solid #e9ecef;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            background: white;
+                            box-sizing: border-box;
+                        ">
+                            <option value="mg">mg</option>
+                            <option value="g">g</option>
+                            <option value="mcg">mcg</option>
+                            <option value="IU">IU</option>
+                            <option value="ml">ml</option>
+                            <option value="drops">drops</option>
+                            <option value="capsules">capsules</option>
+                            <option value="tablets">tablets</option>
+                            <option value="billion CFU">billion CFU</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Checkboxes -->
+                <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="display: flex; gap: 30px;">
+                        <label style="
+                            display: flex;
+                            align-items: center;
+                            cursor: pointer;
+                            font-weight: 500;
+                            color: #333;
+                        ">
+                            <input type="checkbox" id="supplement-active" checked style="
+                                margin-right: 8px;
+                                transform: scale(1.2);
+                            "> 
+                            <span style="color: #28a745;">✅ Active</span>
+                        </label>
+                        
+                        <label style="
+                            display: flex;
+                            align-items: center;
+                            cursor: pointer;
+                            font-weight: 500;
+                            color: #333;
+                        ">
+                            <input type="checkbox" id="supplement-featured" style="
+                                margin-right: 8px;
+                                transform: scale(1.2);
+                            "> 
+                            <span style="color: #ffc107;">⭐ Featured</span>
+                        </label>
+                    </div>
+                    <small style="color: #6c757d; margin-top: 5px; display: block;">
+                        Active supplements are available for customer selection. Featured supplements are highlighted prominently.
+                    </small>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div style="
+                    display: flex;
+                    gap: 10px;
+                    justify-content: flex-end;
+                    padding-top: 20px;
+                    border-top: 1px solid #e9ecef;
+                ">
+                    <button onclick="hideSupplementForm()" style="
+                        padding: 12px 24px;
+                        background: #6c757d;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 500;
+                        transition: all 0.2s;
+                        min-width: 100px;
+                    " onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
+                        Cancel
+                    </button>
+                    
+                    <button onclick="saveSupplementForm()" style="
+                        padding: 12px 24px;
+                        background: linear-gradient(135deg, #007bff, #0056b3);
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 500;
+                        transition: all 0.2s;
+                        min-width: 140px;
+                        box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+                    " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,123,255,0.4)'" 
+                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,123,255,0.3)'">
+                        <span id="supplement-save-spinner"></span>
+                        <span id="supplement-save-text">Update Supplement</span>
+                    </button>
+                </div>
+                
+                <input type="hidden" id="supplement-id" value="">
+            </div>
+        </div>
+    `;
+    
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.id = 'enhanced-modal-styles';
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        #temp-supplement-modal input:focus,
+        #temp-supplement-modal select:focus,
+        #temp-supplement-modal textarea:focus {
+            outline: none;
+            border-color: #007bff !important;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        
+        #temp-supplement-modal input[type="checkbox"]:checked {
+            accent-color: #007bff;
+        }
+    `;
+    
+    // Remove old style if exists
+    const oldStyle = document.getElementById('enhanced-modal-styles');
+    if (oldStyle) oldStyle.remove();
+    
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+    
+    console.log('✅ Enhanced modal created with improved styling');
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            hideSupplementForm();
+        }
+    });
+    
+    // Close modal with Escape key
+    const escapeHandler = function(e) {
+        if (e.key === 'Escape' && document.getElementById('temp-supplement-modal')) {
+            hideSupplementForm();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+}
+
+// Updated showSupplementFormForEdit function to use new modal
+function showSupplementFormForEdit() {
+    console.log('📝 Showing supplement form for edit...');
+    
+    // Try to find existing form container first
+    const possibleContainers = [
+        'supplement-form-container',
+        'supplement-modal', 
+        'add-supplement-modal'
+    ];
+    
+    let formContainer = null;
+    
+    // Try to find any of these containers
+    for (const containerId of possibleContainers) {
+        const element = document.getElementById(containerId);
+        if (element) {
+            console.log(`✅ Found existing form container: ${containerId}`, element);
+            formContainer = element;
+            break;
+        } else {
+            console.log(`❌ Container not found: ${containerId}`);
+        }
+    }
+    
+    // If no container found, create the enhanced modal
+    if (!formContainer) {
+        console.log('⚠️ No existing form container found, creating enhanced modal...');
+        createEnhancedSupplementModal();
+        formContainer = document.getElementById('temp-supplement-modal');
+    }
+    
+    if (formContainer) {
+        // Show the container using multiple methods
+        console.log('📺 Making form container visible...');
+        
+        formContainer.style.display = 'flex';
+        formContainer.style.visibility = 'visible';
+        formContainer.style.opacity = '1';
+        formContainer.classList.remove('hidden', 'd-none', 'hide');
+        formContainer.classList.add('show', 'visible');
+        
+        console.log('✅ Form container should now be visible');
+        
+        // Focus on the form
+        setTimeout(() => {
+            const nameField = document.getElementById('supplement-name');
+            if (nameField) {
+                nameField.focus();
+                nameField.select();
+            }
+        }, 200);
+    } else {
+        console.error('❌ Could not find or create form container');
+        showSupplementAlert('❌ Could not open edit form. Please try refreshing the page.', 'error');
+    }
+}
+
+console.log('✅ Enhanced supplement modal functions loaded');
