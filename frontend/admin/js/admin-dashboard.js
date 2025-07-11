@@ -1194,9 +1194,14 @@ function showSupplementFormForEdit() {
     }
 }
 
-// Create a temporary modal if none exists
+// ==================================================
+// Improved Modal Styling for Better Visibility
+// Replace your createTemporarySupplementModal function
+// ==================================================
+
+// Enhanced modal creation with better styling
 function createTemporarySupplementModal() {
-    console.log('🏗️ Creating temporary supplement modal...');
+    console.log('🏗️ Creating enhanced supplement modal...');
     
     const modal = document.createElement('div');
     modal.id = 'temp-supplement-modal';
@@ -1206,74 +1211,257 @@ function createTemporarySupplementModal() {
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 10000;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 99999;
         display: flex;
         align-items: center;
         justify-content: center;
+        backdrop-filter: blur(3px);
+        animation: fadeIn 0.3s ease-out;
     `;
     
     modal.innerHTML = `
-        <div style="background: white; padding: 20px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 80%; overflow-y: auto;">
-            <h3 id="supplement-form-title">Edit Supplement</h3>
+        <div style="
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            border: 1px solid #e0e0e0;
+        ">
+            <!-- Close button -->
+            <button onclick="hideSupplementForm()" style="
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 50%;
+                width: 30px;
+                height: 30px;
+                cursor: pointer;
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #6c757d;
+                transition: all 0.2s;
+            " onmouseover="this.style.background='#e9ecef'" onmouseout="this.style.background='#f8f9fa'">
+                ×
+            </button>
+            
+            <!-- Form Header -->
+            <div style="margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #f8f9fa;">
+                <h3 id="supplement-form-title" style="
+                    margin: 0;
+                    color: #333;
+                    font-size: 24px;
+                    font-weight: 600;
+                ">Edit Supplement</h3>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
+                    Update supplement information and settings
+                </p>
+            </div>
+            
+            <!-- Form Content -->
             <div id="supplement-form">
-                <div style="margin-bottom: 15px;">
-                    <label>Name *</label><br>
-                    <input type="text" id="supplement-name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <!-- Name Field -->
+                <div style="margin-bottom: 20px;">
+                    <label style="
+                        display: block;
+                        margin-bottom: 8px;
+                        font-weight: 600;
+                        color: #333;
+                        font-size: 14px;
+                    ">Name *</label>
+                    <input type="text" id="supplement-name" placeholder="Enter supplement name..." style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 2px solid #e9ecef;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        transition: border-color 0.2s;
+                        box-sizing: border-box;
+                    " onfocus="this.style.borderColor='#007bff'" onblur="this.style.borderColor='#e9ecef'">
                 </div>
                 
-                <div style="margin-bottom: 15px;">
-                    <label>Category *</label><br>
-                    <select id="supplement-category" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <!-- Category Field -->
+                <div style="margin-bottom: 20px;">
+                    <label style="
+                        display: block;
+                        margin-bottom: 8px;
+                        font-weight: 600;
+                        color: #333;
+                        font-size: 14px;
+                    ">Category *</label>
+                    <select id="supplement-category" style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 2px solid #e9ecef;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        background: white;
+                        box-sizing: border-box;
+                    ">
                         <option value="">Select category...</option>
                         <option value="Vitamins">Vitamins</option>
                         <option value="Minerals">Minerals</option>
                         <option value="Antioxidants">Antioxidants</option>
                         <option value="Essential Fatty Acids">Essential Fatty Acids</option>
-                        <option value="Probiotics">Probiotics</option>
+                        <option value="Digestive Health">Digestive Health</option>
+                        <option value="Anti-inflammatory">Anti-inflammatory</option>
                         <option value="Herbs">Herbs</option>
                         <option value="Other">Other</option>
                     </select>
                 </div>
                 
-                <div style="margin-bottom: 15px;">
-                    <label>Description</label><br>
-                    <textarea id="supplement-description" rows="2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                <!-- Description Field -->
+                <div style="margin-bottom: 20px;">
+                    <label style="
+                        display: block;
+                        margin-bottom: 8px;
+                        font-weight: 600;
+                        color: #333;
+                        font-size: 14px;
+                    ">Description</label>
+                    <textarea id="supplement-description" rows="3" placeholder="Brief description of the supplement..." style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 2px solid #e9ecef;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        resize: vertical;
+                        box-sizing: border-box;
+                        font-family: inherit;
+                    "></textarea>
                 </div>
                 
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <div style="flex: 1;">
-                        <label>Dose</label><br>
-                        <input type="number" id="supplement-dose" step="0.1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <!-- Dose and Unit Fields -->
+                <div style="display: grid; grid-template-columns: 1fr 120px; gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-weight: 600;
+                            color: #333;
+                            font-size: 14px;
+                        ">Default Dose</label>
+                        <input type="number" id="supplement-dose" step="0.1" min="0" placeholder="0" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 2px solid #e9ecef;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            box-sizing: border-box;
+                        ">
                     </div>
-                    <div style="flex: 1;">
-                        <label>Unit</label><br>
-                        <select id="supplement-unit" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-weight: 600;
+                            color: #333;
+                            font-size: 14px;
+                        ">Unit</label>
+                        <select id="supplement-unit" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 2px solid #e9ecef;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            background: white;
+                            box-sizing: border-box;
+                        ">
                             <option value="mg">mg</option>
                             <option value="g">g</option>
                             <option value="mcg">mcg</option>
                             <option value="IU">IU</option>
                             <option value="ml">ml</option>
                             <option value="drops">drops</option>
+                            <option value="capsules">capsules</option>
+                            <option value="tablets">tablets</option>
+                            <option value="billion CFU">billion CFU</option>
                         </select>
                     </div>
                 </div>
                 
-                <div style="margin-bottom: 15px;">
-                    <label>
-                        <input type="checkbox" id="supplement-active" checked> Active
-                    </label>
-                    &nbsp;&nbsp;
-                    <label>
-                        <input type="checkbox" id="supplement-featured"> Featured
-                    </label>
+                <!-- Checkboxes -->
+                <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="display: flex; gap: 30px;">
+                        <label style="
+                            display: flex;
+                            align-items: center;
+                            cursor: pointer;
+                            font-weight: 500;
+                            color: #333;
+                        ">
+                            <input type="checkbox" id="supplement-active" checked style="
+                                margin-right: 8px;
+                                transform: scale(1.2);
+                            "> 
+                            <span style="color: #28a745;">✅ Active</span>
+                        </label>
+                        
+                        <label style="
+                            display: flex;
+                            align-items: center;
+                            cursor: pointer;
+                            font-weight: 500;
+                            color: #333;
+                        ">
+                            <input type="checkbox" id="supplement-featured" style="
+                                margin-right: 8px;
+                                transform: scale(1.2);
+                            "> 
+                            <span style="color: #ffc107;">⭐ Featured</span>
+                        </label>
+                    </div>
+                    <small style="color: #6c757d; margin-top: 5px; display: block;">
+                        Active supplements are available for customer selection. Featured supplements are highlighted prominently.
+                    </small>
                 </div>
                 
-                <div style="text-align: right;">
-                    <button onclick="hideSupplementForm()" style="padding: 8px 16px; margin-right: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                <!-- Action Buttons -->
+                <div style="
+                    display: flex;
+                    gap: 10px;
+                    justify-content: flex-end;
+                    padding-top: 20px;
+                    border-top: 1px solid #e9ecef;
+                ">
+                    <button onclick="hideSupplementForm()" style="
+                        padding: 12px 24px;
+                        background: #6c757d;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 500;
+                        transition: all 0.2s;
+                        min-width: 100px;
+                    " onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
                         Cancel
                     </button>
-                    <button onclick="saveSupplementForm()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    
+                    <button onclick="saveSupplementForm()" style="
+                        padding: 12px 24px;
+                        background: linear-gradient(135deg, #007bff, #0056b3);
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 500;
+                        transition: all 0.2s;
+                        min-width: 140px;
+                        box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+                    " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,123,255,0.4)'" 
+                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,123,255,0.3)'">
                         <span id="supplement-save-spinner"></span>
                         <span id="supplement-save-text">Update Supplement</span>
                     </button>
@@ -1284,11 +1472,47 @@ function createTemporarySupplementModal() {
         </div>
     `;
     
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        #temp-supplement-modal input:focus,
+        #temp-supplement-modal select:focus,
+        #temp-supplement-modal textarea:focus {
+            outline: none;
+            border-color: #007bff !important;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        
+        #temp-supplement-modal input[type="checkbox"]:checked {
+            accent-color: #007bff;
+        }
+    `;
+    document.head.appendChild(style);
+    
     document.body.appendChild(modal);
-    console.log('✅ Temporary modal created');
+    console.log('✅ Enhanced modal created with improved styling');
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            hideSupplementForm();
+        }
+    });
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.getElementById('temp-supplement-modal')) {
+            hideSupplementForm();
+        }
+    });
 }
 
-// Enhanced hide function
+// Enhanced hide function with cleanup
 function hideSupplementForm() {
     console.log('❌ Hiding supplement form...');
     
@@ -1303,18 +1527,26 @@ function hideSupplementForm() {
     for (const containerId of possibleContainers) {
         const container = document.getElementById(containerId);
         if (container) {
-            container.style.display = 'none';
-            container.classList.add('hidden');
+            // Fade out animation
+            container.style.opacity = '0';
+            container.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                container.style.display = 'none';
+                container.classList.add('hidden');
+                
+                // Remove temp modal completely
+                if (containerId === 'temp-supplement-modal') {
+                    container.remove();
+                }
+            }, 200);
+            
             console.log(`✅ Hidden container: ${containerId}`);
         }
     }
     
-    // Remove temporary modal if it exists
-    const tempModal = document.getElementById('temp-supplement-modal');
-    if (tempModal) {
-        tempModal.remove();
-        console.log('✅ Removed temporary modal');
-    }
+    // Remove event listeners
+    document.removeEventListener('keydown', arguments.callee);
 }
 
 // Debug function to check what form elements exist
@@ -1347,6 +1579,7 @@ function addDebugButton() {
 
 console.log('✅ Supplement edit functions loaded');
 console.log('✅ Enhanced supplement form functions loaded');
+console.log('✅ Enhanced modal styling loaded');
 
 // Analytics Actions
 function exportAnalytics() { showAlert('Exporting analytics (placeholder)', 'info'); }
