@@ -5,6 +5,8 @@ backend/logs/*
 backend/uploads/*
 !backend/logs/.gitkeep
 !backend/uploads/.gitkeep
+deployment/theFacts.txt
+
 
 # Temporary files
 *.tmp
