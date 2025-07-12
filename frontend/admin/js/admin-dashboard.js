@@ -301,7 +301,6 @@ window.showAddSupplementForm = showAddSupplementForm;
 window.hideSupplementForm = hideSupplementForm;
 window.saveSupplementForm = saveSupplementForm;
 window.loadSupplements = loadSupplements;
-window.editSupplement = editSupplement;
 window.activateSupplement = activateSupplement;
 window.deactivateSupplement = deactivateSupplement;
 window.showSection = showSection;
