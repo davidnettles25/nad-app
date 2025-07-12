@@ -1,12 +1,12 @@
-// NAD Admin Dashboard - Fixed Edit/Add Version
+// NAD Admin Dashboard - Debug Version
 const API_BASE = 'https://mynadtest.info';
 let allSupplements = [];
 let filteredSupplements = [];
 
-console.log('🚀 Fixed Admin Dashboard Loaded');
+console.log('🚀 Debug Admin Dashboard Loaded');
 
 // ============================================================================
-// SUPPLEMENT FUNCTIONS
+// SUPPLEMENT FUNCTIONS WITH DEBUGGING
 // ============================================================================
 
 async function loadSupplements() {
@@ -49,18 +49,16 @@ function renderSupplementsTable() {
     });
 }
 
-// Add new supplement
 function showAddSupplementForm() {
     console.log('📝 Add new supplement');
-    showSupplementModal(null); // null means add mode
+    showSupplementModal(null);
 }
 
-// Edit existing supplement
 function editSupplement(id) {
     console.log('📝 Edit supplement:', id);
     const supplement = allSupplements.find(s => s.id == id);
     if (supplement) {
-        showSupplementModal(supplement); // pass supplement data means edit mode
+        showSupplementModal(supplement);
     } else {
         showAlert('Supplement not found', 'error');
     }
@@ -84,7 +82,8 @@ function showSupplementModal(supplement) {
             '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: -20px -20px 20px -20px; padding: 20px; border-radius: 12px 12px 0 0;">' +
                 '<h3 style="margin: 0;">' + (isEdit ? '✏️ Edit Supplement' : '➕ Add New Supplement') + '</h3>' +
             '</div>' +
-            '<form id="supplement-form">' +
+            
+            '<div id="supplement-form-container">' +
                 '<input type="hidden" id="supplement-id" value="' + (isEdit ? supplement.id : '') + '">' +
                 '<input type="hidden" id="is-edit" value="' + (isEdit ? 'true' : 'false') + '">' +
                 
@@ -133,15 +132,29 @@ function showSupplementModal(supplement) {
                 
                 '<div style="text-align: right; border-top: 1px solid #e5e7eb; padding-top: 15px;">' +
                     '<button type="button" onclick="closeSupplementModal()" style="margin-right: 10px; padding: 10px 20px; border: 2px solid #d1d5db; background: #f9fafb; border-radius: 6px; cursor: pointer;">Cancel</button>' +
-                    '<button type="submit" style="padding: 10px 20px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 6px; cursor: pointer; font-weight: 600;">💊 ' + (isEdit ? 'Update' : 'Create') + ' Supplement</button>' +
+                    '<button type="button" id="save-supplement-btn" style="padding: 10px 20px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 6px; cursor: pointer; font-weight: 600;">💊 ' + (isEdit ? 'Update' : 'Create') + ' Supplement</button>' +
                 '</div>' +
-            '</form>' +
+            '</div>' +
         '</div>';
     
     document.body.appendChild(modal);
     
-    // Add form submit handler
-    document.getElementById('supplement-form').addEventListener('submit', saveSupplementForm);
+    // Add click handler to save button (NOT form submit)
+    document.getElementById('save-supplement-btn').addEventListener('click', function(e) {
+        console.log('🔘 Save button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        saveSupplementData();
+    });
+    
+    // Prevent any form submission
+    const formContainer = document.getElementById('supplement-form-container');
+    formContainer.addEventListener('submit', function(e) {
+        console.log('❌ Form submit prevented');
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
     
     // Focus on name field
     setTimeout(() => {
@@ -153,9 +166,8 @@ function showSupplementModal(supplement) {
     }, 100);
 }
 
-async function saveSupplementForm(event) {
-    event.preventDefault();
-    console.log('💾 Saving supplement form...');
+async function saveSupplementData() {
+    console.log('💾 saveSupplementData called');
     
     const isEdit = document.getElementById('is-edit').value === 'true';
     const id = document.getElementById('supplement-id').value;
@@ -178,42 +190,65 @@ async function saveSupplementForm(event) {
     }
     
     try {
+        console.log('🚀 Starting API call...');
+        
         const url = isEdit ? 
             API_BASE + '/api/supplements/' + id : 
             API_BASE + '/api/supplements';
         const method = isEdit ? 'PUT' : 'POST';
         
         console.log('🌐 Request:', method, url);
+        console.log('📤 Sending data:', JSON.stringify(data));
+        
+        showAlert('🔄 Saving supplement...', 'info');
         
         const response = await fetch(url, {
             method: method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify(data)
         });
         
+        console.log('📨 Response status:', response.status);
+        console.log('📨 Response ok:', response.ok);
+        
         const result = await response.json();
+        console.log('📨 Response data:', result);
         
         if (response.ok && result.success) {
+            console.log('✅ Save successful!');
             showAlert('✅ Supplement ' + (isEdit ? 'updated' : 'created') + ' successfully!', 'success');
+            
+            // Close modal
             closeSupplementModal();
-            loadSupplements();
+            
+            // Reload supplements
+            console.log('🔄 Reloading supplements...');
+            await loadSupplements();
+            
         } else {
-            throw new Error(result.error || 'Failed to save supplement');
+            console.error('❌ API returned error:', result);
+            throw new Error(result.error || result.message || 'Failed to save supplement');
         }
         
     } catch (error) {
         console.error('❌ Error saving supplement:', error);
-        showAlert('❌ Failed to save supplement: ' + error.message, 'error');
+        showAlert('❌ Failed to save: ' + error.message, 'error');
     }
 }
 
 function closeSupplementModal() {
+    console.log('🚪 Closing modal');
     const modal = document.getElementById('supplement-modal');
-    if (modal) modal.remove();
+    if (modal) {
+        modal.remove();
+        console.log('✅ Modal removed');
+    }
 }
 
 function showAlert(message, type) {
-    console.log('📢 Alert:', message);
+    console.log('📢 Alert:', message, 'Type:', type);
     
     // Remove existing alert
     const existingAlert = document.getElementById('alert');
@@ -235,7 +270,9 @@ function showAlert(message, type) {
         'background: ' + style.bg + '; color: ' + style.color + '; border: 1px solid ' + style.border + ';';
     
     document.body.appendChild(alert);
-    setTimeout(() => alert.remove(), type === 'error' ? 8000 : 4000);
+    setTimeout(() => {
+        if (alert.parentNode) alert.remove();
+    }, type === 'error' ? 8000 : 4000);
 }
 
 // Make functions global
@@ -244,5 +281,6 @@ window.editSupplement = editSupplement;
 window.showAddSupplementForm = showAddSupplementForm;
 window.closeSupplementModal = closeSupplementModal;
 window.showAlert = showAlert;
+window.saveSupplementData = saveSupplementData;
 
-console.log('✅ Fixed edit/add dashboard loaded');
+console.log('✅ Debug dashboard loaded');
