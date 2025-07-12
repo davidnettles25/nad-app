@@ -825,9 +825,9 @@ function createSupplementModalUpdated() {
         existingModal.remove();
     }
     
-    // Create modal (same HTML as before, but with updated event listener)
-    const modal = document.createElement('div');
-    modal.id = 'supplement-modal';
+    // This function is deprecated - use createSupplementModal instead
+    return createSupplementModal();
+}
 
 // ============================================================================
 // EDIT SUPPLEMENT FUNCTIONS (CLEAN VERSION)
