@@ -912,3 +912,255 @@ window.clearSupplementForm = clearSupplementFormFixed;
 window.saveSupplementForm = saveSupplementFormFixed;
 
 console.log('✅ Fixed supplement form functions loaded');
+
+// ============================================================================
+// DEBUGGED SUPPLEMENT FORM FUNCTIONS
+// ============================================================================
+
+async function saveSupplementFormDebug(event) {
+    event.preventDefault();
+    console.log('💾 Saving supplement form...');
+    
+    // Debug: Check if form elements exist
+    console.log('🔍 Debugging form elements:');
+    const nameField = document.getElementById('supplement-name');
+    const categoryField = document.getElementById('supplement-category');
+    const descriptionField = document.getElementById('supplement-description');
+    const doseField = document.getElementById('supplement-dose');
+    const unitField = document.getElementById('supplement-unit');
+    const activeField = document.getElementById('supplement-active');
+    
+    console.log('Name field:', nameField, 'Value:', nameField?.value);
+    console.log('Category field:', categoryField, 'Value:', categoryField?.value);
+    console.log('Description field:', descriptionField, 'Value:', descriptionField?.value);
+    console.log('Dose field:', doseField, 'Value:', doseField?.value);
+    console.log('Unit field:', unitField, 'Value:', unitField?.value);
+    console.log('Active field:', activeField, 'Checked:', activeField?.checked);
+    
+    // If fields don't exist, try to find them by different methods
+    if (!nameField) {
+        console.log('❌ Name field not found, searching for alternatives...');
+        const allInputs = document.querySelectorAll('input[name="name"]');
+        console.log('Found inputs with name="name":', allInputs);
+        
+        const allInputsById = document.querySelectorAll('#supplement-name');
+        console.log('Found inputs with id="supplement-name":', allInputsById);
+    }
+    
+    // Get form values
+    const supplementData = {
+        name: nameField?.value?.trim() || '',
+        category: categoryField?.value || '',
+        description: descriptionField?.value?.trim() || '',
+        default_dose: doseField?.value || null,
+        unit: unitField?.value || 'mg',
+        is_active: activeField?.checked !== false
+    };
+    
+    console.log('📝 Supplement data:', supplementData);
+    
+    // Validation
+    if (!supplementData.name || !supplementData.category) {
+        showAlert('❌ Please fill in all required fields (Name and Category)', 'error');
+        return;
+    }
+    
+    try {
+        showAlert('🔄 Saving supplement...', 'info');
+        
+        const response = await fetch(`${API_BASE}/api/supplements`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(supplementData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showAlert('✅ Supplement created successfully!', 'success');
+            hideSupplementForm();
+            loadSupplements();
+        } else {
+            throw new Error(data.error || 'Failed to create supplement');
+        }
+    } catch (error) {
+        console.error('❌ Error saving supplement:', error);
+        showAlert(`❌ Failed to save supplement: ${error.message}`, 'error');
+    }
+}
+
+// Override the save function
+window.saveSupplementForm = saveSupplementFormDebug;
+
+console.log('✅ Debug supplement form function loaded');
+
+// ============================================================================
+// USE EXISTING SUPPLEMENT FORM
+// ============================================================================
+
+function showAddSupplementFormExisting() {
+    console.log('📝 Using existing supplement form...');
+    
+    // Find the existing form
+    const form = document.getElementById('supplement-form');
+    const nameField = document.getElementById('supplement-name');
+    
+    if (form && nameField) {
+        console.log('✅ Found existing form, showing it');
+        
+        // Clear the form
+        clearExistingSupplementForm();
+        
+        // Show the form
+        form.style.display = 'block';
+        
+        // Update title if it exists
+        const title = document.getElementById('supplement-form-title');
+        if (title) {
+            title.textContent = 'Add New Supplement';
+        }
+        
+        // Focus on name field
+        setTimeout(() => {
+            nameField.focus();
+        }, 100);
+        
+    } else {
+        console.log('❌ Existing form not found, falling back to modal');
+        showAddSupplementFormFixed();
+    }
+}
+
+function clearExistingSupplementForm() {
+    console.log('🧹 Clearing existing supplement form...');
+    
+    const fields = [
+        'supplement-id',
+        'supplement-name', 
+        'supplement-category',
+        'supplement-description',
+        'supplement-dose',
+        'supplement-unit'
+    ];
+    
+    fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            if (field.type === 'checkbox') {
+                field.checked = fieldId === 'supplement-active';
+            } else {
+                field.value = '';
+            }
+            console.log(`✅ Cleared field: ${fieldId}`);
+        } else {
+            console.log(`⚠️ Field not found: ${fieldId}`);
+        }
+    });
+    
+    // Set defaults
+    const unitField = document.getElementById('supplement-unit');
+    if (unitField) {
+        unitField.value = 'mg';
+    }
+    
+    const activeField = document.getElementById('supplement-active');
+    if (activeField) {
+        activeField.checked = true;
+    }
+}
+
+function hideExistingSupplementForm() {
+    const form = document.getElementById('supplement-form');
+    if (form) {
+        form.style.display = 'none';
+        console.log('✅ Hidden existing form');
+    }
+}
+
+async function saveExistingSupplementForm(event) {
+    if (event) event.preventDefault();
+    
+    console.log('💾 Saving existing supplement form...');
+    
+    // Get values from the existing form
+    const nameField = document.getElementById('supplement-name');
+    const categoryField = document.getElementById('supplement-category');
+    const descriptionField = document.getElementById('supplement-description');
+    const doseField = document.getElementById('supplement-dose');
+    const unitField = document.getElementById('supplement-unit');
+    const activeField = document.getElementById('supplement-active');
+    
+    console.log('🔍 Form fields found:');
+    console.log('Name:', nameField?.value);
+    console.log('Category:', categoryField?.value);
+    console.log('Description:', descriptionField?.value);
+    console.log('Dose:', doseField?.value);
+    console.log('Unit:', unitField?.value);
+    console.log('Active:', activeField?.checked);
+    
+    const supplementData = {
+        name: nameField?.value?.trim() || '',
+        category: categoryField?.value || '',
+        description: descriptionField?.value?.trim() || '',
+        default_dose: doseField?.value || null,
+        unit: unitField?.value || 'mg',
+        is_active: activeField?.checked !== false
+    };
+    
+    console.log('📝 Supplement data:', supplementData);
+    
+    // Validation
+    if (!supplementData.name || !supplementData.category) {
+        showAlert('❌ Please fill in all required fields (Name and Category)', 'error');
+        return;
+    }
+    
+    try {
+        showAlert('🔄 Saving supplement...', 'info');
+        
+        const response = await fetch(`${API_BASE}/api/supplements`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(supplementData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showAlert('✅ Supplement created successfully!', 'success');
+            hideExistingSupplementForm();
+            loadSupplements();
+        } else {
+            throw new Error(data.error || 'Failed to create supplement');
+        }
+    } catch (error) {
+        console.error('❌ Error saving supplement:', error);
+        showAlert(`❌ Failed to save supplement: ${error.message}`, 'error');
+    }
+}
+
+// Override the functions to use existing form
+window.showAddSupplementForm = showAddSupplementFormExisting;
+window.hideSupplementForm = hideExistingSupplementForm;
+window.saveSupplementForm = saveExistingSupplementForm;
+
+console.log('✅ Existing supplement form functions loaded');
+
+// ============================================================================
+// SETUP EXISTING FORM EVENT LISTENERS
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up the existing supplement form submit handler
+    const existingForm = document.getElementById('supplement-form');
+    if (existingForm) {
+        // Remove any existing onsubmit attribute
+        existingForm.removeAttribute('onsubmit');
+        
+        // Add our event listener
+        existingForm.addEventListener('submit', saveExistingSupplementForm);
+        console.log('✅ Added submit handler to existing supplement form');
+    }
+});
+
+console.log('✅ Existing form setup loaded');
