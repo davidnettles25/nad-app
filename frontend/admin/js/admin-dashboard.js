@@ -610,7 +610,7 @@ function showAddSupplementForm() {
     }
     
     // Clear the form
-    clearSupplementForm();
+    clearSupplementFormFixed();
     
     // Focus on name field
     setTimeout(() => {
@@ -630,7 +630,7 @@ function hideSupplementForm() {
     }
 }
 
-function clearSupplementForm() {
+function clearSupplementFormFixed() {
     const form = document.getElementById('supplement-form');
     if (form) {
         form.reset();
@@ -667,7 +667,7 @@ function createEnhancedSupplementModal() {
                 <div class="modal-body" style="padding: 24px;">
                     <div id="supplement-form-alert" style="margin-bottom: 16px; display: none;"></div>
                     
-                    <form id="supplement-form" onsubmit="saveSupplementForm(event)">
+                    <form id="supplement-form" onsubmit="saveSupplementFormFixed(event)">
                         <input type="hidden" id="supplement-id" name="id">
                         
                         <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -762,7 +762,7 @@ function createEnhancedSupplementModal() {
     return document.getElementById('supplement-modal');
 }
 
-async function saveSupplementForm(event) {
+async function saveSupplementFormFixed(event) {
     event.preventDefault();
     console.log('💾 Saving supplement form...');
     
@@ -818,3 +818,97 @@ window.hideSupplementForm = hideSupplementForm;
 window.saveSupplementForm = saveSupplementForm;
 
 console.log('✅ Supplement form functions loaded');
+
+// ============================================================================
+// FIXED SUPPLEMENT FORM FUNCTIONS
+// ============================================================================
+
+function clearSupplementFormFixed() {
+    console.log('🧹 Clearing supplement form...');
+    
+    // Clear individual form fields
+    const fields = [
+        'supplement-id',
+        'supplement-name', 
+        'supplement-category',
+        'supplement-description',
+        'supplement-dose',
+        'supplement-unit'
+    ];
+    
+    fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            if (field.type === 'checkbox') {
+                field.checked = fieldId === 'supplement-active'; // Only active should be checked by default
+            } else {
+                field.value = '';
+            }
+        }
+    });
+    
+    // Set default values
+    const unitSelect = document.getElementById('supplement-unit');
+    if (unitSelect) {
+        unitSelect.value = 'mg';
+    }
+    
+    const activeCheckbox = document.getElementById('supplement-active');
+    if (activeCheckbox) {
+        activeCheckbox.checked = true;
+    }
+    
+    console.log('✅ Form cleared');
+}
+
+async function saveSupplementFormFixed(event) {
+    event.preventDefault();
+    console.log('💾 Saving supplement form...');
+    
+    // Get form values manually instead of using FormData
+    const supplementData = {
+        name: document.getElementById('supplement-name')?.value?.trim() || '',
+        category: document.getElementById('supplement-category')?.value || '',
+        description: document.getElementById('supplement-description')?.value?.trim() || '',
+        default_dose: document.getElementById('supplement-dose')?.value || null,
+        unit: document.getElementById('supplement-unit')?.value || 'mg',
+        is_active: document.getElementById('supplement-active')?.checked || false
+    };
+    
+    console.log('📝 Supplement data:', supplementData);
+    
+    // Validation
+    if (!supplementData.name || !supplementData.category) {
+        showAlert('❌ Please fill in all required fields (Name and Category)', 'error');
+        return;
+    }
+    
+    try {
+        showAlert('🔄 Saving supplement...', 'info');
+        
+        const response = await fetch(`${API_BASE}/api/supplements`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(supplementData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showAlert('✅ Supplement created successfully!', 'success');
+            hideSupplementForm();
+            loadSupplements();
+        } else {
+            throw new Error(data.error || 'Failed to create supplement');
+        }
+    } catch (error) {
+        console.error('❌ Error saving supplement:', error);
+        showAlert(`❌ Failed to save supplement: ${error.message}`, 'error');
+    }
+}
+
+// Override the previous functions
+window.clearSupplementForm = clearSupplementFormFixed;
+window.saveSupplementForm = saveSupplementFormFixed;
+
+console.log('✅ Fixed supplement form functions loaded');
