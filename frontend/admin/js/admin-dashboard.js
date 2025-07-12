@@ -587,3 +587,234 @@ window.activateSupplement = activateSupplement;
 window.deactivateSupplement = deactivateSupplement;
 
 console.log('✅ Real supplement management functions loaded');
+
+// ============================================================================
+// SUPPLEMENT FORM FUNCTIONS
+// ============================================================================
+
+function showAddSupplementForm() {
+    console.log('📝 Showing add supplement form...');
+    
+    // Create or show the form modal
+    let formContainer = document.getElementById('supplement-modal');
+    if (!formContainer) {
+        formContainer = createEnhancedSupplementModal();
+    }
+    
+    formContainer.style.display = 'flex';
+    
+    // Update title for adding
+    const titleElement = document.getElementById('supplement-form-title');
+    if (titleElement) {
+        titleElement.textContent = 'Add New Supplement';
+    }
+    
+    // Clear the form
+    clearSupplementForm();
+    
+    // Focus on name field
+    setTimeout(() => {
+        const nameField = document.getElementById('supplement-name');
+        if (nameField) {
+            nameField.focus();
+        }
+    }, 100);
+}
+
+function hideSupplementForm() {
+    const modal = document.getElementById('supplement-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        // Optional: Remove the modal from DOM to clean up
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function clearSupplementForm() {
+    const form = document.getElementById('supplement-form');
+    if (form) {
+        form.reset();
+        
+        // Set default values
+        const activeCheckbox = document.getElementById('supplement-active');
+        if (activeCheckbox) {
+            activeCheckbox.checked = true;
+        }
+        
+        const featuredCheckbox = document.getElementById('supplement-featured');
+        if (featuredCheckbox) {
+            featuredCheckbox.checked = false;
+        }
+        
+        const unitSelect = document.getElementById('supplement-unit');
+        if (unitSelect) {
+            unitSelect.value = 'mg';
+        }
+    }
+}
+
+function createEnhancedSupplementModal() {
+    console.log('🏗️ Creating enhanced supplement modal...');
+    
+    const modalHTML = `
+        <div id="supplement-modal" class="modal" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+            <div class="modal-content" style="background: white; border-radius: 12px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+                <div class="modal-header" style="padding: 20px 24px 16px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 id="supplement-form-title" style="margin: 0; color: #2c3e50; font-size: 1.4rem;">Add New Supplement</h3>
+                    <button class="btn-close" onclick="hideSupplementForm()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6c757d; padding: 0;">&times;</button>
+                </div>
+                
+                <div class="modal-body" style="padding: 24px;">
+                    <div id="supplement-form-alert" style="margin-bottom: 16px; display: none;"></div>
+                    
+                    <form id="supplement-form" onsubmit="saveSupplementForm(event)">
+                        <input type="hidden" id="supplement-id" name="id">
+                        
+                        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label for="supplement-name" style="display: block; margin-bottom: 4px; font-weight: 500; color: #374151;">Supplement Name *</label>
+                                <input type="text" id="supplement-name" name="name" required 
+                                       placeholder="Enter supplement name"
+                                       style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label for="supplement-category" style="display: block; margin-bottom: 4px; font-weight: 500; color: #374151;">Category *</label>
+                                <select id="supplement-category" name="category" required
+                                        style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                                    <option value="">Select category...</option>
+                                    <option value="Vitamins">Vitamins</option>
+                                    <option value="Minerals">Minerals</option>
+                                    <option value="Antioxidants">Antioxidants</option>
+                                    <option value="Herbs">Herbs & Botanicals</option>
+                                    <option value="Amino Acids">Amino Acids</option>
+                                    <option value="Enzymes">Enzymes</option>
+                                    <option value="Probiotics">Probiotics</option>
+                                    <option value="Fatty Acids">Fatty Acids</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label for="supplement-dose" style="display: block; margin-bottom: 4px; font-weight: 500; color: #374151;">Default Dose</label>
+                                <input type="number" id="supplement-dose" name="default_dose" step="0.1" min="0"
+                                       placeholder="e.g., 100"
+                                       style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label for="supplement-unit" style="display: block; margin-bottom: 4px; font-weight: 500; color: #374151;">Unit</label>
+                                <select id="supplement-unit" name="unit"
+                                        style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                                    <option value="mg">mg</option>
+                                    <option value="g">g</option>
+                                    <option value="μg">μg (micrograms)</option>
+                                    <option value="IU">IU (International Units)</option>
+                                    <option value="mL">mL</option>
+                                    <option value="drops">drops</option>
+                                    <option value="capsules">capsules</option>
+                                    <option value="tablets">tablets</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label for="supplement-description" style="display: block; margin-bottom: 4px; font-weight: 500; color: #374151;">Description</label>
+                            <textarea id="supplement-description" name="description" rows="3"
+                                      placeholder="Brief description of the supplement and its benefits"
+                                      style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; resize: vertical;"></textarea>
+                        </div>
+                        
+                        <div class="form-row" style="display: flex; gap: 24px; margin-bottom: 24px;">
+                            <div class="form-check" style="display: flex; align-items: center;">
+                                <input type="checkbox" id="supplement-active" name="is_active" checked
+                                       style="margin-right: 8px;">
+                                <label for="supplement-active" style="margin: 0; font-weight: 500; color: #374151;">Active</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions" style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #e9ecef;">
+                            <button type="button" onclick="hideSupplementForm()" 
+                                    style="padding: 8px 16px; border: 1px solid #d1d5db; background: #f8f9fa; color: #6c757d; border-radius: 6px; cursor: pointer;">
+                                Cancel
+                            </button>
+                            <button type="submit" 
+                                    style="padding: 8px 16px; border: none; background: #007bff; color: white; border-radius: 6px; cursor: pointer;">
+                                Save Supplement
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove any existing modal
+    const existingModal = document.getElementById('supplement-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add the modal to the body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    console.log('✅ Enhanced modal created with improved styling');
+    return document.getElementById('supplement-modal');
+}
+
+async function saveSupplementForm(event) {
+    event.preventDefault();
+    console.log('💾 Saving supplement form...');
+    
+    const formData = new FormData(document.getElementById('supplement-form'));
+    const id = formData.get('id');
+    const isEdit = id && id !== '';
+    
+    const supplementData = {
+        name: formData.get('name').trim(),
+        category: formData.get('category'),
+        description: formData.get('description').trim(),
+        default_dose: formData.get('default_dose') || null,
+        unit: formData.get('unit'),
+        is_active: formData.has('is_active')
+    };
+    
+    // Validation
+    if (!supplementData.name || !supplementData.category) {
+        showAlert('❌ Please fill in all required fields (Name and Category)', 'error');
+        return;
+    }
+    
+    try {
+        showAlert('🔄 Saving supplement...', 'info');
+        
+        const url = isEdit ? `${API_BASE}/api/supplements/${id}` : `${API_BASE}/api/supplements`;
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(supplementData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showAlert(`✅ Supplement ${isEdit ? 'updated' : 'created'} successfully!`, 'success');
+            hideSupplementForm();
+            loadSupplements();
+        } else {
+            throw new Error(data.error || `Failed to ${isEdit ? 'update' : 'create'} supplement`);
+        }
+    } catch (error) {
+        console.error('❌ Error saving supplement:', error);
+        showAlert(`❌ Failed to save supplement: ${error.message}`, 'error');
+    }
+}
+
+// Make functions globally accessible
+window.showAddSupplementForm = showAddSupplementForm;
+window.hideSupplementForm = hideSupplementForm;
+window.saveSupplementForm = saveSupplementForm;
+
+console.log('✅ Supplement form functions loaded');
