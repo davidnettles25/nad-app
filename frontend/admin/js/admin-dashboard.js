@@ -311,3 +311,386 @@ window.showSection = showSection;
 window.showAlert = showAlert;
 
 console.log('📋 Admin Dashboard JavaScript file loaded successfully');
+
+// ============================================================================
+// MODAL SUPPLEMENT FORM (PRETTIER VERSION)
+// ============================================================================
+
+function createSupplementModal() {
+    console.log('🏗️ Creating supplement modal...');
+    
+    // Remove any existing modal
+    const existingModal = document.getElementById('supplement-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'supplement-modal';
+    modal.style.cssText = `
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: modalFadeIn 0.3s ease-out;
+        ">
+            <div class="modal-header" style="
+                padding: 24px 24px 16px;
+                border-bottom: 1px solid #e9ecef;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-radius: 12px 12px 0 0;
+            ">
+                <h3 id="modal-supplement-form-title" style="
+                    margin: 0;
+                    font-size: 1.5rem;
+                    font-weight: 600;
+                ">Add New Supplement</h3>
+                <button type="button" class="btn-close" style="
+                    background: none;
+                    border: none;
+                    font-size: 28px;
+                    cursor: pointer;
+                    color: white;
+                    padding: 0;
+                    opacity: 0.8;
+                    transition: opacity 0.2s;
+                " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="padding: 24px;">
+                <form id="modal-supplement-form">
+                    <input type="hidden" id="modal-supplement-id" name="id">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label for="modal-supplement-name" style="
+                                display: block;
+                                margin-bottom: 8px;
+                                font-weight: 600;
+                                color: #374151;
+                                font-size: 14px;
+                            ">Supplement Name *</label>
+                            <input type="text" id="modal-supplement-name" name="name" required 
+                                   placeholder="Enter supplement name"
+                                   style="
+                                       width: 100%;
+                                       padding: 12px 16px;
+                                       border: 2px solid #e5e7eb;
+                                       border-radius: 8px;
+                                       font-size: 16px;
+                                       transition: border-color 0.2s;
+                                       box-sizing: border-box;
+                                   "
+                                   onfocus="this.style.borderColor='#667eea'"
+                                   onblur="this.style.borderColor='#e5e7eb'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="modal-supplement-category" style="
+                                display: block;
+                                margin-bottom: 8px;
+                                font-weight: 600;
+                                color: #374151;
+                                font-size: 14px;
+                            ">Category *</label>
+                            <select id="modal-supplement-category" name="category" required style="
+                                width: 100%;
+                                padding: 12px 16px;
+                                border: 2px solid #e5e7eb;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                background: white;
+                                transition: border-color 0.2s;
+                                box-sizing: border-box;
+                            "
+                            onfocus="this.style.borderColor='#667eea'"
+                            onblur="this.style.borderColor='#e5e7eb'">
+                                <option value="">Select category...</option>
+                                <option value="Vitamins">Vitamins</option>
+                                <option value="Minerals">Minerals</option>
+                                <option value="Antioxidants">Antioxidants</option>
+                                <option value="Herbs">Herbs & Botanicals</option>
+                                <option value="Amino Acids">Amino Acids</option>
+                                <option value="Enzymes">Enzymes</option>
+                                <option value="Probiotics">Probiotics</option>
+                                <option value="Fatty Acids">Fatty Acids</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="modal-supplement-dose" style="
+                                display: block;
+                                margin-bottom: 8px;
+                                font-weight: 600;
+                                color: #374151;
+                                font-size: 14px;
+                            ">Default Dose</label>
+                            <input type="number" id="modal-supplement-dose" name="default_dose" 
+                                   step="0.1" min="0" placeholder="e.g., 100"
+                                   style="
+                                       width: 100%;
+                                       padding: 12px 16px;
+                                       border: 2px solid #e5e7eb;
+                                       border-radius: 8px;
+                                       font-size: 16px;
+                                       transition: border-color 0.2s;
+                                       box-sizing: border-box;
+                                   "
+                                   onfocus="this.style.borderColor='#667eea'"
+                                   onblur="this.style.borderColor='#e5e7eb'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="modal-supplement-unit" style="
+                                display: block;
+                                margin-bottom: 8px;
+                                font-weight: 600;
+                                color: #374151;
+                                font-size: 14px;
+                            ">Unit</label>
+                            <select id="modal-supplement-unit" name="unit" style="
+                                width: 100%;
+                                padding: 12px 16px;
+                                border: 2px solid #e5e7eb;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                background: white;
+                                transition: border-color 0.2s;
+                                box-sizing: border-box;
+                            "
+                            onfocus="this.style.borderColor='#667eea'"
+                            onblur="this.style.borderColor='#e5e7eb'">
+                                <option value="mg">mg</option>
+                                <option value="g">g</option>
+                                <option value="μg">μg (micrograms)</option>
+                                <option value="IU">IU (International Units)</option>
+                                <option value="mL">mL</option>
+                                <option value="drops">drops</option>
+                                <option value="capsules">capsules</option>
+                                <option value="tablets">tablets</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="modal-supplement-description" style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-weight: 600;
+                            color: #374151;
+                            font-size: 14px;
+                        ">Description</label>
+                        <textarea id="modal-supplement-description" name="description" rows="3"
+                                  placeholder="Brief description of the supplement and its benefits"
+                                  style="
+                                      width: 100%;
+                                      padding: 12px 16px;
+                                      border: 2px solid #e5e7eb;
+                                      border-radius: 8px;
+                                      font-size: 16px;
+                                      resize: vertical;
+                                      transition: border-color 0.2s;
+                                      box-sizing: border-box;
+                                      font-family: inherit;
+                                  "
+                                  onfocus="this.style.borderColor='#667eea'"
+                                  onblur="this.style.borderColor='#e5e7eb'"></textarea>
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <label style="
+                            display: flex;
+                            align-items: center;
+                            cursor: pointer;
+                            font-weight: 600;
+                            color: #374151;
+                        ">
+                            <input type="checkbox" id="modal-supplement-active" name="is_active" checked style="
+                                margin-right: 12px;
+                                transform: scale(1.2);
+                                accent-color: #667eea;
+                            ">
+                            Active Supplement
+                        </label>
+                    </div>
+                    
+                    <div style="
+                        display: flex;
+                        gap: 12px;
+                        justify-content: flex-end;
+                        padding-top: 20px;
+                        border-top: 1px solid #e9ecef;
+                    ">
+                        <button type="button" class="cancel-btn" style="
+                            padding: 12px 24px;
+                            border: 2px solid #d1d5db;
+                            background: #f9fafb;
+                            color: #6b7280;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            transition: all 0.2s;
+                        " onmouseover="this.style.backgroundColor='#f3f4f6'"
+                           onmouseout="this.style.backgroundColor='#f9fafb'">
+                            Cancel
+                        </button>
+                        <button type="submit" class="save-btn" style="
+                            padding: 12px 24px;
+                            border: none;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            transition: transform 0.2s;
+                        " onmouseover="this.style.transform='translateY(-1px)'"
+                           onmouseout="this.style.transform='translateY(0)'">
+                            💊 Save Supplement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    // Add CSS for modal animation
+    if (!document.getElementById('modal-styles')) {
+        const style = document.createElement('style');
+        style.id = 'modal-styles';
+        style.textContent = `
+            @keyframes modalFadeIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.9) translateY(-50px);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Add event listeners
+    const closeBtn = modal.querySelector('.btn-close');
+    const cancelBtn = modal.querySelector('.cancel-btn');
+    const form = modal.querySelector('#modal-supplement-form');
+    
+    closeBtn.addEventListener('click', hideSupplementModal);
+    cancelBtn.addEventListener('click', hideSupplementModal);
+    form.addEventListener('submit', saveModalSupplementForm);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            hideSupplementModal();
+        }
+    });
+    
+    document.body.appendChild(modal);
+    console.log('✅ Beautiful modal created');
+    return modal;
+}
+
+async function saveModalSupplementForm(event) {
+    event.preventDefault();
+    console.log('💾 Saving modal supplement form...');
+    
+    const nameField = document.getElementById('modal-supplement-name');
+    const categoryField = document.getElementById('modal-supplement-category');
+    const descriptionField = document.getElementById('modal-supplement-description');
+    const doseField = document.getElementById('modal-supplement-dose');
+    const unitField = document.getElementById('modal-supplement-unit');
+    const activeField = document.getElementById('modal-supplement-active');
+    
+    const supplementData = {
+        name: nameField?.value?.trim() || '',
+        category: categoryField?.value || '',
+        description: descriptionField?.value?.trim() || '',
+        default_dose: doseField?.value || null,
+        unit: unitField?.value || 'mg',
+        is_active: activeField?.checked !== false
+    };
+    
+    console.log('📝 Modal supplement data:', supplementData);
+    
+    if (!supplementData.name || !supplementData.category) {
+        showAlert('❌ Please fill in all required fields (Name and Category)', 'error');
+        return;
+    }
+    
+    try {
+        showAlert('🔄 Saving supplement...', 'info');
+        
+        const response = await fetch(`${API_BASE}/api/supplements`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(supplementData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showAlert('✅ Supplement created successfully!', 'success');
+            hideSupplementModal();
+            loadSupplements();
+        } else {
+            throw new Error(data.error || 'Failed to create supplement');
+        }
+    } catch (error) {
+        console.error('❌ Error saving supplement:', error);
+        showAlert(`❌ Failed to save supplement: ${error.message}`, 'error');
+    }
+}
+
+function hideSupplementModal() {
+    const modal = document.getElementById('supplement-modal');
+    if (modal) {
+        modal.style.animation = 'modalFadeOut 0.2s ease-in';
+        setTimeout(() => modal.remove(), 200);
+    }
+}
+
+function showAddSupplementFormModal() {
+    console.log('📝 Showing beautiful supplement modal...');
+    
+    // Create and show the modal
+    createSupplementModal();
+    
+    // Focus on name field
+    setTimeout(() => {
+        const nameField = document.getElementById('modal-supplement-name');
+        if (nameField) {
+            nameField.focus();
+        }
+    }, 300);
+}
+
+// Override the showAddSupplementForm function to use modal
+window.showAddSupplementForm = showAddSupplementFormModal;
+
+console.log('✅ Beautiful modal supplement form loaded');
