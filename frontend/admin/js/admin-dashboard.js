@@ -516,3 +516,61 @@ function showSupplementModalWithDebug(supplement) {
 window.editSupplement = editSupplementWithDebug;
 
 console.log('✅ Debug edit functions added');
+
+// ============================================================================
+// SIMPLE TEST FUNCTION
+// ============================================================================
+
+function testEditSupplement() {
+    console.log('🧪 Testing edit supplement...');
+    console.log('📊 allSupplements:', allSupplements);
+    
+    if (allSupplements.length > 0) {
+        const firstSupplement = allSupplements[0];
+        console.log('📝 Testing with first supplement:', firstSupplement);
+        
+        // Create a simple test modal
+        const modal = document.createElement('div');
+        modal.id = 'test-modal';
+        modal.style.cssText = 'position: fixed; top: 50px; right: 50px; background: white; border: 2px solid black; padding: 20px; z-index: 1001; width: 300px;';
+        modal.innerHTML = `
+            <h3>TEST MODAL</h3>
+            <p><strong>Supplement Data:</strong></p>
+            <p>ID: ${firstSupplement.id}</p>
+            <p>Name: "${firstSupplement.name}"</p>
+            <p>Category: "${firstSupplement.category}"</p>
+            <br>
+            <input type="text" id="test-name" value="${firstSupplement.name}" style="width: 100%; margin-bottom: 10px;">
+            <select id="test-category" style="width: 100%; margin-bottom: 10px;">
+                <option value="Vitamins" ${firstSupplement.category === 'Vitamins' ? 'selected' : ''}>Vitamins</option>
+                <option value="Minerals" ${firstSupplement.category === 'Minerals' ? 'selected' : ''}>Minerals</option>
+                <option value="Other" ${firstSupplement.category === 'Other' ? 'selected' : ''}>Other</option>
+            </select>
+            <button onclick="testReadValues()">Read Values</button>
+            <button onclick="closeTestModal()">Close</button>
+        `;
+        document.body.appendChild(modal);
+        
+    } else {
+        console.log('❌ No supplements in allSupplements array');
+    }
+}
+
+function testReadValues() {
+    const name = document.getElementById('test-name')?.value;
+    const category = document.getElementById('test-category')?.value;
+    console.log('📖 Read values:', { name, category });
+    alert(`Name: "${name}", Category: "${category}"`);
+}
+
+function closeTestModal() {
+    const modal = document.getElementById('test-modal');
+    if (modal) modal.remove();
+}
+
+// Make test functions global
+window.testEditSupplement = testEditSupplement;
+window.testReadValues = testReadValues;
+window.closeTestModal = closeTestModal;
+
+console.log('✅ Test functions added. Run testEditSupplement() in console to test.');
