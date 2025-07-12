@@ -284,3 +284,235 @@ window.showAlert = showAlert;
 window.saveSupplementData = saveSupplementData;
 
 console.log('✅ Debug dashboard loaded');
+
+// ============================================================================
+// ENHANCED DEBUGGING FOR FORM FIELDS
+// ============================================================================
+
+async function saveSupplementDataWithDebug() {
+    console.log('💾 saveSupplementDataWithDebug called');
+    
+    // Debug: Check if elements exist
+    const isEditElement = document.getElementById('is-edit');
+    const idElement = document.getElementById('supplement-id');
+    const nameElement = document.getElementById('supplement-name');
+    const categoryElement = document.getElementById('supplement-category');
+    
+    console.log('🔍 Form elements found:');
+    console.log('  is-edit element:', isEditElement, 'value:', isEditElement?.value);
+    console.log('  supplement-id element:', idElement, 'value:', idElement?.value);
+    console.log('  supplement-name element:', nameElement, 'value:', nameElement?.value);
+    console.log('  supplement-category element:', categoryElement, 'value:', categoryElement?.value);
+    
+    // Debug: Check if modal exists
+    const modal = document.getElementById('supplement-modal');
+    console.log('🔍 Modal found:', modal);
+    
+    // Debug: List all form inputs in the modal
+    if (modal) {
+        const allInputs = modal.querySelectorAll('input, select, textarea');
+        console.log('🔍 All form inputs in modal:', allInputs.length);
+        allInputs.forEach((input, index) => {
+            console.log(`  Input ${index}: id="${input.id}", type="${input.type}", value="${input.value}"`);
+        });
+    }
+    
+    const isEdit = isEditElement?.value === 'true';
+    const id = idElement?.value;
+    
+    const data = {
+        name: nameElement?.value?.trim() || '',
+        category: categoryElement?.value || '',
+        description: document.getElementById('supplement-description')?.value?.trim() || '',
+        default_dose: document.getElementById('supplement-dose')?.value || null,
+        unit: document.getElementById('supplement-unit')?.value || 'mg',
+        is_active: document.getElementById('supplement-active')?.checked || false
+    };
+    
+    console.log('📝 Collected form data:', data);
+    console.log('🔄 Is edit mode:', isEdit, 'ID:', id);
+    
+    if (!data.name || !data.category) {
+        console.log('❌ Validation failed - missing required fields');
+        console.log('  Name provided:', !!data.name, 'Value:', data.name);
+        console.log('  Category provided:', !!data.category, 'Value:', data.category);
+        showAlert('Please fill in required fields (Name and Category)', 'error');
+        return;
+    }
+    
+    // Continue with the save process...
+    console.log('✅ Validation passed, proceeding with save');
+    
+    try {
+        const url = isEdit ? 
+            API_BASE + '/api/supplements/' + id : 
+            API_BASE + '/api/supplements';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        console.log('🌐 API Request:', method, url);
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            showAlert('✅ Supplement ' + (isEdit ? 'updated' : 'created') + ' successfully!', 'success');
+            closeSupplementModal();
+            await loadSupplements();
+        } else {
+            throw new Error(result.error || 'Failed to save supplement');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error saving supplement:', error);
+        showAlert('❌ Failed to save: ' + error.message, 'error');
+    }
+}
+
+// Override the save function to use the debug version
+window.saveSupplementData = saveSupplementDataWithDebug;
+
+console.log('✅ Enhanced debugging added');
+
+// ============================================================================
+// DEBUG EDIT SUPPLEMENT FUNCTION
+// ============================================================================
+
+function editSupplementWithDebug(id) {
+    console.log('📝 editSupplementWithDebug called with ID:', id, 'Type:', typeof id);
+    
+    // Debug: Check allSupplements array
+    console.log('🔍 allSupplements array:', allSupplements);
+    console.log('🔍 Looking for supplement with ID:', id);
+    
+    // Try different comparison methods
+    const supplementById = allSupplements.find(s => s.id == id);
+    const supplementByIdStrict = allSupplements.find(s => s.id === id);
+    const supplementByIdString = allSupplements.find(s => s.id === String(id));
+    const supplementByIdNumber = allSupplements.find(s => s.id === Number(id));
+    
+    console.log('🔍 Search results:');
+    console.log('  Using == :', supplementById);
+    console.log('  Using === :', supplementByIdStrict);
+    console.log('  Using === String():', supplementByIdString);
+    console.log('  Using === Number():', supplementByIdNumber);
+    
+    const supplement = supplementById || supplementByIdStrict || supplementByIdString || supplementByIdNumber;
+    
+    if (supplement) {
+        console.log('✅ Found supplement:', supplement);
+        showSupplementModalWithDebug(supplement);
+    } else {
+        console.log('❌ Supplement not found');
+        console.log('🔍 Available supplement IDs:', allSupplements.map(s => `${s.id} (${typeof s.id})`));
+        showAlert('Supplement not found', 'error');
+    }
+}
+
+function showSupplementModalWithDebug(supplement) {
+    const isEdit = supplement !== null;
+    console.log('📝 showSupplementModalWithDebug - edit mode:', isEdit);
+    console.log('📝 Supplement data:', supplement);
+    
+    // Remove existing modal
+    const existingModal = document.getElementById('supplement-modal');
+    if (existingModal) {
+        console.log('🗑️ Removing existing modal');
+        existingModal.remove();
+    }
+    
+    // Create modal with debug info
+    const modal = document.createElement('div');
+    modal.id = 'supplement-modal';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;';
+    
+    const supplementId = isEdit ? supplement.id : '';
+    const supplementName = isEdit ? (supplement.name || '') : '';
+    const supplementCategory = isEdit ? (supplement.category || '') : '';
+    
+    console.log('📝 Modal data to populate:');
+    console.log('  ID:', supplementId);
+    console.log('  Name:', supplementName);
+    console.log('  Category:', supplementCategory);
+    
+    modal.innerHTML = 
+        '<div style="background: white; padding: 20px; border-radius: 12px; width: 500px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
+            '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: -20px -20px 20px -20px; padding: 20px; border-radius: 12px 12px 0 0;">' +
+                '<h3 style="margin: 0;">🔍 DEBUG: ' + (isEdit ? 'Edit Supplement (ID: ' + supplementId + ')' : 'Add New Supplement') + '</h3>' +
+            '</div>' +
+            
+            '<div id="supplement-form-container">' +
+                '<input type="hidden" id="supplement-id" value="' + supplementId + '">' +
+                '<input type="hidden" id="is-edit" value="' + (isEdit ? 'true' : 'false') + '">' +
+                
+                '<div style="margin-bottom: 10px; padding: 10px; background: #f0f0f0; border-radius: 4px; font-size: 12px;">' +
+                    '<strong>Debug Info:</strong><br>' +
+                    'Edit Mode: ' + isEdit + '<br>' +
+                    'Supplement ID: ' + supplementId + '<br>' +
+                    'Supplement Name: "' + supplementName + '"<br>' +
+                    'Supplement Category: "' + supplementCategory + '"' +
+                '</div>' +
+                
+                '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">' +
+                    '<div>' +
+                        '<label style="display: block; margin-bottom: 5px; font-weight: 600;">Name * (Debug: "' + supplementName + '")</label>' +
+                        '<input type="text" id="supplement-name" required value="' + supplementName + '" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; box-sizing: border-box;">' +
+                    '</div>' +
+                    '<div>' +
+                        '<label style="display: block; margin-bottom: 5px; font-weight: 600;">Category * (Debug: "' + supplementCategory + '")</label>' +
+                        '<select id="supplement-category" required style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; box-sizing: border-box;">' +
+                            '<option value="">Select...</option>' +
+                            '<option value="Vitamins"' + (supplementCategory === 'Vitamins' ? ' selected' : '') + '>Vitamins</option>' +
+                            '<option value="Minerals"' + (supplementCategory === 'Minerals' ? ' selected' : '') + '>Minerals</option>' +
+                            '<option value="Antioxidants"' + (supplementCategory === 'Antioxidants' ? ' selected' : '') + '>Antioxidants</option>' +
+                            '<option value="Other"' + (supplementCategory === 'Other' ? ' selected' : '') + '>Other</option>' +
+                        '</select>' +
+                    '</div>' +
+                '</div>' +
+                
+                '<div style="margin-bottom: 15px;">' +
+                    '<label style="display: block; margin-bottom: 5px; font-weight: 600;">Description</label>' +
+                    '<textarea id="supplement-description" rows="2" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; box-sizing: border-box; resize: vertical;">' + (isEdit ? (supplement.description || '') : '') + '</textarea>' +
+                '</div>' +
+                
+                '<div style="text-align: right; border-top: 1px solid #e5e7eb; padding-top: 15px;">' +
+                    '<button type="button" onclick="closeSupplementModal()" style="margin-right: 10px; padding: 10px 20px; border: 2px solid #d1d5db; background: #f9fafb; border-radius: 6px; cursor: pointer;">Cancel</button>' +
+                    '<button type="button" id="save-supplement-btn" style="padding: 10px 20px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 6px; cursor: pointer; font-weight: 600;">💾 DEBUG SAVE</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    
+    document.body.appendChild(modal);
+    console.log('✅ Debug modal created and added to DOM');
+    
+    // Add click handler
+    document.getElementById('save-supplement-btn').addEventListener('click', function(e) {
+        console.log('🔘 DEBUG Save button clicked');
+        e.preventDefault();
+        saveSupplementDataWithDebug();
+    });
+    
+    // Focus and verify field population
+    setTimeout(() => {
+        const nameField = document.getElementById('supplement-name');
+        const categoryField = document.getElementById('supplement-category');
+        
+        console.log('🔍 After modal creation:');
+        console.log('  Name field value:', nameField?.value);
+        console.log('  Category field value:', categoryField?.value);
+        
+        if (nameField) {
+            nameField.focus();
+            if (isEdit) nameField.select();
+        }
+    }, 100);
+}
+
+// Override the functions
+window.editSupplement = editSupplementWithDebug;
+
+console.log('✅ Debug edit functions added');
