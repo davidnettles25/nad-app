@@ -1,377 +1,254 @@
 /**
- * SUPPLEMENT ACTIVATE BUTTON TO DELETE FIX
- * =========================================
- * Changes the Activate/Deactivate button to be Delete button
- * Updates the supplement table rendering and button actions
+ * SUPPLEMENT DELETE BUTTON FIX - NON-INTERFERING VERSION
+ * ======================================================
+ * Changes Activate buttons to Delete without breaking data loading
+ * This version works AFTER the table is rendered, not before
  */
 
 (function() {
     'use strict';
     
-    console.log('🔄 Loading Activate → Delete Button Fix...');
+    console.log('🔧 Loading Non-Interfering Delete Button Fix...');
     
     // ========================================================================
-    // ENHANCED SUPPLEMENT TABLE RENDERING WITH DELETE BUTTON
+    // SIMPLE BUTTON REPLACEMENT (NO RENDER OVERRIDE)
     // ========================================================================
     
-    function renderSupplementsTableWithDelete() {
-        console.log('🔄 Rendering supplements table with Delete button...');
+    function replaceActivateButtonsWithDelete() {
+        console.log('🔄 Replacing Activate buttons with Delete buttons...');
         
-        const tbody = document.getElementById('supplements-table-body');
-        if (!tbody) {
-            console.warn('❌ Supplements table body not found');
-            return;
-        }
-        
-        if (!window.allSupplements || !Array.isArray(window.allSupplements)) {
-            console.warn('❌ No supplements data available');
-            tbody.innerHTML = '<tr><td colspan="5">No supplements available</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = ''; // Clear existing content
-        
-        const supplements = window.filteredSupplements || window.allSupplements;
-        
-        supplements.forEach(supplement => {
-            const row = document.createElement('tr');
-            row.className = supplement.is_active ? 'supplement-active' : 'supplement-inactive';
-            
-            const dose = supplement.default_dose ? 
-                supplement.default_dose + ' ' + (supplement.unit || 'mg') : 
-                'Not set';
-            
-            row.innerHTML = `
-                <td>
-                    <strong>${supplement.name}</strong>
-                    ${supplement.description ? `<br><small class="text-muted">${supplement.description}</small>` : ''}
-                </td>
-                <td>${supplement.category || 'Other'}</td>
-                <td>${dose}</td>
-                <td>
-                    <span class="status-badge ${supplement.is_active ? 'status-active' : 'status-inactive'}">
-                        ${supplement.is_active ? '✅ Active' : '❌ Inactive'}
-                    </span>
-                </td>
-                <td class="actions-cell">
-                    <button class="btn btn-sm btn-primary" onclick="editSupplement(${supplement.id})" title="Edit supplement">
-                        ✏️ Edit
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="confirmDeleteSupplement(${supplement.id})" title="Delete supplement">
-                        🗑️ Delete
-                    </button>
-                </td>
-            `;
-            
-            tbody.appendChild(row);
+        // Find individual Activate buttons (not bulk actions)
+        const activateButtons = Array.from(document.querySelectorAll('button')).filter(btn => {
+            const text = btn.textContent.trim();
+            return text === '⚡ Activate' || (text.includes('Activate') && !text.includes('All') && !text.includes('Selected'));
         });
         
-        console.log(`✅ Rendered ${supplements.length} supplements with Delete buttons`);
+        console.log(`🔍 Found ${activateButtons.length} Activate buttons to replace`);
+        
+        activateButtons.forEach((button, index) => {
+            const tableRow = button.closest('tr');
+            if (tableRow) {
+                // Find supplement ID from Edit button in same row
+                const editButton = tableRow.querySelector('button[onclick*="editSupplementFinal"]');
+                if (editButton) {
+                    const onclickStr = editButton.getAttribute('onclick');
+                    const idMatch = onclickStr?.match(/\((\d+)\)/);
+                    if (idMatch) {
+                        const supplementId = idMatch[1];
+                        
+                        // Replace the button
+                        button.innerHTML = '🗑️ Delete';
+                        button.className = 'btn btn-sm btn-danger';
+                        button.title = 'Delete supplement';
+                        button.removeAttribute('onclick');
+                        button.onclick = null;
+                        
+                        // Add delete functionality
+                        button.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            deleteSupplementSafe(supplementId);
+                        });
+                        
+                        console.log(`✅ Replaced button ${index + 1} for supplement ID ${supplementId}`);
+                    }
+                }
+            }
+        });
+        
+        return activateButtons.length;
     }
     
     // ========================================================================
-    // DELETE SUPPLEMENT FUNCTION WITH CONFIRMATION
+    // SAFE DELETE FUNCTION
     // ========================================================================
     
-    async function confirmDeleteSupplement(id) {
-        console.log('🗑️ Delete supplement requested for ID:', id);
+    function deleteSupplementSafe(id) {
+        console.log('🗑️ Safe delete for supplement ID:', id);
         
-        if (!window.allSupplements) {
-            console.error('❌ No supplements data available');
-            showAlert('❌ Unable to find supplement data', 'error');
+        // Find supplement name from table
+        let supplementName = `Supplement ${id}`;
+        const tableRows = document.querySelectorAll('#supplements-table-body tr');
+        for (const row of tableRows) {
+            const editButton = row.querySelector(`button[onclick*="editSupplementFinal"][onclick*="${id}"]`);
+            if (editButton) {
+                const nameCell = row.querySelector('td:first-child strong');
+                if (nameCell) {
+                    supplementName = nameCell.textContent.trim();
+                    break;
+                }
+            }
+        }
+        
+        // Confirmation
+        if (!confirm(`⚠️ DELETE SUPPLEMENT\n\nName: "${supplementName}"\nID: ${id}\n\nThis action cannot be undone. Continue?`)) {
             return;
         }
         
-        const supplement = window.allSupplements.find(s => s.id == id);
-        if (!supplement) {
-            console.error('❌ Supplement not found with ID:', id);
-            showAlert('❌ Supplement not found', 'error');
-            return;
+        // Show loading
+        if (typeof showAlert === 'function') {
+            showAlert('🔄 Deleting supplement...', 'info');
         }
         
-        // Enhanced confirmation dialog
-        const confirmMessage = `⚠️ DELETE SUPPLEMENT
-        
-Name: "${supplement.name}"
-Category: ${supplement.category || 'Other'}
-Status: ${supplement.is_active ? 'Active' : 'Inactive'}
-
-This action cannot be undone and will remove:
-• The supplement from the system
-• All associated test data and results
-• Any customer supplement histories
-
-Are you sure you want to permanently delete this supplement?`;
-        
-        if (!confirm(confirmMessage)) {
-            console.log('❌ Delete cancelled by user');
-            return;
-        }
-        
-        // Show loading state
-        showAlert('🔄 Deleting supplement...', 'info');
-        
-        try {
-            console.log('🌐 Making DELETE request for supplement:', supplement.name);
-            
-            const response = await fetch(`${API_BASE}/api/supplements/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            console.log('📨 Delete response status:', response.status);
-            
-            const result = await response.json();
-            console.log('📨 Delete response data:', result);
-            
-            if (response.ok && result.success) {
-                console.log('✅ Supplement deleted successfully');
-                showAlert(`✅ Supplement "${supplement.name}" deleted successfully!`, 'success');
-                
-                // Remove from local data
-                if (window.allSupplements) {
-                    window.allSupplements = window.allSupplements.filter(s => s.id != id);
-                }
-                if (window.filteredSupplements) {
-                    window.filteredSupplements = window.filteredSupplements.filter(s => s.id != id);
-                }
-                
-                // Update any selected supplements
-                if (window.selectedSupplements && window.selectedSupplements.has) {
-                    window.selectedSupplements.delete(id);
-                }
-                
-                // Re-render the table
-                renderSupplementsTableWithDelete();
-                
-                // Update stats if function exists
-                if (typeof updateSupplementStats === 'function') {
-                    updateSupplementStats(window.allSupplements);
-                }
-                
-                // Reload supplements from server to ensure sync
-                if (typeof loadSupplements === 'function') {
-                    setTimeout(() => loadSupplements(), 1000);
-                }
-                
+        // Make delete request
+        fetch(`${API_BASE}/api/supplements/${id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
             } else {
-                throw new Error(result.error || result.message || 'Failed to delete supplement');
+                return response.json().then(error => Promise.reject(error));
+            }
+        })
+        .then(result => {
+            console.log('✅ Delete successful:', result);
+            
+            if (typeof showAlert === 'function') {
+                showAlert(`✅ "${supplementName}" deleted successfully!`, 'success');
             }
             
-        } catch (error) {
-            console.error('❌ Error deleting supplement:', error);
-            const errorMessage = error.message || 'Unknown error occurred';
-            showAlert(`❌ Failed to delete supplement: ${errorMessage}`, 'error');
-        }
-    }
-    
-    // ========================================================================
-    // OVERRIDE EXISTING RENDER FUNCTIONS
-    // ========================================================================
-    
-//    function overrideSupplementRenderFunctions() {
-//        console.log('🔄 Overriding supplement render functions...');
-//        
-//        // Override the main render function
-//        if (window.renderSupplementsTable) {
-//            window.renderSupplementsTable = renderSupplementsTableWithDelete;
-//            console.log('✅ Overridden renderSupplementsTable');
- //       }
-        
-        // Override alternative render function names
-        const renderFunctionNames = [
-            'renderSupplements',
-            'displaySupplements',
-            'showSupplements',
-            'updateSupplementsDisplay'
-        ];
-        
-        renderFunctionNames.forEach(funcName => {
-            if (window[funcName]) {
-                window[funcName] = renderSupplementsTableWithDelete;
-                console.log(`✅ Overridden ${funcName}`);
+            // Update local data if available
+            if (window.allSupplements) {
+                window.allSupplements = window.allSupplements.filter(s => s.id != id);
+            }
+            if (window.filteredSupplements) {
+                window.filteredSupplements = window.filteredSupplements.filter(s => s.id != id);
+            }
+            
+            // Reload supplements using the original function
+            if (typeof loadSupplements === 'function') {
+                setTimeout(() => loadSupplements(), 500);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Delete error:', error);
+            const message = error.error || error.message || 'Unknown error';
+            if (typeof showAlert === 'function') {
+                showAlert(`❌ Failed to delete: ${message}`, 'error');
+            } else {
+                alert(`❌ Failed to delete: ${message}`);
             }
         });
-        
-        // Add the delete function globally
-        window.confirmDeleteSupplement = confirmDeleteSupplement;
-        window.deleteSupplement = confirmDeleteSupplement; // Alias
-        
-        console.log('✅ Delete function added globally');
     }
     
     // ========================================================================
-    // REMOVE EXISTING ACTIVATE/DEACTIVATE BUTTONS
+    // MONITORING FOR NEW BUTTONS (LIGHT VERSION)
     // ========================================================================
     
-    function removeActivateButtons() {
-        console.log('🔄 Removing existing activate/deactivate buttons...');
+    function setupLightMonitoring() {
+        console.log('👁️ Setting up light monitoring...');
         
-        // Find and remove activate/deactivate buttons
-        const activateButtons = document.querySelectorAll('button[onclick*="activate"], button[onclick*="deactivate"]');
-        activateButtons.forEach(button => {
-            if (button.textContent.includes('Activate') || button.textContent.includes('Deactivate')) {
-                console.log('🗑️ Removing activate/deactivate button:', button.textContent);
-                button.remove();
-            }
-        });
-        
-        // Remove activate/deactivate functions from global scope
-        if (window.activateSupplement) {
-            delete window.activateSupplement;
-            console.log('✅ Removed activateSupplement function');
-        }
-        
-        if (window.deactivateSupplement) {
-            delete window.deactivateSupplement;
-            console.log('✅ Removed deactivateSupplement function');
-        }
-        
-        if (window.toggleSupplementStatus) {
-            delete window.toggleSupplementStatus;
-            console.log('✅ Removed toggleSupplementStatus function');
-        }
-    }
-    
-    // ========================================================================
-    // UPDATE CSS FOR BETTER DELETE BUTTON STYLING
-    // ========================================================================
-    
-    function addDeleteButtonStyles() {
-        console.log('🎨 Adding enhanced delete button styles...');
-        
-        const style = document.createElement('style');
-        style.textContent = `
-            /* Enhanced supplement table styles */
-            .supplement-active {
-                background-color: #f8f9fa;
-            }
-            
-            .supplement-inactive {
-                background-color: #fff3cd;
-                opacity: 0.8;
-            }
-            
-            .status-badge {
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 0.875em;
-                font-weight: 500;
-            }
-            
-            .status-active {
-                background-color: #d4edda;
-                color: #155724;
-                border: 1px solid #c3e6cb;
-            }
-            
-            .status-inactive {
-                background-color: #f8d7da;
-                color: #721c24;
-                border: 1px solid #f5c6cb;
-            }
-            
-            .actions-cell {
-                white-space: nowrap;
-            }
-            
-            .actions-cell .btn {
-                margin-right: 5px;
-            }
-            
-            .btn-danger {
-                background-color: #dc3545;
-                border-color: #dc3545;
-                color: white;
-            }
-            
-            .btn-danger:hover {
-                background-color: #c82333;
-                border-color: #bd2130;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
-            }
-            
-            .btn-danger:active {
-                transform: translateY(0);
-                box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
-            }
-        `;
-        
-        document.head.appendChild(style);
-        console.log('✅ Delete button styles added');
-    }
-    
-    // ========================================================================
-    // INITIALIZATION AND MONITORING
-    // ========================================================================
-    
-    function initializeDeleteButtonFix() {
-        console.log('🚀 Initializing Delete Button Fix...');
-        
-        // Apply overrides immediately
-        overrideSupplementRenderFunctions();
-        addDeleteButtonStyles();
-        
-        // Remove existing activate buttons after a short delay
-        setTimeout(() => {
-            removeActivateButtons();
-            
-            // Re-render the table if supplements are already loaded
-            if (window.allSupplements && window.allSupplements.length > 0) {
-                renderSupplementsTableWithDelete();
-            }
-        }, 500);
-        
-        // Set up observer for dynamic content
+        // Monitor for table changes
         const observer = new MutationObserver(function(mutations) {
+            let shouldCheck = false;
+            
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(function(node) {
-                        if (node.nodeType === 1 && node.querySelector) {
-                            // Check for new activate buttons and remove them
-                            const newActivateButtons = node.querySelectorAll('button[onclick*="activate"]');
-                            newActivateButtons.forEach(btn => {
-                                if (btn.textContent.includes('Activate')) {
-                                    btn.remove();
-                                }
-                            });
+                        if (node.nodeType === 1) {
+                            // Only check if new content contains supplement table or buttons
+                            if (node.id === 'supplements-table-body' || 
+                                (node.querySelector && node.querySelector('#supplements-table-body')) ||
+                                (node.textContent && node.textContent.includes('⚡ Activate'))) {
+                                shouldCheck = true;
+                            }
                         }
                     });
                 }
             });
+            
+            if (shouldCheck) {
+                console.log('🔍 New supplement content detected, checking buttons...');
+                setTimeout(replaceActivateButtonsWithDelete, 200);
+            }
         });
         
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        // Only observe the supplements section
+        const supplementsSection = document.getElementById('supplements');
+        if (supplementsSection) {
+            observer.observe(supplementsSection, {
+                childList: true,
+                subtree: true
+            });
+            console.log('✅ Light monitoring active on supplements section');
+        }
         
-        console.log('✅ Delete Button Fix initialized successfully!');
+        return observer;
     }
     
     // ========================================================================
-    // PUBLIC API AND EXECUTION
+    // ENHANCED SECTION MONITORING
     // ========================================================================
     
-    // Expose functions for debugging
+    function monitorSupplementsSection() {
+        console.log('📍 Setting up supplements section monitoring...');
+        
+        // Check when supplements section becomes active
+        const checkSupplementsSection = () => {
+            const supplementsSection = document.getElementById('supplements');
+            if (supplementsSection && supplementsSection.classList.contains('active')) {
+                // Wait a bit for content to load, then fix buttons
+                setTimeout(() => {
+                    const fixedCount = replaceActivateButtonsWithDelete();
+                    if (fixedCount > 0) {
+                        console.log(`🔄 Fixed ${fixedCount} buttons in active supplements section`);
+                    }
+                }, 300);
+            }
+        };
+        
+        // Check periodically (lighter than constant monitoring)
+        setInterval(checkSupplementsSection, 2000);
+        
+        // Also check immediately if already active
+        checkSupplementsSection();
+    }
+    
+    // ========================================================================
+    // INITIALIZATION
+    // ========================================================================
+    
+    function initializeNonInterferingFix() {
+        console.log('🚀 Initializing Non-Interfering Delete Button Fix...');
+        
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeNonInterferingFix);
+            return;
+        }
+        
+        // Initial button replacement (if supplements already loaded)
+        setTimeout(() => {
+            const initialCount = replaceActivateButtonsWithDelete();
+            if (initialCount > 0) {
+                console.log(`🔧 Initially replaced ${initialCount} buttons`);
+            }
+        }, 1000);
+        
+        // Set up monitoring
+        setupLightMonitoring();
+        monitorSupplementsSection();
+        
+        console.log('✅ Non-Interfering Delete Button Fix initialized!');
+    }
+    
+    // ========================================================================
+    // PUBLIC API
+    // ========================================================================
+    
+    // Expose functions for manual use
     window.SupplementDeleteFix = {
-        render: renderSupplementsTableWithDelete,
-        delete: confirmDeleteSupplement,
-        removeActivateButtons: removeActivateButtons,
-        init: initializeDeleteButtonFix
+        replaceButtons: replaceActivateButtonsWithDelete,
+        deleteSupplementSafe: deleteSupplementSafe,
+        init: initializeNonInterferingFix
     };
     
     // Auto-initialize
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeDeleteButtonFix);
-    } else {
-        initializeDeleteButtonFix();
-    }
+    initializeNonInterferingFix();
     
-    console.log('🔄 Activate → Delete Button Fix loaded successfully!');
-    console.log('💡 Debug: window.SupplementDeleteFix contains manual functions');
+    console.log('🔧 Non-Interfering Delete Button Fix loaded successfully!');
+    console.log('💡 Manual function: SupplementDeleteFix.replaceButtons()');
     
 })();
