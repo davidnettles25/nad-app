@@ -395,6 +395,37 @@
     <script src="admin/js/admin-dashboard.js"></script>
 
     <script>
+
+// Define loadDashboardStats function FIRST
+async function loadDashboardStats() {
+    console.log('📊 Loading dashboard statistics...');
+    try {
+        const response = await fetch('http://localhost:3001/api/dashboard/stats');
+        const data = await response.json();
+        if (response.ok && data.success) {
+            console.log('✅ Dashboard stats loaded:', data.stats);
+            const elements = {
+                'total-tests': data.stats.total_tests || 0,
+                'completed-tests': data.stats.completed_tests || 0,
+                'pending-tests': data.stats.pending_tests || 0,
+                'active-users': data.stats.activated_tests || 0
+            };
+            Object.entries(elements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                    console.log(`✅ Updated ${id}: ${value}`);
+                }
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error loading dashboard stats:', error);
+    }
+}
+window.loadDashboardStats = loadDashboardStats;
+console.log('✅ loadDashboardStats defined at script start');
+
+
         // Initialize dashboard after DOM loads
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Initializing NAD Admin Dashboard...');
