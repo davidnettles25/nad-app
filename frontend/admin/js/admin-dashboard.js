@@ -1,11 +1,7 @@
-// NAD Admin Dashboard - Fixed JavaScript
-// Configuration
+// NAD Admin Dashboard - Clean Version
 const API_BASE = 'https://mynadtest.info';
 
 // Global variables
-let allTests = [];
-let filteredTests = [];
-let selectedTests = new Set();
 let allSupplements = [];
 let filteredSupplements = [];
 
@@ -13,15 +9,13 @@ console.log('🚀 NAD Admin Dashboard JavaScript Loaded');
 console.log('📡 API Base:', API_BASE);
 
 // ============================================================================
-// SUPPLEMENT FORM FUNCTIONS - DEFINED FIRST
+// SUPPLEMENT FORM FUNCTIONS
 // ============================================================================
 
-async function saveExistingSupplementForm(event) {
+async function saveSupplementForm(event) {
     if (event) event.preventDefault();
+    console.log('💾 Saving supplement form...');
     
-    console.log('💾 Saving existing supplement form...');
-    
-    // Get values from the existing form
     const nameField = document.getElementById('supplement-name');
     const categoryField = document.getElementById('supplement-category');
     const descriptionField = document.getElementById('supplement-description');
@@ -40,7 +34,6 @@ async function saveExistingSupplementForm(event) {
     
     console.log('📝 Supplement data:', supplementData);
     
-    // Validation
     if (!supplementData.name || !supplementData.category) {
         showAlert('❌ Please fill in all required fields (Name and Category)', 'error');
         return;
@@ -59,7 +52,7 @@ async function saveExistingSupplementForm(event) {
         
         if (response.ok && data.success) {
             showAlert('✅ Supplement created successfully!', 'success');
-            hideExistingSupplementForm();
+            hideSupplementForm();
             loadSupplements();
         } else {
             throw new Error(data.error || 'Failed to create supplement');
@@ -70,61 +63,35 @@ async function saveExistingSupplementForm(event) {
     }
 }
 
-function showAddSupplementFormExisting() {
-    console.log('📝 Using existing supplement form...');
-    
-    // Find the existing form
+function showAddSupplementForm() {
+    console.log('📝 Showing supplement form...');
     const form = document.getElementById('supplement-form');
-    const nameField = document.getElementById('supplement-name');
-    
-    if (form && nameField) {
-        console.log('✅ Found existing form, showing it');
-        
-        // Clear the form
-        clearExistingSupplementForm();
-        
-        // Show the form
+    if (form) {
+        clearSupplementForm();
         form.style.display = 'block';
         
-        // Update title if it exists
         const title = document.getElementById('supplement-form-title');
-        if (title) {
-            title.textContent = 'Add New Supplement';
-        }
+        if (title) title.textContent = 'Add New Supplement';
         
-        // Focus on name field
         setTimeout(() => {
-            nameField.focus();
+            const nameField = document.getElementById('supplement-name');
+            if (nameField) nameField.focus();
         }, 100);
-        
-    } else {
-        console.log('❌ Existing form not found');
-        showAlert('❌ Form not found', 'error');
     }
 }
 
-function clearExistingSupplementForm() {
-    const fields = [
-        'supplement-id',
-        'supplement-name', 
-        'supplement-category',
-        'supplement-description',
-        'supplement-dose',
-        'supplement-unit'
-    ];
-    
+function hideSupplementForm() {
+    const form = document.getElementById('supplement-form');
+    if (form) form.style.display = 'none';
+}
+
+function clearSupplementForm() {
+    const fields = ['supplement-name', 'supplement-category', 'supplement-description', 'supplement-dose'];
     fields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
-        if (field) {
-            if (field.type === 'checkbox') {
-                field.checked = fieldId === 'supplement-active';
-            } else {
-                field.value = '';
-            }
-        }
+        if (field) field.value = '';
     });
     
-    // Set defaults
     const unitField = document.getElementById('supplement-unit');
     if (unitField) unitField.value = 'mg';
     
@@ -132,78 +99,10 @@ function clearExistingSupplementForm() {
     if (activeField) activeField.checked = true;
 }
 
-function hideExistingSupplementForm() {
-    const form = document.getElementById('supplement-form');
-    if (form) {
-        form.style.display = 'none';
-    }
-}
-
-// Make functions globally accessible
-window.showAddSupplementForm = showAddSupplementFormExisting;
-window.hideSupplementForm = hideExistingSupplementForm;
-window.saveSupplementForm = saveExistingSupplementForm;
-
-console.log('✅ Supplement form functions defined');
-
 // ============================================================================
-// DASHBOARD STATS FUNCTIONS
+// SUPPLEMENT MANAGEMENT
 // ============================================================================
-async function loadDashboardStats() {
-    console.log('📊 Loading dashboard statistics...');
-    try {
-        const response = await fetch(`${API_BASE}/api/dashboard/stats`);
-        const data = await response.json();
-        
-        if (response.ok && data.success) {
-            updateDashboardStats(data.stats);
-            console.log('✅ Dashboard stats loaded:', data.stats);
-            showAlert('✅ Dashboard statistics loaded successfully!', 'success');
-        } else {
-            console.error('❌ Failed to load dashboard stats:', data.error);
-            updateDashboardStats({
-                total_tests: 0,
-                completed_tests: 0,
-                pending_tests: 0,
-                activated_tests: 0
-            });
-            showAlert('⚠️ Could not load dashboard statistics from API', 'warning');
-        }
-    } catch (error) {
-        console.error('❌ Error loading dashboard stats:', error);
-        updateDashboardStats({
-            total_tests: 0,
-            completed_tests: 0,
-            pending_tests: 0,
-            activated_tests: 0
-        });
-        showAlert('❌ Failed to connect to API for dashboard statistics', 'error');
-    }
-}
 
-function updateDashboardStats(stats) {
-    console.log('📈 Updating dashboard stats display with:', stats);
-    
-    // Update individual stat cards
-    const elements = {
-        'total-tests': stats.total_tests || 0,
-        'completed-tests': stats.completed_tests || 0,
-        'pending-tests': stats.pending_tests || 0,
-        'active-users': stats.activated_tests || 0
-    };
-    
-    Object.entries(elements).forEach(([id, value]) => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.textContent = value;
-            console.log(`✅ Updated ${id}: ${value}`);
-        } else {
-            console.log(`⚠️ Element not found: ${id}`);
-        }
-
-// ============================================================================
-// SUPPLEMENT MANAGEMENT FUNCTIONS
-// ============================================================================
 async function loadSupplements() {
     console.log('💊 Loading supplements from API...');
     showAlert('🔄 Loading supplements from database...', 'info');
@@ -231,115 +130,147 @@ async function loadSupplements() {
 }
 
 function updateSupplementStats(supplements) {
-    const stats = calculateSupplementStats(supplements);
+    const stats = {
+        total: supplements.length,
+        active: supplements.filter(s => s.is_active).length,
+        inactive: supplements.filter(s => !s.is_active).length,
+        categories: new Set(supplements.map(s => s.category)).size
+    };
     
-    const totalElement = document.getElementById('supplement-total-count');
-    const activeElement = document.getElementById('supplement-active-count');
-    const inactiveElement = document.getElementById('supplement-inactive-count');
-    const categoriesElement = document.getElementById('supplement-categories-count');
+    const elements = {
+        'supplement-total-count': stats.total,
+        'supplement-active-count': stats.active,
+        'supplement-inactive-count': stats.inactive,
+        'supplement-categories-count': stats.categories
+    };
     
-    if (totalElement) totalElement.textContent = stats.total;
-    if (activeElement) activeElement.textContent = stats.active;
-    if (inactiveElement) inactiveElement.textContent = stats.inactive;
-    if (categoriesElement) categoriesElement.textContent = stats.categories;
+    Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    });
     
     console.log('📊 Supplement stats updated:', stats);
 }
 
-function calculateSupplementStats(supplements) {
-    const stats = {
-        total: supplements.length,
-        active: 0,
-        inactive: 0,
-        categories: new Set()
-    };
-    
-    supplements.forEach(supplement => {
-        if (supplement.is_active) {
-            stats.active++;
-        } else {
-            stats.inactive++;
-        }
-        
-        if (supplement.category) {
-            stats.categories.add(supplement.category);
-        }
-    });
-    
-    stats.categories = stats.categories.size;
-    return stats;
-}
-
 function renderSupplementsTable() {
     const tbody = document.getElementById('supplements-table-body');
-    if (!tbody) {
-        console.error('❌ supplements-table-body element not found');
-        return;
-    }
+    if (!tbody) return;
     
     if (filteredSupplements.length === 0) {
         tbody.innerHTML = `
-            <tr>
-                <td colspan="5">
-                    <div class="empty-state">
-                        <div class="icon">💊</div>
-                        <h4>No Supplements Found</h4>
-                        <p>No supplements found or API connection failed.</p>
-                        <button class="btn" onclick="loadSupplements()" style="margin-top: 15px;">
-                            🔄 Retry
-                        </button>
-                    </div>
-                </td>
-            </tr>
+            <tr><td colspan="5">
+                <div class="empty-state">
+                    <h4>No Supplements Found</h4>
+                    <button class="btn" onclick="loadSupplements()">🔄 Retry</button>
+                </div>
+            </td></tr>
         `;
         return;
     }
     
     tbody.innerHTML = '';
-    
     filteredSupplements.forEach(supplement => {
         const row = document.createElement('tr');
-        row.className = supplement.is_active ? '' : 'inactive-row';
-        
         const dose = supplement.default_dose ? 
             `${supplement.default_dose} ${supplement.unit || 'mg'}` : 'Not set';
         
         row.innerHTML = `
+            <td><strong>${supplement.name}</strong><br><small>${supplement.description || 'No description'}</small></td>
+            <td>${supplement.category || 'Other'}</td>
+            <td>${dose}</td>
+            <td><span class="status-badge ${supplement.is_active ? 'status-activated' : 'status-not-activated'}">${supplement.is_active ? '✅ Active' : '❌ Inactive'}</span></td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editSupplement(${supplement.id})">✏️ Edit</button>
+                <button class="btn btn-sm ${supplement.is_active ? 'btn-warning' : 'btn-success'}" onclick="${supplement.is_active ? 'deactivateSupplement' : 'activateSupplement'}(${supplement.id})">${supplement.is_active ? '❌ Deactivate' : '⚡ Activate'}</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    console.log('📊 Rendered supplements table with', filteredSupplements.length, 'items');
+}
+
+function showSupplementsError(errorMessage) {
+    const tbody = document.getElementById('supplements-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = `
+        <tr><td colspan="5">
+            <div class="empty-state">
+                <h4>Error Loading Supplements</h4>
+                <p>${errorMessage}</p>
+                <button class="btn" onclick="loadSupplements()">🔄 Retry</button>
+            </div>
+        </td></tr>
+    `;
+    showAlert('❌ Failed to load supplements.', 'error');
+}
+
+// Placeholder functions
+function editSupplement(id) {
+    showAlert(`✏️ Edit supplement ${id} - Feature coming soon!`, 'info');
+}
+
+function activateSupplement(id) {
+    showAlert(`⚡ Activate supplement ${id} - Feature coming soon!`, 'info');
+}
+
+function deactivateSupplement(id) {
+    showAlert(`❌ Deactivate supplement ${id} - Feature coming soon!`, 'info');
+}
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
+
+function showSection(sectionName) {
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    const targetSection = document.getElementById(sectionName);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
+    
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    const navLink = document.querySelector(`[data-section="${sectionName}"]`);
+    if (navLink) {
+        navLink.classList.add('active');
+    }
+    
+    if (sectionName === 'supplements') {
+        loadSupplements();
+    }
+}
+
 function showAlert(message, type = 'info') {
     console.log('📢 Alert:', message, '(Type:', type + ')');
     
-    // Try to find section-specific alert div first
-    const activeSection = document.querySelector('.content-section.active');
-    let alertId = 'global-alert'; // default
-    
-    if (activeSection) {
-        alertId = activeSection.id + '-alert';
-    }
-    
-    let alertDiv = document.getElementById(alertId);
-    
-    // If section-specific alert doesn't exist, use global alert
-    if (!alertDiv) {
-        alertDiv = document.getElementById('global-alert');
-    }
-    
-    // If still no alert div, create one
+    let alertDiv = document.getElementById('supplement-alert');
     if (!alertDiv) {
         alertDiv = document.createElement('div');
-        alertDiv.id = 'global-alert';
+        alertDiv.id = 'supplement-alert';
         alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1000; max-width: 400px;';
         document.body.appendChild(alertDiv);
     }
     
-    if (alertDiv) {
-        alertDiv.innerHTML = `<div class="alert alert-${type}" style="padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid; font-weight: 500;">${message}</div>`;
-        
-        // Set colors based on type
-        const alertElement = alertDiv.querySelector('.alert');
+    const colors = {
+        success: { bg: '#d4edda', color: '#155724', border: '#c3e6cb' },
+        error: { bg: '#f8d7da', color: '#721c24', border: '#f5c6cb' },
+        warning: { bg: '#fff3cd', color: '#856404', border: '#ffeaa7' },
+        info: { bg: '#d1ecf1', color: '#0c5460', border: '#bee5eb' }
+    };
+    
+    const style = colors[type] || colors.info;
+    alertDiv.innerHTML = `<div style="padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid ${style.border}; background: ${style.bg}; color: ${style.color}; font-weight: 500;">${message}</div>`;
+    
+    if (type === 'success' || type === 'info') {
+        setTimeout(() => alertDiv.innerHTML = '', 5000);
+    }
+}
 
 // ============================================================================
 // INITIALIZATION
@@ -357,21 +288,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Set up the existing supplement form submit handler
-    const existingForm = document.getElementById('supplement-form');
-    if (existingForm) {
-        existingForm.removeAttribute('onsubmit');
-        existingForm.addEventListener('submit', saveExistingSupplementForm);
-        console.log('✅ Added submit handler to existing supplement form');
+    // Setup supplement form submit handler
+    const supplementForm = document.getElementById('supplement-form');
+    if (supplementForm) {
+        supplementForm.removeAttribute('onsubmit');
+        supplementForm.addEventListener('submit', saveSupplementForm);
+        console.log('✅ Added submit handler to supplement form');
     }
-    
-    // Load initial data after a short delay
-    setTimeout(() => {
-        console.log('🔄 Loading initial dashboard stats...');
-        loadDashboardStats();
-    }, 1000);
     
     console.log('🎯 NAD Admin Dashboard initialization complete!');
 });
+
+// Make functions globally accessible
+window.showAddSupplementForm = showAddSupplementForm;
+window.hideSupplementForm = hideSupplementForm;
+window.saveSupplementForm = saveSupplementForm;
+window.loadSupplements = loadSupplements;
+window.editSupplement = editSupplement;
+window.activateSupplement = activateSupplement;
+window.deactivateSupplement = deactivateSupplement;
+window.showSection = showSection;
+window.showAlert = showAlert;
 
 console.log('📋 Admin Dashboard JavaScript file loaded successfully');
