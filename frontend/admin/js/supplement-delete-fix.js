@@ -171,14 +171,14 @@ Are you sure you want to permanently delete this supplement?`;
     // OVERRIDE EXISTING RENDER FUNCTIONS
     // ========================================================================
     
-    function overrideSupplementRenderFunctions() {
-        console.log('🔄 Overriding supplement render functions...');
-        
-        // Override the main render function
-        if (window.renderSupplementsTable) {
-            window.renderSupplementsTable = renderSupplementsTableWithDelete;
-            console.log('✅ Overridden renderSupplementsTable');
-        }
+//    function overrideSupplementRenderFunctions() {
+//        console.log('🔄 Overriding supplement render functions...');
+//        
+//        // Override the main render function
+//        if (window.renderSupplementsTable) {
+//            window.renderSupplementsTable = renderSupplementsTableWithDelete;
+//            console.log('✅ Overridden renderSupplementsTable');
+ //       }
         
         // Override alternative render function names
         const renderFunctionNames = [
