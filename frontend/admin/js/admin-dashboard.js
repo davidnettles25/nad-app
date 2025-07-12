@@ -271,21 +271,9 @@ function refreshData() {
 // PLACEHOLDER FUNCTIONS (replace these with real implementations later)
 // ============================================================================
 
-function loadUsers() {
-    showAlert('👥 Users management coming soon!', 'info');
-}
 
-function loadTestsFromAPI() {
-    showAlert('🧪 Tests management coming soon!', 'info');
-}
 
-function loadSupplements() {
-    showAlert('💊 Supplements management coming soon!', 'info');
-}
 
-function loadAnalytics() {
-    showAlert('📈 Analytics dashboard coming soon!', 'info');
-}
 
 function testSystemHealth() {
     showAlert('🔍 System health check coming soon!', 'info');
@@ -421,3 +409,181 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('📋 Admin Dashboard JavaScript file loaded successfully');
+// ============================================================================
+// SUPPLEMENT MANAGEMENT FUNCTIONS - REAL IMPLEMENTATION
+// ============================================================================
+
+async function loadSupplements() {
+    console.log('💊 Loading supplements from API...');
+    showAlert('🔄 Loading supplements from database...', 'info');
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/supplements`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            allSupplements = data.supplements || [];
+            filteredSupplements = [...allSupplements];
+            
+            updateSupplementStats(allSupplements);
+            renderSupplementsTable();
+            
+            showAlert(`✅ Loaded ${allSupplements.length} supplements successfully!`, 'success');
+            console.log('✅ Supplements loaded:', allSupplements.length);
+        } else {
+            throw new Error(data.error || 'Failed to load supplements');
+        }
+    } catch (error) {
+        console.error('❌ Error loading supplements:', error);
+        showSupplementsError(error.message);
+    }
+}
+
+function updateSupplementStats(supplements) {
+    const stats = calculateSupplementStats(supplements);
+    
+    const totalElement = document.getElementById('supplement-total-count');
+    const activeElement = document.getElementById('supplement-active-count');
+    const inactiveElement = document.getElementById('supplement-inactive-count');
+    const categoriesElement = document.getElementById('supplement-categories-count');
+    
+    if (totalElement) totalElement.textContent = stats.total;
+    if (activeElement) activeElement.textContent = stats.active;
+    if (inactiveElement) inactiveElement.textContent = stats.inactive;
+    if (categoriesElement) categoriesElement.textContent = stats.categories;
+    
+    console.log('📊 Supplement stats updated:', stats);
+}
+
+function calculateSupplementStats(supplements) {
+    const stats = {
+        total: supplements.length,
+        active: 0,
+        inactive: 0,
+        categories: new Set()
+    };
+    
+    supplements.forEach(supplement => {
+        if (supplement.is_active) {
+            stats.active++;
+        } else {
+            stats.inactive++;
+        }
+        
+        if (supplement.category) {
+            stats.categories.add(supplement.category);
+        }
+    });
+    
+    stats.categories = stats.categories.size;
+    return stats;
+}
+
+function renderSupplementsTable() {
+    const tbody = document.getElementById('supplements-table-body');
+    if (!tbody) {
+        console.error('❌ supplements-table-body element not found');
+        return;
+    }
+    
+    if (filteredSupplements.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <div class="icon">💊</div>
+                        <h4>No Supplements Found</h4>
+                        <p>No supplements found or API connection failed.</p>
+                        <button class="btn" onclick="loadSupplements()" style="margin-top: 15px;">
+                            🔄 Retry
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    filteredSupplements.forEach(supplement => {
+        const row = document.createElement('tr');
+        row.className = supplement.is_active ? '' : 'inactive-row';
+        
+        const dose = supplement.default_dose ? 
+            `${supplement.default_dose} ${supplement.unit || 'mg'}` : 'Not set';
+        
+        row.innerHTML = `
+            <td>
+                <strong>${supplement.name}</strong>
+                <div style="font-size: 12px; color: #666; margin-top: 2px;">
+                    ${supplement.description || 'No description'}
+                </div>
+            </td>
+            <td>
+                <span class="status-badge">${supplement.category || 'Other'}</span>
+            </td>
+            <td>${dose}</td>
+            <td>
+                <span class="status-badge ${supplement.is_active ? 'status-activated' : 'status-not-activated'}">
+                    ${supplement.is_active ? '✅ Active' : '❌ Inactive'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editSupplement(${supplement.id})" title="Edit">
+                    ✏️ Edit
+                </button>
+                <button class="btn btn-sm ${supplement.is_active ? 'btn-warning' : 'btn-success'}" 
+                        onclick="${supplement.is_active ? 'deactivateSupplement' : 'activateSupplement'}(${supplement.id})"
+                        title="${supplement.is_active ? 'Deactivate' : 'Activate'}">
+                    ${supplement.is_active ? '❌ Deactivate' : '⚡ Activate'}
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    console.log('📊 Rendered supplements table with', filteredSupplements.length, 'items');
+}
+
+function showSupplementsError(errorMessage) {
+    const tbody = document.getElementById('supplements-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5">
+                <div class="empty-state">
+                    <div class="icon">⚠️</div>
+                    <h4>Error Loading Supplements</h4>
+                    <p>${errorMessage}</p>
+                    <button class="btn" onclick="loadSupplements()" style="margin-top: 15px;">
+                        🔄 Retry
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `;
+    showAlert('❌ Failed to load supplements.', 'error');
+}
+
+// Placeholder functions for supplement actions (implement these later)
+function editSupplement(id) {
+    showAlert(`✏️ Edit supplement ${id} - Form coming soon!`, 'info');
+}
+
+function activateSupplement(id) {
+    showAlert(`⚡ Activate supplement ${id} - Feature coming soon!`, 'info');
+}
+
+function deactivateSupplement(id) {
+    showAlert(`❌ Deactivate supplement ${id} - Feature coming soon!`, 'info');
+}
+
+// Make functions globally accessible
+window.loadSupplements = loadSupplements;
+window.editSupplement = editSupplement;
+window.activateSupplement = activateSupplement;
+window.deactivateSupplement = deactivateSupplement;
+
+console.log('✅ Real supplement management functions loaded');
