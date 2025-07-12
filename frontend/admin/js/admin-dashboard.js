@@ -149,7 +149,222 @@ function createEnhancedSupplementModal() {
     return document.getElementById('supplement-modal');
 }
 
-// Fixed edit supplement function
+// ============================================================================
+// COMPLETE SUPPLEMENT MANAGEMENT FUNCTIONS
+// Replace your existing supplement functions with these
+// ============================================================================
+
+// Global variables for supplements
+let allSupplements = [];
+let filteredSupplements = [];
+let selectedSupplements = new Set();
+
+// Load supplements from API
+async function loadSupplements() {
+    console.log('💊 Loading supplements from API...');
+    showSupplementAlert('🔄 Loading supplements from database...', 'info');
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/supplements`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            allSupplements = data.supplements || [];
+            filteredSupplements = [...allSupplements];
+            
+            updateSupplementStats(allSupplements);
+            renderSupplementsTable();
+            
+            showSupplementAlert(`✅ Loaded ${allSupplements.length} supplements successfully!`, 'success');
+            console.log('✅ Supplements loaded:', allSupplements.length);
+        } else {
+            throw new Error(data.error || 'Failed to load supplements');
+        }
+    } catch (error) {
+        console.error('❌ Error loading supplements:', error);
+        showSupplementsError(error.message);
+    }
+}
+
+// Calculate supplement statistics
+function calculateSupplementStats(supplements) {
+    const stats = {
+        total: supplements.length,
+        active: 0,
+        inactive: 0,
+        categories: new Set()
+    };
+    
+    supplements.forEach(supplement => {
+        if (supplement.is_active) {
+            stats.active++;
+        } else {
+            stats.inactive++;
+        }
+        
+        if (supplement.category) {
+            stats.categories.add(supplement.category);
+        }
+    });
+    
+    stats.categories = stats.categories.size;
+    return stats;
+}
+
+// Update supplement statistics display
+function updateSupplementStats(supplements) {
+    const stats = calculateSupplementStats(supplements);
+    
+    // Update stat cards if they exist
+    const totalElement = document.getElementById('supplement-total-count');
+    const activeElement = document.getElementById('supplement-active-count');
+    const inactiveElement = document.getElementById('supplement-inactive-count');
+    const categoriesElement = document.getElementById('supplement-categories-count');
+    
+    if (totalElement) totalElement.textContent = stats.total;
+    if (activeElement) activeElement.textContent = stats.active;
+    if (inactiveElement) inactiveElement.textContent = stats.inactive;
+    if (categoriesElement) categoriesElement.textContent = stats.categories;
+    
+    console.log('📊 Supplement stats updated:', stats);
+}
+
+// Render supplements table
+function renderSupplementsTable() {
+    const tbody = document.getElementById('supplements-table-body');
+    if (!tbody) {
+        console.error('❌ supplements-table-body element not found');
+        return;
+    }
+    
+    if (filteredSupplements.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <div class="icon">💊</div>
+                        <h4>No Supplements Found</h4>
+                        <p>No supplements found or API connection failed.</p>
+                        <button class="btn" onclick="loadSupplements()" style="margin-top: 15px;">
+                            🔄 Retry
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    filteredSupplements.forEach(supplement => {
+        const row = document.createElement('tr');
+        row.className = supplement.is_active ? '' : 'inactive-row';
+        
+        const dose = supplement.default_dose ? 
+            `${supplement.default_dose} ${supplement.unit || 'mg'}` : 'Not set';
+        
+        row.innerHTML = `
+            <td>
+                <strong>${supplement.name}</strong>
+                <div style="font-size: 12px; color: #666; margin-top: 2px;">
+                    ${supplement.description || 'No description'}
+                </div>
+            </td>
+            <td>
+                <span class="status-badge">${formatCategory(supplement.category || 'other')}</span>
+            </td>
+            <td>${dose}</td>
+            <td>
+                <span class="status-badge ${supplement.is_active ? 'status-activated' : 'status-not-activated'}">
+                    ${supplement.is_active ? '✅ Active' : '❌ Inactive'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editSupplement(${supplement.id})" title="Edit">
+                    ✏️ Edit
+                </button>
+                <button class="btn btn-sm ${supplement.is_active ? 'btn-warning' : 'btn-success'}" 
+                        onclick="${supplement.is_active ? 'deactivateSupplement' : 'activateSupplement'}(${supplement.id})"
+                        title="${supplement.is_active ? 'Deactivate' : 'Activate'}">
+                    ${supplement.is_active ? '❌ Deactivate' : '⚡ Activate'}
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteSupplement(${supplement.id})" title="Delete">
+                    🗑️ Delete
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    console.log('📊 Rendered supplements table with', filteredSupplements.length, 'items');
+}
+
+// Show supplements error
+function showSupplementsError(errorMessage) {
+    const tbody = document.getElementById('supplements-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5">
+                <div class="empty-state">
+                    <div class="icon">⚠️</div>
+                    <h4>Error Loading Supplements</h4>
+                    <p>${errorMessage}</p>
+                    <button class="btn" onclick="loadSupplements()" style="margin-top: 15px;">
+                        🔄 Retry
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `;
+    showSupplementAlert('❌ Failed to load supplements.', 'error');
+}
+
+// Show supplement alert
+function showSupplementAlert(message, type) {
+    console.log(`📢 Supplement Alert: ${message}`);
+    
+    // Try to find existing alert container
+    let alertContainer = document.getElementById('supplement-alert');
+    
+    // If no dedicated supplement alert, use generic showAlert
+    if (!alertContainer) {
+        showAlert(message, type);
+        return;
+    }
+    
+    // Set alert content and styling
+    alertContainer.className = `alert alert-${type}`;
+    alertContainer.textContent = message;
+    alertContainer.style.display = 'block';
+    
+    // Auto-hide success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            alertContainer.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// Format category for display
+function formatCategory(category) {
+    const categoryNames = {
+        'vitamins': 'Vitamins',
+        'minerals': 'Minerals',
+        'antioxidants': 'Antioxidants',
+        'herbs': 'Herbs',
+        'amino_acids': 'Amino Acids',
+        'enzymes': 'Enzymes',
+        'probiotics': 'Probiotics',
+        'fatty_acids': 'Fatty Acids',
+        'other': 'Other'
+    };
+    return categoryNames[category] || category || 'Other';
+}
+
+// Edit supplement
 async function editSupplement(id) {
     console.log(`📝 Editing supplement ID: ${id}`);
     
@@ -175,7 +390,137 @@ async function editSupplement(id) {
         
     } catch (error) {
         console.error('❌ Error fetching supplement for edit:', error);
-        showAlert(`❌ Failed to load supplement: ${error.message}`, 'error');
+        showSupplementAlert(`❌ Failed to load supplement: ${error.message}`, 'error');
+    }
+}
+
+// Save supplement form
+async function saveSupplementForm(event) {
+    event.preventDefault();
+    console.log('💾 Saving supplement form...');
+    
+    const formData = new FormData(document.getElementById('supplement-form'));
+    const id = formData.get('id');
+    const isEdit = id && id !== '';
+    
+    const supplementData = {
+        name: formData.get('name').trim(),
+        category: formData.get('category'),
+        description: formData.get('description').trim(),
+        default_dose: formData.get('default_dose') || null,
+        unit: formData.get('unit'),
+        min_dose: formData.get('min_dose') || null,
+        max_dose: formData.get('max_dose') || null,
+        notes: formData.get('notes').trim(),
+        is_active: formData.has('is_active'),
+        is_featured: formData.has('is_featured')
+    };
+    
+    // Validation
+    if (!supplementData.name || !supplementData.category) {
+        showSupplementAlert('❌ Please fill in all required fields (Name and Category)', 'error');
+        return;
+    }
+    
+    try {
+        showSupplementAlert('🔄 Saving supplement...', 'info');
+        
+        const url = isEdit ? `${API_BASE}/api/supplements/${id}` : `${API_BASE}/api/supplements`;
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(supplementData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showSupplementAlert(`✅ Supplement ${isEdit ? 'updated' : 'created'} successfully!`, 'success');
+            hideSupplementForm();
+            loadSupplements();
+        } else {
+            throw new Error(data.error || `Failed to ${isEdit ? 'update' : 'create'} supplement`);
+        }
+    } catch (error) {
+        console.error('❌ Error saving supplement:', error);
+        showSupplementAlert(`❌ Failed to save supplement: ${error.message}`, 'error');
+    }
+}
+
+// Activate supplement
+async function activateSupplement(id) {
+    await toggleSupplementStatus(id, true);
+}
+
+// Deactivate supplement
+async function deactivateSupplement(id) {
+    await toggleSupplementStatus(id, false);
+}
+
+// Toggle supplement status
+async function toggleSupplementStatus(id, isActive) {
+    const supplement = allSupplements.find(s => s.id === id);
+    if (!supplement) {
+        showSupplementAlert('❌ Supplement not found', 'error');
+        return;
+    }
+    
+    const action = isActive ? 'activate' : 'deactivate';
+    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} "${supplement.name}"?`)) return;
+    
+    try {
+        showSupplementAlert(`🔄 ${action.charAt(0).toUpperCase() + action.slice(1)}ing supplement...`, 'info');
+        
+        const response = await fetch(`${API_BASE}/api/supplements/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...supplement, is_active: isActive })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showSupplementAlert(`✅ Supplement ${action}d successfully!`, 'success');
+            loadSupplements();
+        } else {
+            throw new Error(data.error || `Failed to ${action} supplement`);
+        }
+    } catch (error) {
+        console.error(`❌ Error ${action}ing supplement:`, error);
+        showSupplementAlert(`❌ Failed to ${action} supplement: ${error.message}`, 'error');
+    }
+}
+
+// Delete supplement
+async function deleteSupplement(id) {
+    const supplement = allSupplements.find(s => s.id === id);
+    if (!supplement) {
+        showSupplementAlert('❌ Supplement not found', 'error');
+        return;
+    }
+    
+    if (!confirm(`Delete "${supplement.name}"?\n\nThis action cannot be undone.`)) return;
+    
+    try {
+        showSupplementAlert('🔄 Deleting supplement...', 'info');
+        
+        const response = await fetch(`${API_BASE}/api/supplements/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showSupplementAlert(`✅ Supplement "${supplement.name}" deleted successfully!`, 'success');
+            loadSupplements();
+        } else {
+            throw new Error(data.error || 'Failed to delete supplement');
+        }
+    } catch (error) {
+        console.error('❌ Error deleting supplement:', error);
+        showSupplementAlert(`❌ Failed to delete supplement: ${error.message}`, 'error');
     }
 }
 
@@ -362,7 +707,222 @@ function createEnhancedSupplementModal() {
     return document.getElementById('supplement-modal');
 }
 
-// Fixed edit supplement function
+// ============================================================================
+// COMPLETE SUPPLEMENT MANAGEMENT FUNCTIONS
+// Replace your existing supplement functions with these
+// ============================================================================
+
+// Global variables for supplements
+let allSupplements = [];
+let filteredSupplements = [];
+let selectedSupplements = new Set();
+
+// Load supplements from API
+async function loadSupplements() {
+    console.log('💊 Loading supplements from API...');
+    showSupplementAlert('🔄 Loading supplements from database...', 'info');
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/supplements`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            allSupplements = data.supplements || [];
+            filteredSupplements = [...allSupplements];
+            
+            updateSupplementStats(allSupplements);
+            renderSupplementsTable();
+            
+            showSupplementAlert(`✅ Loaded ${allSupplements.length} supplements successfully!`, 'success');
+            console.log('✅ Supplements loaded:', allSupplements.length);
+        } else {
+            throw new Error(data.error || 'Failed to load supplements');
+        }
+    } catch (error) {
+        console.error('❌ Error loading supplements:', error);
+        showSupplementsError(error.message);
+    }
+}
+
+// Calculate supplement statistics
+function calculateSupplementStats(supplements) {
+    const stats = {
+        total: supplements.length,
+        active: 0,
+        inactive: 0,
+        categories: new Set()
+    };
+    
+    supplements.forEach(supplement => {
+        if (supplement.is_active) {
+            stats.active++;
+        } else {
+            stats.inactive++;
+        }
+        
+        if (supplement.category) {
+            stats.categories.add(supplement.category);
+        }
+    });
+    
+    stats.categories = stats.categories.size;
+    return stats;
+}
+
+// Update supplement statistics display
+function updateSupplementStats(supplements) {
+    const stats = calculateSupplementStats(supplements);
+    
+    // Update stat cards if they exist
+    const totalElement = document.getElementById('supplement-total-count');
+    const activeElement = document.getElementById('supplement-active-count');
+    const inactiveElement = document.getElementById('supplement-inactive-count');
+    const categoriesElement = document.getElementById('supplement-categories-count');
+    
+    if (totalElement) totalElement.textContent = stats.total;
+    if (activeElement) activeElement.textContent = stats.active;
+    if (inactiveElement) inactiveElement.textContent = stats.inactive;
+    if (categoriesElement) categoriesElement.textContent = stats.categories;
+    
+    console.log('📊 Supplement stats updated:', stats);
+}
+
+// Render supplements table
+function renderSupplementsTable() {
+    const tbody = document.getElementById('supplements-table-body');
+    if (!tbody) {
+        console.error('❌ supplements-table-body element not found');
+        return;
+    }
+    
+    if (filteredSupplements.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <div class="icon">💊</div>
+                        <h4>No Supplements Found</h4>
+                        <p>No supplements found or API connection failed.</p>
+                        <button class="btn" onclick="loadSupplements()" style="margin-top: 15px;">
+                            🔄 Retry
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    filteredSupplements.forEach(supplement => {
+        const row = document.createElement('tr');
+        row.className = supplement.is_active ? '' : 'inactive-row';
+        
+        const dose = supplement.default_dose ? 
+            `${supplement.default_dose} ${supplement.unit || 'mg'}` : 'Not set';
+        
+        row.innerHTML = `
+            <td>
+                <strong>${supplement.name}</strong>
+                <div style="font-size: 12px; color: #666; margin-top: 2px;">
+                    ${supplement.description || 'No description'}
+                </div>
+            </td>
+            <td>
+                <span class="status-badge">${formatCategory(supplement.category || 'other')}</span>
+            </td>
+            <td>${dose}</td>
+            <td>
+                <span class="status-badge ${supplement.is_active ? 'status-activated' : 'status-not-activated'}">
+                    ${supplement.is_active ? '✅ Active' : '❌ Inactive'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editSupplement(${supplement.id})" title="Edit">
+                    ✏️ Edit
+                </button>
+                <button class="btn btn-sm ${supplement.is_active ? 'btn-warning' : 'btn-success'}" 
+                        onclick="${supplement.is_active ? 'deactivateSupplement' : 'activateSupplement'}(${supplement.id})"
+                        title="${supplement.is_active ? 'Deactivate' : 'Activate'}">
+                    ${supplement.is_active ? '❌ Deactivate' : '⚡ Activate'}
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteSupplement(${supplement.id})" title="Delete">
+                    🗑️ Delete
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    console.log('📊 Rendered supplements table with', filteredSupplements.length, 'items');
+}
+
+// Show supplements error
+function showSupplementsError(errorMessage) {
+    const tbody = document.getElementById('supplements-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5">
+                <div class="empty-state">
+                    <div class="icon">⚠️</div>
+                    <h4>Error Loading Supplements</h4>
+                    <p>${errorMessage}</p>
+                    <button class="btn" onclick="loadSupplements()" style="margin-top: 15px;">
+                        🔄 Retry
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `;
+    showSupplementAlert('❌ Failed to load supplements.', 'error');
+}
+
+// Show supplement alert
+function showSupplementAlert(message, type) {
+    console.log(`📢 Supplement Alert: ${message}`);
+    
+    // Try to find existing alert container
+    let alertContainer = document.getElementById('supplement-alert');
+    
+    // If no dedicated supplement alert, use generic showAlert
+    if (!alertContainer) {
+        showAlert(message, type);
+        return;
+    }
+    
+    // Set alert content and styling
+    alertContainer.className = `alert alert-${type}`;
+    alertContainer.textContent = message;
+    alertContainer.style.display = 'block';
+    
+    // Auto-hide success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            alertContainer.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// Format category for display
+function formatCategory(category) {
+    const categoryNames = {
+        'vitamins': 'Vitamins',
+        'minerals': 'Minerals',
+        'antioxidants': 'Antioxidants',
+        'herbs': 'Herbs',
+        'amino_acids': 'Amino Acids',
+        'enzymes': 'Enzymes',
+        'probiotics': 'Probiotics',
+        'fatty_acids': 'Fatty Acids',
+        'other': 'Other'
+    };
+    return categoryNames[category] || category || 'Other';
+}
+
+// Edit supplement
 async function editSupplement(id) {
     console.log(`📝 Editing supplement ID: ${id}`);
     
@@ -388,7 +948,137 @@ async function editSupplement(id) {
         
     } catch (error) {
         console.error('❌ Error fetching supplement for edit:', error);
-        showAlert(`❌ Failed to load supplement: ${error.message}`, 'error');
+        showSupplementAlert(`❌ Failed to load supplement: ${error.message}`, 'error');
+    }
+}
+
+// Save supplement form
+async function saveSupplementForm(event) {
+    event.preventDefault();
+    console.log('💾 Saving supplement form...');
+    
+    const formData = new FormData(document.getElementById('supplement-form'));
+    const id = formData.get('id');
+    const isEdit = id && id !== '';
+    
+    const supplementData = {
+        name: formData.get('name').trim(),
+        category: formData.get('category'),
+        description: formData.get('description').trim(),
+        default_dose: formData.get('default_dose') || null,
+        unit: formData.get('unit'),
+        min_dose: formData.get('min_dose') || null,
+        max_dose: formData.get('max_dose') || null,
+        notes: formData.get('notes').trim(),
+        is_active: formData.has('is_active'),
+        is_featured: formData.has('is_featured')
+    };
+    
+    // Validation
+    if (!supplementData.name || !supplementData.category) {
+        showSupplementAlert('❌ Please fill in all required fields (Name and Category)', 'error');
+        return;
+    }
+    
+    try {
+        showSupplementAlert('🔄 Saving supplement...', 'info');
+        
+        const url = isEdit ? `${API_BASE}/api/supplements/${id}` : `${API_BASE}/api/supplements`;
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(supplementData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showSupplementAlert(`✅ Supplement ${isEdit ? 'updated' : 'created'} successfully!`, 'success');
+            hideSupplementForm();
+            loadSupplements();
+        } else {
+            throw new Error(data.error || `Failed to ${isEdit ? 'update' : 'create'} supplement`);
+        }
+    } catch (error) {
+        console.error('❌ Error saving supplement:', error);
+        showSupplementAlert(`❌ Failed to save supplement: ${error.message}`, 'error');
+    }
+}
+
+// Activate supplement
+async function activateSupplement(id) {
+    await toggleSupplementStatus(id, true);
+}
+
+// Deactivate supplement
+async function deactivateSupplement(id) {
+    await toggleSupplementStatus(id, false);
+}
+
+// Toggle supplement status
+async function toggleSupplementStatus(id, isActive) {
+    const supplement = allSupplements.find(s => s.id === id);
+    if (!supplement) {
+        showSupplementAlert('❌ Supplement not found', 'error');
+        return;
+    }
+    
+    const action = isActive ? 'activate' : 'deactivate';
+    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} "${supplement.name}"?`)) return;
+    
+    try {
+        showSupplementAlert(`🔄 ${action.charAt(0).toUpperCase() + action.slice(1)}ing supplement...`, 'info');
+        
+        const response = await fetch(`${API_BASE}/api/supplements/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...supplement, is_active: isActive })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showSupplementAlert(`✅ Supplement ${action}d successfully!`, 'success');
+            loadSupplements();
+        } else {
+            throw new Error(data.error || `Failed to ${action} supplement`);
+        }
+    } catch (error) {
+        console.error(`❌ Error ${action}ing supplement:`, error);
+        showSupplementAlert(`❌ Failed to ${action} supplement: ${error.message}`, 'error');
+    }
+}
+
+// Delete supplement
+async function deleteSupplement(id) {
+    const supplement = allSupplements.find(s => s.id === id);
+    if (!supplement) {
+        showSupplementAlert('❌ Supplement not found', 'error');
+        return;
+    }
+    
+    if (!confirm(`Delete "${supplement.name}"?\n\nThis action cannot be undone.`)) return;
+    
+    try {
+        showSupplementAlert('🔄 Deleting supplement...', 'info');
+        
+        const response = await fetch(`${API_BASE}/api/supplements/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showSupplementAlert(`✅ Supplement "${supplement.name}" deleted successfully!`, 'success');
+            loadSupplements();
+        } else {
+            throw new Error(data.error || 'Failed to delete supplement');
+        }
+    } catch (error) {
+        console.error('❌ Error deleting supplement:', error);
+        showSupplementAlert(`❌ Failed to delete supplement: ${error.message}`, 'error');
     }
 }
 
@@ -838,5 +1528,52 @@ function showAlert(message, type) {
 
 // Configuration
 const API_BASE = 'https://mynadtest.info';
+
+async function loadDashboardStats() {
+    console.log('📊 Loading dashboard statistics...');
+    try {
+        const response = await fetch(`${API_BASE}/api/dashboard/stats`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            updateDashboardStats(data.stats);
+            console.log('✅ Dashboard stats loaded:', data.stats);
+        } else {
+            console.error('❌ Failed to load dashboard stats:', data.error);
+            // Use default stats if API fails
+            updateDashboardStats({
+                total_tests: 0,
+                completed_tests: 0,
+                pending_tests: 0,
+                activated_tests: 0
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error loading dashboard stats:', error);
+        updateDashboardStats({
+            total_tests: 0,
+            completed_tests: 0,
+            pending_tests: 0,
+            activated_tests: 0
+        });
+    }
+}
+
+function updateDashboardStats(stats) {
+    const elements = {
+        'total-tests': stats.total_tests || 0,
+        'completed-tests': stats.completed_tests || 0,
+        'pending-tests': stats.pending_tests || 0,
+        'active-users': stats.activated_tests || 0
+    };
+    
+    Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+            console.log(`✅ Updated ${id}: ${value}`);
+        }
+    });
+}
 
 console.log('✅ Supplement management functions loaded');

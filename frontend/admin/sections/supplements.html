@@ -79,27 +79,21 @@
             <input type="hidden" id="supplement-id" value="">
         </div>
         
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Default Dose</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="supplements-table-body">
-                <tr>
-                    <td colspan="5" style="text-align: center; padding: 20px;">
-                        <div class="empty-state">
-                            <div class="icon">💊</div>
-                            <h4>Loading Supplements...</h4>
-                            <p>Fetching supplement data from API</p>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table" id="supplements-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Default Dose</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="supplements-table-body">
+                    <!-- Content will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
