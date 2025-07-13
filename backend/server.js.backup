@@ -136,6 +136,37 @@ function isNADProduct(product) {
 }
 
 // ============================================================================
+// SHOPIFY AUTHENTICATION MIDDLEWARE
+// ============================================================================
+
+function validateShopifyAuth(req, res, next) {
+    // TODO: Implement Shopify Multipass validation
+    // Check for valid Shopify authentication token
+    // Verify user role from Shopify
+    // Set req.user with role information
+    
+    const shopifyToken = req.headers['x-shopify-token'] || req.query.token;
+    const userRole = req.headers['x-shopify-role'] || req.query.role;
+    
+    if (!shopifyToken) {
+        return res.status(401).json({ 
+            success: false, 
+            error: 'Authentication required',
+            redirect: 'https://mynadtest.myshopify.com/account/login'
+        });
+    }
+    
+    // Set user context for role-based access
+    req.user = {
+        role: userRole,
+        shopifyToken: shopifyToken,
+        authenticated: true
+    };
+    
+    next();
+}
+
+// ============================================================================
 // HEALTH CHECK ENDPOINT
 // ============================================================================
 
@@ -166,22 +197,33 @@ app.get('/health', async (req, res) => {
 
 app.get('/api/dashboard/stats', async (req, res) => {
     try {
-        const [totalTests] = await db.execute(`SELECT COUNT(*) as total_tests FROM nad_test_ids`);
-        const [activatedTests] = await db.execute(`SELECT COUNT(*) as activated_tests FROM nad_test_ids WHERE is_activated = 1`);
-        const [completedTests] = await db.execute(`SELECT COUNT(*) as completed_tests FROM nad_test_scores`);
+        const [testStats] = await db.execute(`
+            SELECT 
+                COUNT(*) as total_tests,
+                COUNT(CASE WHEN is_activated = 1 THEN 1 END) as activated_tests,
+                COUNT(CASE WHEN is_activated = 0 THEN 1 END) as pending_tests
+            FROM nad_test_ids
+        `);
         
-        const total = totalTests[0].total_tests;
-        const activated = activatedTests[0].activated_tests;
-        const completed = completedTests[0].completed_tests;
-        const pending = total - activated;
+        const [completedTests] = await db.execute(`
+            SELECT COUNT(DISTINCT test_id) as completed_tests
+            FROM nad_test_scores 
+            WHERE score IS NOT NULL AND score != ''
+        `);
+        
+        // REMOVED: User statistics
+        // const [userStats] = await db.execute(`
+        //     SELECT COUNT(*) as active_users FROM nad_user_roles
+        // `);
         
         res.json({
             success: true,
             stats: {
-                total_tests: total,
-                activated_tests: activated,
-                completed_tests: completed,
-                pending_tests: pending
+                total_tests: testStats[0].total_tests,
+                activated_tests: testStats[0].activated_tests,
+                pending_tests: testStats[0].pending_tests,
+                completed_tests: completedTests[0].completed_tests
+                // REMOVED: active_users: userStats[0].active_users
             }
         });
     } catch (error) {
@@ -488,462 +530,6 @@ app.post('/api/tests/score', upload.single('image'), async (req, res) => {
     }
 });
 
-// ============================================================================
-// USER MANAGEMENT ENDPOINTS - COMPLETELY FIXED TO SHOW ALL 4 USERS
-// ============================================================================
-app.use('/api', (req, res, next) => {
-    res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-    });
-    next();
-});
-
-// Debug endpoint to check all users in the database
-app.get('/api/users/debug-all', async (req, res) => {
-    try {
-        console.log('🔍 Debug: Checking all users in nad_user_roles...');
-        
-        // Get ALL users from nad_user_roles table
-        const [allUsers] = await db.execute(`
-            SELECT * FROM nad_user_roles ORDER BY created_at DESC
-        `);
-        
-        console.log('📊 Found users in nad_user_roles:', allUsers);
-        
-        // Get users with the complex query from the current /api/users endpoint
-        const [complexQuery] = await db.execute(`
-            SELECT 
-                ur.customer_id, ur.role, ur.permissions, ur.created_at, ur.updated_at,
-                COUNT(DISTINCT ti.id) as total_tests,
-                COUNT(DISTINCT CASE WHEN ti.is_activated = 1 THEN ti.id END) as activated_tests,
-                COUNT(DISTINCT ts.id) as completed_tests,
-                MAX(ti.created_date) as last_test_date
-            FROM nad_user_roles ur
-            LEFT JOIN nad_test_ids ti ON ur.customer_id = ti.customer_id
-            LEFT JOIN nad_test_scores ts ON ur.customer_id = ts.customer_id
-            WHERE ur.customer_id != 0
-            GROUP BY ur.customer_id, ur.role, ur.permissions, ur.created_at, ur.updated_at
-            ORDER BY ur.created_at DESC
-        `);
-        
-        console.log('📊 Users from complex query:', complexQuery);
-        
-        res.json({
-            success: true,
-            debug: {
-                total_in_table: allUsers.length,
-                all_users: allUsers,
-                complex_query_count: complexQuery.length,
-                complex_query_users: complexQuery,
-                missing_users: allUsers.length - complexQuery.length,
-                issue_analysis: {
-                    likely_cause: allUsers.length > complexQuery.length ? 
-                        "Some users have customer_id = 0 or GROUP BY is filtering them out" : 
-                        "Query is working correctly"
-                }
-            }
-        });
-        
-    } catch (error) {
-        console.error('❌ Debug users error:', error);
-        res.json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-// Simple users query without complex JOINs
-app.get('/api/users/simple', async (req, res) => {
-    try {
-        console.log('👥 Fetching users with simple query...');
-        
-        const [users] = await db.execute(`
-            SELECT 
-                ur.customer_id, 
-                ur.role, 
-                ur.permissions, 
-                ur.created_at, 
-                ur.updated_at,
-                0 as total_tests,
-                0 as activated_tests,
-                0 as completed_tests
-            FROM nad_user_roles ur
-            WHERE ur.customer_id != 0
-            ORDER BY ur.created_at DESC
-        `);
-        
-        console.log('✅ Simple query found users:', users.length);
-        
-        res.json({ 
-            success: true, 
-            users: users,
-            note: "This is a simplified query that should show all non-zero customer_id users"
-        });
-        
-    } catch (error) {
-        console.error('❌ Error fetching users with simple query:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// Fixed user stats endpoint
-app.get('/api/users/stats', async (req, res) => {
-    try {
-        console.log('📊 Fetching user stats...');
-        
-        const [totalUsers] = await db.execute(`
-            SELECT COUNT(*) as total_users FROM nad_user_roles WHERE customer_id != 0
-        `);
-        
-        const [customers] = await db.execute(`
-            SELECT COUNT(*) as customers FROM nad_user_roles WHERE role = 'customer' AND customer_id != 0
-        `);
-        
-        const [labTechs] = await db.execute(`
-            SELECT COUNT(*) as lab_techs FROM nad_user_roles WHERE role = 'lab_technician' AND customer_id != 0
-        `);
-        
-        const [admins] = await db.execute(`
-            SELECT COUNT(*) as admins FROM nad_user_roles WHERE role = 'administrator' AND customer_id != 0
-        `);
-        
-        const [shippingManagers] = await db.execute(`
-            SELECT COUNT(*) as shipping_managers FROM nad_user_roles WHERE role = 'shipping_manager' AND customer_id != 0
-        `);
-        
-        const [managers] = await db.execute(`
-            SELECT COUNT(*) as managers FROM nad_user_roles WHERE role = 'boss_control' AND customer_id != 0
-        `);
-        
-        const stats = {
-            total_users: totalUsers[0].total_users || 0,
-            customers: customers[0].customers || 0,
-            lab_techs: labTechs[0].lab_techs || 0,
-            admins: admins[0].admins || 0,
-            shipping_managers: shippingManagers[0].shipping_managers || 0,
-            managers: managers[0].managers || 0
-        };
-        
-        console.log('✅ User stats calculated:', stats);
-        
-        res.json({
-            success: true,
-            stats: stats
-        });
-        
-    } catch (error) {
-        console.error('❌ Error fetching user stats:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message,
-            stats: {
-                total_users: 0,
-                customers: 0,
-                lab_techs: 0,
-                admins: 0,
-                shipping_managers: 0,
-                managers: 0
-            }
-        });
-    }
-});
-
-// ★★★ MAIN FIX: Users endpoint that shows ALL 4 users ★★★
-app.get('/api/users', async (req, res) => {
-    try {
-        console.log('👥 Fetching ALL users with completely fixed query...');
-        
-        // Step 1: Get ALL users first (no JOINs that could filter out users)
-        const [users] = await db.execute(`
-            SELECT 
-                ur.customer_id, 
-                ur.role, 
-                ur.permissions, 
-                ur.created_at, 
-                ur.updated_at
-            FROM nad_user_roles ur
-            WHERE ur.customer_id != 0
-            ORDER BY ur.created_at DESC
-        `);
-        
-        console.log(`✅ Found ${users.length} users in database without any JOINs`);
-        
-        // Step 2: Add test statistics for each user individually
-        const usersWithStats = [];
-        
-        for (const user of users) {
-            try {
-                // Get test statistics for this specific user
-                const [testCounts] = await db.execute(`
-                    SELECT 
-                        COUNT(*) as total_tests,
-                        SUM(CASE WHEN is_activated = 1 THEN 1 ELSE 0 END) as activated_tests,
-                        MAX(created_date) as last_test_date
-                    FROM nad_test_ids 
-                    WHERE customer_id = ?
-                `, [user.customer_id]);
-                
-                const [completedCounts] = await db.execute(`
-                    SELECT COUNT(*) as completed_tests
-                    FROM nad_test_scores 
-                    WHERE customer_id = ?
-                `, [user.customer_id]);
-                
-                usersWithStats.push({
-                    customer_id: user.customer_id,
-                    role: user.role,
-                    permissions: user.permissions,
-                    created_at: user.created_at,
-                    updated_at: user.updated_at,
-                    total_tests: testCounts[0].total_tests || 0,
-                    activated_tests: testCounts[0].activated_tests || 0,
-                    completed_tests: completedCounts[0].completed_tests || 0,
-                    last_test_date: testCounts[0].last_test_date
-                });
-                
-            } catch (statsError) {
-                console.warn(`Warning: Could not get stats for user ${user.customer_id}:`, statsError.message);
-                // Include user even if stats fail
-                usersWithStats.push({
-                    customer_id: user.customer_id,
-                    role: user.role,
-                    permissions: user.permissions,
-                    created_at: user.created_at,
-                    updated_at: user.updated_at,
-                    total_tests: 0,
-                    activated_tests: 0,
-                    completed_tests: 0,
-                    last_test_date: null
-                });
-            }
-        }
-        
-        console.log(`✅ Successfully processed ${usersWithStats.length} users with test statistics`);
-        
-        res.json({ 
-            success: true, 
-            users: usersWithStats
-        });
-        
-    } catch (error) {
-        console.error('❌ Error in completely fixed /api/users endpoint:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
-    }
-});
-
-app.get('/api/users/:customerId', async (req, res) => {
-    try {
-        const customerId = req.params.customerId;
-        
-        const [userRole] = await db.execute(`
-            SELECT * FROM nad_user_roles WHERE customer_id = ?
-        `, [customerId]);
-        
-        if (userRole.length === 0) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
-        
-        const [tests] = await db.execute(`
-            SELECT ti.*, ts.score, ts.status as score_status, ts.score_submission_date
-            FROM nad_test_ids ti
-            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-            WHERE ti.customer_id = ?
-            ORDER BY ti.created_date DESC
-        `, [customerId]);
-        
-        const [supplements] = await db.execute(`
-            SELECT * FROM nad_user_supplements WHERE customer_id = ?
-            ORDER BY created_at DESC
-        `, [customerId]);
-        
-        res.json({
-            success: true,
-            user: { ...userRole[0], tests, supplements }
-        });
-    } catch (error) {
-        console.error('Error fetching user details:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-app.post('/api/users', async (req, res) => {
-    try {
-        const { customer_id, role, permissions } = req.body;
-        
-        if (!customer_id || !role) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Customer ID and role are required' 
-            });
-        }
-        
-        // Check if user already exists
-        const [existing] = await db.execute(`
-            SELECT customer_id FROM nad_user_roles WHERE customer_id = ?
-        `, [customer_id]);
-        
-        if (existing.length > 0) {
-            return res.status(409).json({ 
-                success: false, 
-                error: 'User already exists' 
-            });
-        }
-        
-        await db.execute(`
-            INSERT INTO nad_user_roles (customer_id, role, permissions, created_at, updated_at)
-            VALUES (?, ?, ?, NOW(), NOW())
-        `, [customer_id, role, JSON.stringify(permissions || {})]);
-        
-        console.log(`✅ Created user: ${customer_id} with role: ${role}`);
-        
-        res.json({ success: true, message: 'User created successfully' });
-    } catch (error) {
-        console.error('Error creating user:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-app.put('/api/users/:customerId', async (req, res) => {
-    try {
-        const customerId = req.params.customerId;
-        const { role, permissions } = req.body;
-        
-        const [existing] = await db.execute(`
-            SELECT customer_id FROM nad_user_roles WHERE customer_id = ?
-        `, [customerId]);
-        
-        if (existing.length === 0) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
-        
-        await db.execute(`
-            UPDATE nad_user_roles 
-            SET role = ?, permissions = ?, updated_at = NOW()
-            WHERE customer_id = ?
-        `, [role, JSON.stringify(permissions || {}), customerId]);
-        
-        console.log(`✅ Updated user: ${customerId} to role: ${role}`);
-        
-        res.json({ success: true, message: 'User updated successfully' });
-    } catch (error) {
-        console.error('Error updating user:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-app.delete('/api/users/:customerId', async (req, res) => {
-    try {
-        const customerId = req.params.customerId;
-        
-        const [existing] = await db.execute(`
-            SELECT customer_id FROM nad_user_roles WHERE customer_id = ?
-        `, [customerId]);
-        
-        if (existing.length === 0) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
-        
-        await db.execute(`DELETE FROM nad_user_roles WHERE customer_id = ?`, [customerId]);
-        
-        console.log(`✅ Deleted user: ${customerId}`);
-        
-        res.json({ success: true, message: 'User deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting user:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-app.get('/api/users/roles/available', async (req, res) => {
-    try {
-        const roles = {
-            'customer': {
-                name: 'Customer',
-                description: 'Regular customer with test access',
-                permissions: {
-                    'view_own_tests': true,
-                    'submit_supplements': true,
-                    'view_own_results': true
-                }
-            },
-            'lab_technician': {
-                name: 'Lab Technician',
-                description: 'Can score tests and manage lab results',
-                permissions: {
-                    'manage_nad_test': true,
-                    'submit_scores': true,
-                    'view_dashboard': true,
-                    'view_all_tests': true
-                }
-            },
-            'shipping_manager': {
-                name: 'Shipping Manager', 
-                description: 'Can manage orders and shipping',
-                permissions: {
-                    'manage_nad_shipping_order': true,
-                    'view_orders': true,
-                    'update_shipping': true,
-                    'view_dashboard': true
-                }
-            },
-            'boss_control': {
-                name: 'Manager',
-                description: 'Full access to tests and shipping',
-                permissions: {
-                    'manage_nad_test': true,
-                    'manage_nad_shipping_order': true,
-                    'full_access': true,
-                    'view_dashboard': true,
-                    'manage_users': true
-                }
-            },
-            'administrator': {
-                name: 'Administrator',
-                description: 'Full system access including user management',
-                permissions: {
-                    'manage_nad_test': true,
-                    'manage_nad_shipping_order': true,
-                    'full_access': true,
-                    'manage_users': true,
-                    'view_dashboard': true,
-                    'system_admin': true
-                }
-            }
-        };
-        res.json({ success: true, roles });
-    } catch (error) {
-        console.error('Error fetching roles:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-app.post('/api/users/:customerId/activate-tests', async (req, res) => {
-    try {
-        const customerId = req.params.customerId;
-        const [result] = await db.execute(`
-            UPDATE nad_test_ids 
-            SET is_activated = 1, activated_date = NOW()
-            WHERE customer_id = ? AND is_activated = 0
-        `, [customerId]);
-        
-        console.log(`✅ Activated ${result.affectedRows} tests for user ${customerId}`);
-        
-        res.json({ 
-            success: true, 
-            message: `Activated ${result.affectedRows} tests for user`,
-            activated_count: result.affectedRows
-        });
-    } catch (error) {
-        console.error('Error activating user tests:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
 // ============================================================================
 // SUPPLEMENT MANAGEMENT ENDPOINTS
@@ -1313,6 +899,14 @@ console.log('✅ Supplements API endpoints loaded');
 console.log('✅ Supplement CRUD endpoints loaded (GET, POST, PUT, DELETE)');
 
 // ============================================================================
+// APPLY AUTHENTICATION TO PROTECTED ROUTES
+// ============================================================================
+
+// Apply authentication to protected routes
+app.use('/api/admin/*', validateShopifyAuth);
+app.use('/api/lab/*', validateShopifyAuth);
+
+// ============================================================================
 // LAB INTERFACE ENDPOINTS
 // ============================================================================
 
@@ -1668,52 +1262,47 @@ app.post('/api/admin/tests/bulk-deactivate', async (req, res) => {
 
 app.get('/api/admin/export/:type', async (req, res) => {
     try {
-        const exportType = req.params.type;
+        const { type } = req.params;
         let data = [];
-        let filename = 'export.json';
+        let filename = '';
         
-        switch (exportType) {
+        switch(type) {
             case 'tests':
-                const [tests] = await db.execute(`
-                    SELECT 
-                        ti.*, ts.score, ts.technician_id, ts.score_submission_date,
-                        us.supplements_with_dose, us.habits_notes
+                [data] = await db.execute(`
+                    SELECT ti.*, ts.score, ts.score_submission_date, ts.technician_id
                     FROM nad_test_ids ti
                     LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-                    LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id
                     ORDER BY ti.created_date DESC
                 `);
-                data = tests;
                 filename = `nad_tests_export_${new Date().toISOString().split('T')[0]}.json`;
                 break;
                 
-            case 'users':
-                const [users] = await db.execute(`
-                    SELECT * FROM nad_user_roles WHERE customer_id != 0 ORDER BY created_at DESC
-                `);
-                data = users;
-                filename = `nad_users_export_${new Date().toISOString().split('T')[0]}.json`;
-                break;
-                
             case 'supplements':
-                const [supplements] = await db.execute(`
-                    SELECT * FROM nad_supplements ORDER BY name ASC
+                [data] = await db.execute(`
+                    SELECT * FROM nad_user_supplements ORDER BY created_at DESC
                 `);
-                data = supplements;
                 filename = `nad_supplements_export_${new Date().toISOString().split('T')[0]}.json`;
                 break;
                 
+            // REMOVED: users export case
+            // case 'users':
+            //     [data] = await db.execute(`
+            //         SELECT * FROM nad_user_roles ORDER BY customer_id
+            //     `);
+            //     filename = `nad_users_export_${new Date().toISOString().split('T')[0]}.json`;
+            //     break;
+                
             default:
-                return res.status(400).json({
-                    success: false,
-                    error: 'Invalid export type. Use: tests, users, or supplements'
+                return res.status(400).json({ 
+                    success: false, 
+                    error: 'Invalid export type. Use: tests or supplements'
                 });
         }
         
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.json({
-            export_type: exportType,
+            export_type: type,
             export_date: new Date().toISOString(),
             total_records: data.length,
             data: data
@@ -1764,20 +1353,21 @@ app.get('/api/analytics/overview', async (req, res) => {
             ORDER BY date ASC
         `);
         
-        const [roleStats] = await db.execute(`
-            SELECT role, COUNT(*) as count
-            FROM nad_user_roles 
-            WHERE customer_id != 0
-            GROUP BY role
-        `);
+        // REMOVED: User role statistics
+        // const [roleStats] = await db.execute(`
+        //     SELECT role, COUNT(*) as count
+        //     FROM nad_user_roles 
+        //     WHERE customer_id != 0
+        //     GROUP BY role
+        // `);
         
         res.json({
             success: true,
             analytics: {
                 basic_stats: basicStats[0],
                 score_distribution: scoreDistribution,
-                daily_completions: dailyStats,
-                user_roles: roleStats
+                daily_completions: dailyStats
+                // REMOVED: user_roles: roleStats
             }
         });
     } catch (error) {
@@ -1979,10 +1569,6 @@ app.use((req, res) => {
         available_endpoints: [
             'GET /health',
             'GET /api/dashboard/stats',
-            'GET /api/users',
-            'GET /api/users/stats',
-            'GET /api/users/debug-all',
-            'GET /api/users/simple',
             'GET /api/supplements',
             'GET /api/tests/scores',
             'GET /api/analytics/overview'
@@ -2022,18 +1608,18 @@ async function startServer() {
         }
         
         app.listen(PORT, () => {
-            console.log('🚀 NAD Test Cycle API Server Started - USERS COMPLETELY FIXED');
+            console.log('🚀 NAD Test Cycle API Server Started - USER MANAGEMENT REMOVED');
             console.log(`📡 Server running on port ${PORT}`);
             console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
             console.log(`🔗 Health: http://localhost:${PORT}/health`);
             console.log(`📊 Stats: http://localhost:${PORT}/api/dashboard/stats`);
-            console.log(`👥 Users: http://localhost:${PORT}/api/users`);
-            console.log(`👥 User Stats: http://localhost:${PORT}/api/users/stats`);
-            console.log(`🔍 Debug Users: http://localhost:${PORT}/api/users/debug-all`);
             console.log(`🧪 Tests: http://localhost:${PORT}/api/tests/scores`);
             console.log(`💊 Supplements: http://localhost:${PORT}/api/supplements`);
             console.log(`📈 Analytics: http://localhost:${PORT}/api/analytics/overview`);
-            console.log('✅ All 4 users will now appear in the admin dashboard!');
+            console.log('✅ User Management removed from backend');
+            console.log('🔐 Shopify authentication middleware added');
+            console.log('📊 Analytics updated to remove user statistics');
+            console.log('📤 Export functionality updated to remove users');
         });
         
     } catch (error) {
