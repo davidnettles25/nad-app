@@ -946,6 +946,157 @@ app.post('/api/users/:customerId/activate-tests', async (req, res) => {
 });
 
 // ============================================================================
+// BULK TEST CREATION ENDPOINTS
+// ============================================================================
+
+// Generate random 5-digit number between 10000-99999
+function generateRandomSuffix() {
+    return Math.floor(Math.random() * (99999 - 10000 + 1)) + 10000;
+}
+
+// Generate new test ID format: yyyy-mm-n-xxxxxx
+function generateTestId(autoIncrementId) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const randomSuffix = generateRandomSuffix();
+    
+    return `${year}-${month}-${autoIncrementId}-${randomSuffix}`;
+}
+
+// Bulk test creation endpoint
+app.post('/api/admin/create-test-batch', async (req, res) => {
+    const { quantity, notes } = req.body;
+    
+    // Validation
+    if (!quantity || quantity < 1 || quantity > 1000) {
+        return res.status(400).json({
+            success: false,
+            message: 'Quantity must be between 1 and 1000'
+        });
+    }
+
+    const connection = await db.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+        
+        // Generate batch ID for tracking
+        const batchId = `BATCH-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+        const createdTests = [];
+        
+        console.log(`Creating batch of ${quantity} tests with batch ID: ${batchId}`);
+        
+        // Create tests in bulk
+        for (let i = 0; i < quantity; i++) {
+            // Insert placeholder record to get auto-increment ID
+            const [insertResult] = await connection.execute(
+                `INSERT INTO nad_test_ids (
+                    test_id, batch_id, batch_size, generated_by, order_id, customer_id, created_date
+                ) VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+                ['TEMP', batchId, quantity, null, null, null]
+            );
+            
+            const autoIncrementId = insertResult.insertId;
+            const testId = generateTestId(autoIncrementId);
+            
+            // Update with the actual test_id
+            await connection.execute(
+                'UPDATE nad_test_ids SET test_id = ? WHERE id = ?',
+                [testId, autoIncrementId]
+            );
+            
+            createdTests.push({
+                id: autoIncrementId,
+                test_id: testId,
+                batch_id: batchId
+            });
+        }
+        
+        await connection.commit();
+        
+        console.log(`Successfully created ${createdTests.length} tests`);
+        
+        res.json({
+            success: true,
+            message: `Successfully created ${quantity} tests`,
+            data: {
+                batch_id: batchId,
+                quantity: quantity,
+                tests_created: createdTests.length,
+                sample_test_ids: createdTests.slice(0, 5).map(t => t.test_id),
+                notes: notes || ''
+            }
+        });
+        
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error creating test batch:', error);
+        
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create test batch',
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+});
+
+// Get batch information
+app.get('/api/admin/test-batches', async (req, res) => {
+    try {
+        const [batches] = await db.execute(`
+            SELECT 
+                batch_id,
+                batch_size,
+                COUNT(*) as tests_created,
+                MIN(created_date) as created_date,
+                GROUP_CONCAT(test_id ORDER BY id LIMIT 3) as sample_test_ids
+            FROM nad_test_ids 
+            WHERE batch_id IS NOT NULL 
+            GROUP BY batch_id, batch_size 
+            ORDER BY MIN(created_date) DESC
+            LIMIT 20
+        `);
+        
+        res.json({
+            success: true,
+            data: batches
+        });
+    } catch (error) {
+        console.error('Error fetching test batches:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch test batches'
+        });
+    }
+});
+
+// Get tests by batch ID
+app.get('/api/admin/test-batch/:batchId', async (req, res) => {
+    const { batchId } = req.params;
+    
+    try {
+        const [tests] = await db.execute(
+            'SELECT * FROM nad_test_ids WHERE batch_id = ? ORDER BY id',
+            [batchId]
+        );
+        
+        res.json({
+            success: true,
+            data: tests
+        });
+    } catch (error) {
+        console.error('Error fetching batch tests:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch batch tests'
+        });
+    }
+});
+
+// ============================================================================
 // SUPPLEMENT MANAGEMENT ENDPOINTS
 // ============================================================================
 

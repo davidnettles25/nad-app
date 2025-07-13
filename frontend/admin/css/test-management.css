@@ -1,0 +1,263 @@
+/* Add these styles to your existing admin-dashboard.html <style> section */
+/* OR create a separate file: frontend/admin/css/test-management.css */
+
+/* Section Layout */
+.section-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 15px;
+}
+
+.section-header h2 {
+    margin: 0 0 5px 0;
+    color: #495057;
+}
+
+.section-header p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+/* Bulk Creation Section */
+.bulk-creation-section {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.bulk-creation-section h3 {
+    margin: 0 0 10px 0;
+    color: #495057;
+}
+
+.creation-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 15px;
+    align-items: end;
+    margin: 20px 0;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #495057;
+    font-size: 14px;
+}
+
+.form-group input {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-group small {
+    color: #6c757d;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.test-id-preview {
+    background: #e9ecef;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #495057;
+    border: 1px solid #ced4da;
+}
+
+.create-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 14px;
+}
+
+.create-btn:hover {
+    background: #218838;
+}
+
+.create-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Tests Table Section */
+.tests-table-section {
+    margin-bottom: 30px;
+}
+
+.section-controls {
+    margin-bottom: 20px;
+}
+
+.search-filters {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 200px;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    background: white;
+}
+
+/* Batch History Section */
+.batch-history-section h3 {
+    margin: 0 0 20px 0;
+    color: #495057;
+}
+
+.batch-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: 1fr 120px 100px 100px auto;
+    gap: 15px;
+    align-items: center;
+}
+
+.batch-info h4 {
+    margin: 0 0 5px 0;
+    color: #495057;
+    font-size: 14px;
+}
+
+.batch-info p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.badge.success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.view-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.view-btn:hover {
+    background: #0056b3;
+}
+
+/* Messages */
+.success-message {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 20px;
+}
+
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 20px;
+}
+
+/* Loading States */
+.loading-spinner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #6c757d;
+    justify-content: center;
+    padding: 20px;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: #6c757d;
+    padding: 40px;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .creation-form {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .search-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .batch-item {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}

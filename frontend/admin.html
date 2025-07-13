@@ -384,6 +384,105 @@
                     <div id="system-test-results" style="margin-top: 20px;"></div>
                 </div>
             </div>
+
+            <!-- Tests Section -->
+            <div id="tests" class="content-section">
+                <div class="section-header">
+                    <h2>🧪 Test Management</h2>
+                    <p>Create test blocks and manage test lifecycle</p>
+                </div>
+
+                <!-- Bulk Test Creation Section -->
+                <div class="bulk-creation-section">
+                    <h3>📦 Create Test Block</h3>
+                    <p>Generate a batch of test IDs for shipping. Tests will use the new format: <code>yyyy-mm-n-xxxxxx</code></p>
+                    
+                    <div class="success-message" id="success-message" style="display: none;"></div>
+                    <div class="error-message" id="error-message" style="display: none;"></div>
+                    
+                    <form id="bulk-creation-form" class="creation-form">
+                        <div class="form-group">
+                            <label for="test-quantity">Number of Tests</label>
+                            <input type="number" id="test-quantity" min="1" max="1000" value="10" required>
+                            <small>Min: 1, Max: 1000</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="batch-notes">Notes (Optional)</label>
+                            <input type="text" id="batch-notes" placeholder="e.g., Q1 2025 Inventory">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Preview Format</label>
+                            <div class="test-id-preview" id="test-id-preview">
+                                2025-07-123-45678
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="create-btn" id="create-btn">
+                            📦 Create Tests
+                        </button>
+                    </form>
+                    
+                    <div class="loading-spinner" id="loading-spinner" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Creating tests...</span>
+                    </div>
+                </div>
+
+                <!-- Existing Tests Table Section -->
+                <div class="tests-table-section">
+                    <div class="section-controls">
+                        <div class="search-filters">
+                            <input type="text" id="test-search" placeholder="🔍 Search tests..." class="search-input">
+                            <select id="status-filter" class="filter-select">
+                                <option value="">All Statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="activated">Activated</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                            <button class="btn secondary" onclick="exportTests()">📊 Export</button>
+                            <button class="btn" onclick="loadTestsFromAPI()">🔄 Refresh</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Test ID</th>
+                                    <th>Status</th>
+                                    <th>Customer ID</th>
+                                    <th>Order ID</th>
+                                    <th>Created Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tests-table-body">
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="loading-state">
+                                            <div class="spinner"></div>
+                                            <p>Loading tests...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Batches Section -->
+                <div class="batch-history-section">
+                    <h3>📋 Recent Test Batches</h3>
+                    <div id="batch-list">
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <p>Loading batches...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
