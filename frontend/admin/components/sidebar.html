@@ -1,51 +1,58 @@
-        <div class="sidebar">
-            <h2>🔧 Admin Panel</h2>
-            <ul class="nav-menu">
-                <li><a class="nav-link active" data-section="overview">📊 Overview</a></li>
-                <li><a class="nav-link" data-section="tests">🧪 Test Management</a></li>
-                <li><a class="nav-link" data-section="users">👥 User Management</a></li>
-                <li><a class="nav-link" data-section="supplements">💊 Supplements</a></li>
-                <li><a class="nav-link" data-section="analytics">📈 Analytics</a></li>
-                <li><a class="nav-link" data-section="system">⚙️ System Health</a></li>
-            </ul>
-        </div>
+<nav class="admin-sidebar">
+    <div class="sidebar-header">
+        <h2>🧬 NAD Admin</h2>
+        <p>Shopify-Authenticated</p>
+    </div>
+    
+    <div class="nav-menu">
+        <a href="#" class="nav-link active" data-section="overview">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">Overview</span>
+        </a>
+        
+        <a href="#" class="nav-link" data-section="tests">
+            <span class="nav-icon">🧪</span>
+            <span class="nav-text">Tests</span>
+        </a>
+        
+        <a href="#" class="nav-link" data-section="supplements">
+            <span class="nav-icon">💊</span>
+            <span class="nav-text">Supplements</span>
+        </a>
+        
+        <a href="#" class="nav-link" data-section="analytics">
+            <span class="nav-icon">📈</span>
+            <span class="nav-text">Analytics</span>
+        </a>
+        
+        <a href="#" class="nav-link" data-section="system">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">System</span>
+        </a>
+        
+        <!-- REMOVED: Users navigation item -->
+        
+        <div class="nav-divider"></div>
+        
+        <a href="https://mynadtest.myshopify.com/admin" class="nav-link external" target="_blank">
+            <span class="nav-icon">👥</span>
+            <span class="nav-text">Manage Users (Shopify)</span>
+        </a>
+        
+        <a href="#" class="nav-link" onclick="logoutToShopify()">
+            <span class="nav-icon">🚪</span>
+            <span class="nav-text">Logout</span>
+        </a>
+    </div>
+</nav>
 
-        <div class="main-content">
-            <div class="header">
-                <h1>NAD Test Administration</h1>
-                <p>Real-time management dashboard - Connected to https://mynadtest.info</p>
-            </div>
-
-            <div id="overview" class="content-section active">
-                <div class="stats-overview">
-                    <div class="stat-card">
-                        <div class="stat-number primary" id="total-tests">0</div>
-                        <div class="stat-label">Total Tests Generated</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number warning" id="completed-tests">0</div>
-                        <div class="stat-label">Tests Completed</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number info" id="pending-tests">0</div>
-                        <div class="stat-label">Pending Tests</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number success" id="active-users">0</div>
-                        <div class="stat-label">Activated Tests</div>
-                    </div>
-                </div>
-
-                <div class="quick-actions">
-                    <div class="action-card" onclick="refreshData()">
-                        <h4>🔄 Refresh Data</h4>
-                        <p>Update from live API</p>
-                    </div>
-                    <div class="action-card" onclick="showSection('tests')">
-                        <h4>🧪 Manage Tests</h4>
-                        <p>View all tests</p>
-                    </div>
-                    <div class="action-card" onclick="showSection('users')">
-                        <h4>👥 Manage Users</h4>
-                        <p>User administration</p>
-                    </div>
+<script>
+function logoutToShopify() {
+    // Clear session storage
+    sessionStorage.removeItem('shopify_token');
+    sessionStorage.removeItem('shopify_role');
+    
+    // Redirect to Shopify
+    window.location.href = 'https://mynadtest.myshopify.com/account/logout';
+}
+</script>
