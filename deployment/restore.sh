@@ -205,7 +205,7 @@ perform_restore() {
     echo ""
     log_info "Application URLs:"
     echo "  🌐 Frontend: https://mynadtest.info/nad-app/"
-    echo "  🔗 API: https://mynadtest.info:3001/"
+    echo "  🔗 API: https://mynadtest.info/"
     echo ""
     log_info "Backup restored from: $backup_path"
 }

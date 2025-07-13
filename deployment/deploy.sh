@@ -62,5 +62,5 @@ rm -rf "$TEMP_DIR"
 
 log "✅ Deployment completed!"
 log "🔗 Frontend: https://mynadtest.info/nad-app/"
-log "🔗 API: https://mynadtest.info:3001/"
+log "🔗 API: https://mynadtest.info/"
 log "📦 Backup: $BACKUP_DIR"

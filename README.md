@@ -48,8 +48,8 @@ git push origin main
 
 - **Frontend**: https://mynadtest.info/nad-app/
 - **Admin Dashboard**: https://mynadtest.info/nad-app/admin-dashboard.html
-- **API**: https://mynadtest.info:3001/
-- **API Health**: https://mynadtest.info:3001/health
+- **API**: https://mynadtest.info/
+- **API Health**: https://mynadtest.info/health
 
 ## 📂 Production Deployment Structure
 
