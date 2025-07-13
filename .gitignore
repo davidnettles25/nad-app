@@ -5,7 +5,7 @@ backend/logs/*
 backend/uploads/*
 !backend/logs/.gitkeep
 !backend/uploads/.gitkeep
-deployment/theFacts.txt
+deployment/theFacts.md
 node_modules/
 npm-debug.log*
 
