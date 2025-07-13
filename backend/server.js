@@ -112,6 +112,25 @@ function generateTestId() {
     return `NAD-${year}${month}${day}-${random}`;
 }
 
+// =====================================================
+// BULK TEST CREATION FUNCTIONS
+// =====================================================
+
+// Generate random 5-digit number between 10000-99999
+function generateRandomSuffix() {
+    return Math.floor(Math.random() * (99999 - 10000 + 1)) + 10000;
+}
+
+// Generate new test ID format: yyyy-mm-n-xxxxxx
+function generateTestIdWithAutoIncrement(autoIncrementId) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const randomSuffix = generateRandomSuffix();
+    
+    return `${year}-${month}-${autoIncrementId}-${randomSuffix}`;
+}
+
 function verifyShopifyWebhook(data, hmacHeader) {
     if (!process.env.SHOPIFY_WEBHOOK_SECRET) {
         console.warn('⚠️ SHOPIFY_WEBHOOK_SECRET not set, skipping verification');
@@ -500,450 +519,15 @@ app.use('/api', (req, res, next) => {
     next();
 });
 
-// Debug endpoint to check all users in the database
-app.get('/api/users/debug-all', async (req, res) => {
-    try {
-        console.log('🔍 Debug: Checking all users in nad_user_roles...');
-        
-        // Get ALL users from nad_user_roles table
-        const [allUsers] = await db.execute(`
-            SELECT * FROM nad_user_roles ORDER BY created_at DESC
-        `);
-        
-        console.log('📊 Found users in nad_user_roles:', allUsers);
-        
-        // Get users with the complex query from the current /api/users endpoint
-        const [complexQuery] = await db.execute(`
-            SELECT 
-                ur.customer_id, ur.role, ur.permissions, ur.created_at, ur.updated_at,
-                COUNT(DISTINCT ti.id) as total_tests,
-                COUNT(DISTINCT CASE WHEN ti.is_activated = 1 THEN ti.id END) as activated_tests,
-                COUNT(DISTINCT ts.id) as completed_tests,
-                MAX(ti.created_date) as last_test_date
-            FROM nad_user_roles ur
-            LEFT JOIN nad_test_ids ti ON ur.customer_id = ti.customer_id
-            LEFT JOIN nad_test_scores ts ON ur.customer_id = ts.customer_id
-            WHERE ur.customer_id != 0
-            GROUP BY ur.customer_id, ur.role, ur.permissions, ur.created_at, ur.updated_at
-            ORDER BY ur.created_at DESC
-        `);
-        
-        console.log('📊 Users from complex query:', complexQuery);
-        
-        res.json({
-            success: true,
-            debug: {
-                total_in_table: allUsers.length,
-                all_users: allUsers,
-                complex_query_count: complexQuery.length,
-                complex_query_users: complexQuery,
-                missing_users: allUsers.length - complexQuery.length,
-                issue_analysis: {
-                    likely_cause: allUsers.length > complexQuery.length ? 
-                        "Some users have customer_id = 0 or GROUP BY is filtering them out" : 
-                        "Query is working correctly"
-                }
-            }
-        });
-        
-    } catch (error) {
-        console.error('❌ Debug users error:', error);
-        res.json({
-            success: false,
-            error: error.message
-        });
-    }
-});
 
-// Simple users query without complex JOINs
-app.get('/api/users/simple', async (req, res) => {
-    try {
-        console.log('👥 Fetching users with simple query...');
-        
-        const [users] = await db.execute(`
-            SELECT 
-                ur.customer_id, 
-                ur.role, 
-                ur.permissions, 
-                ur.created_at, 
-                ur.updated_at,
-                0 as total_tests,
-                0 as activated_tests,
-                0 as completed_tests
-            FROM nad_user_roles ur
-            WHERE ur.customer_id != 0
-            ORDER BY ur.created_at DESC
-        `);
-        
-        console.log('✅ Simple query found users:', users.length);
-        
-        res.json({ 
-            success: true, 
-            users: users,
-            note: "This is a simplified query that should show all non-zero customer_id users"
-        });
-        
-    } catch (error) {
-        console.error('❌ Error fetching users with simple query:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
-// Fixed user stats endpoint
-app.get('/api/users/stats', async (req, res) => {
-    try {
-        console.log('📊 Fetching user stats...');
-        
-        const [totalUsers] = await db.execute(`
-            SELECT COUNT(*) as total_users FROM nad_user_roles WHERE customer_id != 0
-        `);
-        
-        const [customers] = await db.execute(`
-            SELECT COUNT(*) as customers FROM nad_user_roles WHERE role = 'customer' AND customer_id != 0
-        `);
-        
-        const [labTechs] = await db.execute(`
-            SELECT COUNT(*) as lab_techs FROM nad_user_roles WHERE role = 'lab_technician' AND customer_id != 0
-        `);
-        
-        const [admins] = await db.execute(`
-            SELECT COUNT(*) as admins FROM nad_user_roles WHERE role = 'administrator' AND customer_id != 0
-        `);
-        
-        const [shippingManagers] = await db.execute(`
-            SELECT COUNT(*) as shipping_managers FROM nad_user_roles WHERE role = 'shipping_manager' AND customer_id != 0
-        `);
-        
-        const [managers] = await db.execute(`
-            SELECT COUNT(*) as managers FROM nad_user_roles WHERE role = 'boss_control' AND customer_id != 0
-        `);
-        
-        const stats = {
-            total_users: totalUsers[0].total_users || 0,
-            customers: customers[0].customers || 0,
-            lab_techs: labTechs[0].lab_techs || 0,
-            admins: admins[0].admins || 0,
-            shipping_managers: shippingManagers[0].shipping_managers || 0,
-            managers: managers[0].managers || 0
-        };
-        
-        console.log('✅ User stats calculated:', stats);
-        
-        res.json({
-            success: true,
-            stats: stats
-        });
-        
-    } catch (error) {
-        console.error('❌ Error fetching user stats:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message,
-            stats: {
-                total_users: 0,
-                customers: 0,
-                lab_techs: 0,
-                admins: 0,
-                shipping_managers: 0,
-                managers: 0
-            }
-        });
-    }
-});
 
-// ★★★ MAIN FIX: Users endpoint that shows ALL 4 users ★★★
-app.get('/api/users', async (req, res) => {
-    try {
-        console.log('👥 Fetching ALL users with completely fixed query...');
-        
-        // Step 1: Get ALL users first (no JOINs that could filter out users)
-        const [users] = await db.execute(`
-            SELECT 
-                ur.customer_id, 
-                ur.role, 
-                ur.permissions, 
-                ur.created_at, 
-                ur.updated_at
-            FROM nad_user_roles ur
-            WHERE ur.customer_id != 0
-            ORDER BY ur.created_at DESC
-        `);
-        
-        console.log(`✅ Found ${users.length} users in database without any JOINs`);
-        
-        // Step 2: Add test statistics for each user individually
-        const usersWithStats = [];
-        
-        for (const user of users) {
-            try {
-                // Get test statistics for this specific user
-                const [testCounts] = await db.execute(`
-                    SELECT 
-                        COUNT(*) as total_tests,
-                        SUM(CASE WHEN is_activated = 1 THEN 1 ELSE 0 END) as activated_tests,
-                        MAX(created_date) as last_test_date
-                    FROM nad_test_ids 
-                    WHERE customer_id = ?
-                `, [user.customer_id]);
-                
-                const [completedCounts] = await db.execute(`
-                    SELECT COUNT(*) as completed_tests
-                    FROM nad_test_scores 
-                    WHERE customer_id = ?
-                `, [user.customer_id]);
-                
-                usersWithStats.push({
-                    customer_id: user.customer_id,
-                    role: user.role,
-                    permissions: user.permissions,
-                    created_at: user.created_at,
-                    updated_at: user.updated_at,
-                    total_tests: testCounts[0].total_tests || 0,
-                    activated_tests: testCounts[0].activated_tests || 0,
-                    completed_tests: completedCounts[0].completed_tests || 0,
-                    last_test_date: testCounts[0].last_test_date
-                });
-                
-            } catch (statsError) {
-                console.warn(`Warning: Could not get stats for user ${user.customer_id}:`, statsError.message);
-                // Include user even if stats fail
-                usersWithStats.push({
-                    customer_id: user.customer_id,
-                    role: user.role,
-                    permissions: user.permissions,
-                    created_at: user.created_at,
-                    updated_at: user.updated_at,
-                    total_tests: 0,
-                    activated_tests: 0,
-                    completed_tests: 0,
-                    last_test_date: null
-                });
-            }
-        }
-        
-        console.log(`✅ Successfully processed ${usersWithStats.length} users with test statistics`);
-        
-        res.json({ 
-            success: true, 
-            users: usersWithStats
-        });
-        
-    } catch (error) {
-        console.error('❌ Error in completely fixed /api/users endpoint:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
-    }
-});
 
-app.get('/api/users/:customerId', async (req, res) => {
-    try {
-        const customerId = req.params.customerId;
-        
-        const [userRole] = await db.execute(`
-            SELECT * FROM nad_user_roles WHERE customer_id = ?
-        `, [customerId]);
-        
-        if (userRole.length === 0) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
-        
-        const [tests] = await db.execute(`
-            SELECT ti.*, ts.score, ts.status as score_status, ts.score_submission_date
-            FROM nad_test_ids ti
-            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-            WHERE ti.customer_id = ?
-            ORDER BY ti.created_date DESC
-        `, [customerId]);
-        
-        const [supplements] = await db.execute(`
-            SELECT * FROM nad_user_supplements WHERE customer_id = ?
-            ORDER BY created_at DESC
-        `, [customerId]);
-        
-        res.json({
-            success: true,
-            user: { ...userRole[0], tests, supplements }
-        });
-    } catch (error) {
-        console.error('Error fetching user details:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
-app.post('/api/users', async (req, res) => {
-    try {
-        const { customer_id, role, permissions } = req.body;
-        
-        if (!customer_id || !role) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Customer ID and role are required' 
-            });
-        }
-        
-        // Check if user already exists
-        const [existing] = await db.execute(`
-            SELECT customer_id FROM nad_user_roles WHERE customer_id = ?
-        `, [customer_id]);
-        
-        if (existing.length > 0) {
-            return res.status(409).json({ 
-                success: false, 
-                error: 'User already exists' 
-            });
-        }
-        
-        await db.execute(`
-            INSERT INTO nad_user_roles (customer_id, role, permissions, created_at, updated_at)
-            VALUES (?, ?, ?, NOW(), NOW())
-        `, [customer_id, role, JSON.stringify(permissions || {})]);
-        
-        console.log(`✅ Created user: ${customer_id} with role: ${role}`);
-        
-        res.json({ success: true, message: 'User created successfully' });
-    } catch (error) {
-        console.error('Error creating user:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
-app.put('/api/users/:customerId', async (req, res) => {
-    try {
-        const customerId = req.params.customerId;
-        const { role, permissions } = req.body;
-        
-        const [existing] = await db.execute(`
-            SELECT customer_id FROM nad_user_roles WHERE customer_id = ?
-        `, [customerId]);
-        
-        if (existing.length === 0) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
-        
-        await db.execute(`
-            UPDATE nad_user_roles 
-            SET role = ?, permissions = ?, updated_at = NOW()
-            WHERE customer_id = ?
-        `, [role, JSON.stringify(permissions || {}), customerId]);
-        
-        console.log(`✅ Updated user: ${customerId} to role: ${role}`);
-        
-        res.json({ success: true, message: 'User updated successfully' });
-    } catch (error) {
-        console.error('Error updating user:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
-app.delete('/api/users/:customerId', async (req, res) => {
-    try {
-        const customerId = req.params.customerId;
-        
-        const [existing] = await db.execute(`
-            SELECT customer_id FROM nad_user_roles WHERE customer_id = ?
-        `, [customerId]);
-        
-        if (existing.length === 0) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
-        
-        await db.execute(`DELETE FROM nad_user_roles WHERE customer_id = ?`, [customerId]);
-        
-        console.log(`✅ Deleted user: ${customerId}`);
-        
-        res.json({ success: true, message: 'User deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting user:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
-app.get('/api/users/roles/available', async (req, res) => {
-    try {
-        const roles = {
-            'customer': {
-                name: 'Customer',
-                description: 'Regular customer with test access',
-                permissions: {
-                    'view_own_tests': true,
-                    'submit_supplements': true,
-                    'view_own_results': true
-                }
-            },
-            'lab_technician': {
-                name: 'Lab Technician',
-                description: 'Can score tests and manage lab results',
-                permissions: {
-                    'manage_nad_test': true,
-                    'submit_scores': true,
-                    'view_dashboard': true,
-                    'view_all_tests': true
-                }
-            },
-            'shipping_manager': {
-                name: 'Shipping Manager', 
-                description: 'Can manage orders and shipping',
-                permissions: {
-                    'manage_nad_shipping_order': true,
-                    'view_orders': true,
-                    'update_shipping': true,
-                    'view_dashboard': true
-                }
-            },
-            'boss_control': {
-                name: 'Manager',
-                description: 'Full access to tests and shipping',
-                permissions: {
-                    'manage_nad_test': true,
-                    'manage_nad_shipping_order': true,
-                    'full_access': true,
-                    'view_dashboard': true,
-                    'manage_users': true
-                }
-            },
-            'administrator': {
-                name: 'Administrator',
-                description: 'Full system access including user management',
-                permissions: {
-                    'manage_nad_test': true,
-                    'manage_nad_shipping_order': true,
-                    'full_access': true,
-                    'manage_users': true,
-                    'view_dashboard': true,
-                    'system_admin': true
-                }
-            }
-        };
-        res.json({ success: true, roles });
-    } catch (error) {
-        console.error('Error fetching roles:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
-app.post('/api/users/:customerId/activate-tests', async (req, res) => {
-    try {
-        const customerId = req.params.customerId;
-        const [result] = await db.execute(`
-            UPDATE nad_test_ids 
-            SET is_activated = 1, activated_date = NOW()
-            WHERE customer_id = ? AND is_activated = 0
-        `, [customerId]);
-        
-        console.log(`✅ Activated ${result.affectedRows} tests for user ${customerId}`);
-        
-        res.json({ 
-            success: true, 
-            message: `Activated ${result.affectedRows} tests for user`,
-            activated_count: result.affectedRows
-        });
-    } catch (error) {
-        console.error('Error activating user tests:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
 // ============================================================================
 // SUPPLEMENT MANAGEMENT ENDPOINTS
@@ -1663,6 +1247,206 @@ app.post('/api/admin/tests/bulk-deactivate', async (req, res) => {
     } catch (error) {
         console.error('Error bulk deactivating tests:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// =====================================================
+// BULK TEST CREATION ENDPOINTS
+// =====================================================
+
+// Bulk test creation endpoint
+app.post('/api/admin/create-test-batch', async (req, res) => {
+    const { quantity, notes } = req.body;
+    
+    // Validation
+    if (!quantity || quantity < 1 || quantity > 1000) {
+        return res.status(400).json({
+            success: false,
+            message: 'Quantity must be between 1 and 1000'
+        });
+    }
+
+    const connection = await db.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+        
+        // Generate batch ID for tracking
+        const batchId = `BATCH-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+        const createdTests = [];
+        
+        console.log(`Creating batch of ${quantity} tests with batch ID: ${batchId}`);
+        
+        // Create tests in bulk
+        for (let i = 0; i < quantity; i++) {
+            // Insert placeholder record to get auto-increment ID
+            const [insertResult] = await connection.execute(
+                `INSERT INTO nad_test_ids (
+                    test_id, batch_id, batch_size, generated_by, order_id, customer_id, created_date
+                ) VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+                ['TEMP', batchId, quantity, null, null, null]
+            );
+            
+            const autoIncrementId = insertResult.insertId;
+            const testId = generateTestIdWithAutoIncrement(autoIncrementId);
+            
+            // Update with the actual test_id
+            await connection.execute(
+                'UPDATE nad_test_ids SET test_id = ? WHERE id = ?',
+                [testId, autoIncrementId]
+            );
+            
+            createdTests.push({
+                id: autoIncrementId,
+                test_id: testId,
+                batch_id: batchId
+            });
+        }
+        
+        await connection.commit();
+        
+        console.log(`Successfully created ${createdTests.length} tests`);
+        
+        res.json({
+            success: true,
+            message: `Successfully created ${quantity} tests`,
+            data: {
+                batch_id: batchId,
+                quantity: quantity,
+                tests_created: createdTests.length,
+                sample_test_ids: createdTests.slice(0, 5).map(t => t.test_id),
+                notes: notes || ''
+            }
+        });
+        
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error creating test batch:', error);
+        
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create test batch',
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+});
+
+// Get batch information
+app.get('/api/admin/test-batches', async (req, res) => {
+    try {
+        const [batches] = await db.execute(`
+            SELECT 
+                batch_id,
+                batch_size,
+                COUNT(*) as tests_created,
+                MIN(created_date) as created_date,
+                GROUP_CONCAT(test_id ORDER BY id LIMIT 3) as sample_test_ids
+            FROM nad_test_ids 
+            WHERE batch_id IS NOT NULL 
+            GROUP BY batch_id, batch_size 
+            ORDER BY MIN(created_date) DESC
+            LIMIT 20
+        `);
+        
+        res.json({
+            success: true,
+            data: batches
+        });
+    } catch (error) {
+        console.error('Error fetching test batches:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch test batches'
+        });
+    }
+});
+
+// Get tests by batch ID
+app.get('/api/admin/test-batch/:batchId', async (req, res) => {
+    const { batchId } = req.params;
+    
+    try {
+        const [tests] = await db.execute(
+            'SELECT * FROM nad_test_ids WHERE batch_id = ? ORDER BY id',
+            [batchId]
+        );
+        
+        res.json({
+            success: true,
+            data: tests
+        });
+    } catch (error) {
+        console.error('Error fetching batch tests:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch batch tests'
+        });
+    }
+});
+
+// Test activation endpoint if it doesn't exist
+app.post('/api/tests/:testId/activate', async (req, res) => {
+    const { testId } = req.params;
+    
+    try {
+        const [result] = await db.execute(
+            'UPDATE nad_test_ids SET is_activated = 1, activated_date = NOW() WHERE test_id = ?',
+            [testId]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Test not found'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: `Test ${testId} has been activated`
+        });
+    } catch (error) {
+        console.error('Error activating test:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to activate test'
+        });
+    }
+});
+
+// Enhanced /api/tests endpoint that includes batch information
+app.get('/api/tests', async (req, res) => {
+    try {
+        const [tests] = await db.execute(`
+            SELECT 
+                id,
+                test_id,
+                batch_id,
+                batch_size,
+                generated_by,
+                order_id,
+                customer_id,
+                created_date,
+                is_activated,
+                activated_date,
+                shipping_status,
+                shipped_date
+            FROM nad_test_ids 
+            ORDER BY created_date DESC
+        `);
+        
+        res.json({
+            success: true,
+            data: tests
+        });
+    } catch (error) {
+        console.error('Error fetching tests:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch tests'
+        });
     }
 });
 

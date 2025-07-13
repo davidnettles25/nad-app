@@ -50,7 +50,7 @@ chmod -R 755 "$FRONTEND_TARGET"
 
 # Test deployment
 log "🧪 Testing deployment..."
-sleep 3
+sleep 5
 if curl -f -s http://localhost:3001/health > /dev/null 2>&1; then
     log "✅ API health check passed"
 else
