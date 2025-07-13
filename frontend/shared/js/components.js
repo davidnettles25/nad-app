@@ -1,104 +1,68 @@
-// NAD Components Loading System - Updated without User Management
-console.log('🔄 Loading NAD Components System...');
+// NAD Component Loading System - Enhanced for Admin Sections
+window.NADComponents = {
+    config: {
+        baseUrl: '',
+        debugMode: true
+    },
 
-class NADComponents {
-    constructor() {
-        this.loadedComponents = new Set();
-        this.loadedSections = new Set();
-    }
-    
-    async loadComponent(componentPath, targetSelector) {
-        if (this.loadedComponents.has(componentPath)) {
-            console.log(`[NADComponents] ⚠️ Component already loaded: ${componentPath}`);
-            return;
-        }
-        
+    async loadSection(sectionName, targetSelector = '.main-content') {
         try {
-            console.log(`[NADComponents] Loading component: ${componentPath}`);
-            const response = await fetch(componentPath);
+            this.log(`Loading section: ${sectionName}`);
             
-            if (!response.ok) {
-                throw new Error(`Failed to load component: ${response.status}`);
-            }
-            
-            const html = await response.text();
-            const target = document.querySelector(targetSelector);
-            
-            if (target) {
-                target.innerHTML = html;
-                this.loadedComponents.add(componentPath);
-                console.log(`[NADComponents] ✅ Component ${componentPath} loaded successfully`);
-            } else {
-                console.error(`[NADComponents] ❌ Target selector not found: ${targetSelector}`);
-            }
-        } catch (error) {
-            console.error(`[NADComponents] ❌ Error loading component ${componentPath}:`, error);
-        }
-    }
-    
-    async loadSection(sectionName) {
-        if (this.loadedSections.has(sectionName)) {
-            console.log(`[NADComponents] Section already loaded: ${sectionName}`);
-            return;
-        }
-        
-        try {
-            console.log(`[NADComponents] Loading section: ${sectionName}`);
             const sectionPath = `admin/sections/${sectionName}.html`;
-            const response = await fetch(sectionPath);
+            const response = await fetch(`${this.config.baseUrl}/${sectionPath}`);
             
             if (!response.ok) {
                 throw new Error(`Failed to load section: ${response.status}`);
             }
             
             const html = await response.text();
+            const targetElement = document.querySelector(targetSelector);
             
-            // Create section container if it doesn't exist
-            let sectionContainer = document.getElementById(sectionName);
-            if (!sectionContainer) {
-                sectionContainer = document.createElement('div');
-                sectionContainer.id = sectionName;
-                sectionContainer.className = 'content-section';
-                
-                const mainContent = document.querySelector('.main-content') || document.body;
-                mainContent.appendChild(sectionContainer);
+            if (targetElement) {
+                // Insert the section HTML
+                targetElement.insertAdjacentHTML('beforeend', html);
+                this.log(`✅ Section ${sectionName} loaded successfully`);
+                return true;
+            } else {
+                throw new Error(`Target selector ${targetSelector} not found`);
             }
-            
-            sectionContainer.innerHTML = html;
-            this.loadedSections.add(sectionName);
-            console.log(`[NADComponents] ✅ Section ${sectionName} loaded successfully`);
-            
         } catch (error) {
-            console.error(`[NADComponents] ❌ Error loading section ${sectionName}:`, error);
+            this.log(`❌ Error loading section ${sectionName}:`, error);
+            return false;
         }
-    }
-    
-    async loadAdminSections() {
-        console.log('🔄 Auto-loading admin sections...');
-        
-        // Load all admin sections EXCEPT users
-        const sections = ['overview', 'tests', 'supplements', 'analytics', 'system'];
+    },
+
+    async loadAllSections() {
+        const sections = ['overview', 'tests', 'users', 'supplements', 'analytics'];
         
         for (const section of sections) {
             await this.loadSection(section);
+            // Small delay between loads to prevent overwhelming the browser
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        console.log('✅ All admin sections loaded');
+        this.log('✅ All admin sections loaded');
+    },
+
+    log(message, data = null) {
+        if (this.config.debugMode) {
+            if (data) {
+                console.log(`[NADComponents] ${message}`, data);
+            } else {
+                console.log(`[NADComponents] ${message}`);
+            }
+        }
     }
-    
-    // Remove user-related methods
-    // loadUserComponents() - DELETED
-    // loadUserSections() - DELETED
-}
+};
 
-// Global instance
-window.NADComponents = new NADComponents();
-
-// Auto-load admin sections when page loads
+// Auto-load sections when DOM is ready
 document.addEventListener('DOMContentLoaded', async function() {
-    if (document.querySelector('.admin-dashboard')) {
-        await window.NADComponents.loadAdminSections();
+    console.log('🔄 Auto-loading admin sections...');
+    await window.NADComponents.loadAllSections();
+    
+    // Initialize admin dashboard after sections are loaded
+    if (typeof window.initializeAdminDashboard === 'function') {
+        window.initializeAdminDashboard();
     }
 });
-
-console.log('✅ NAD Components System loaded (User Management removed)');

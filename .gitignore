@@ -6,7 +6,8 @@ backend/uploads/*
 !backend/logs/.gitkeep
 !backend/uploads/.gitkeep
 deployment/theFacts.txt
-
+node_modules/
+npm-debug.log*
 
 # Temporary files
 *.tmp
