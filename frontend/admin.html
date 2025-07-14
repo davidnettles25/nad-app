@@ -103,6 +103,8 @@
 
         .btn-primary { background: #667eea; }
         .btn-secondary { background: #6c757d; }
+        .btn-success { background: #28a745; }
+        .btn-warning { background: #ffc107; color: #333; }
         .btn-sm { padding: 6px 12px; font-size: 0.875rem; }
 
         .stats-grid {
@@ -202,6 +204,144 @@
             gap: 10px;
             align-items: center;
         }
+
+        /* Test Management Styles */
+        .section-header {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 15px;
+        }
+
+        .section-header h2 {
+            margin: 0 0 5px 0;
+            color: #495057;
+        }
+
+        .bulk-creation-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .creation-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+            margin: 20px 0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .test-id-preview {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #495057;
+            border: 1px solid #ced4da;
+        }
+
+        .create-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+        }
+
+        .create-btn:hover {
+            background: #218838;
+        }
+
+        .create-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .search-filters {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-input, .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .filter-select {
+            background: white;
+        }
+
+        .search-input {
+            min-width: 200px;
+        }
+
+        .loading-spinner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #6c757d;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .creation-form {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .admin-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -269,12 +409,87 @@
 
             <!-- Test Management Section -->
             <div id="tests" class="content-section">
-                <h2 style="margin-bottom: 20px;">🧪 Test Management</h2>
-                <div class="section-controls">
-                    <button class="btn btn-primary">➕ Create Test Batch</button>
-                    <button class="btn btn-secondary">📊 View Reports</button>
+                <div class="section-header">
+                    <h2>🧪 Test Management</h2>
+                    <p>Create test blocks and manage test lifecycle</p>
                 </div>
-                <p>Test management functionality will be implemented here.</p>
+
+                <!-- Bulk Test Creation Section -->
+                <div class="bulk-creation-section">
+                    <h3>📦 Create Test Block</h3>
+                    <p>Generate a batch of test IDs for shipping. Tests will use the new format: <code>yyyy-mm-n-xxxxxx</code></p>
+                    
+                    <div class="success-message" id="test-success-message" style="display: none;"></div>
+                    <div class="error-message" id="test-error-message" style="display: none;"></div>
+                    
+                    <form id="bulk-creation-form" class="creation-form">
+                        <div class="form-group">
+                            <label for="test-quantity">Number of Tests</label>
+                            <input type="number" id="test-quantity" min="1" max="1000" value="10" required>
+                            <small>Min: 1, Max: 1000</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="batch-notes">Notes (Optional)</label>
+                            <input type="text" id="batch-notes" placeholder="e.g., Q1 2025 Inventory">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Preview Format</label>
+                            <div class="test-id-preview" id="test-id-preview">
+                                2025-07-123-45678
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="create-btn" id="create-test-btn">
+                            📦 Create Tests
+                        </button>
+                    </form>
+                    
+                    <div class="loading-spinner" id="test-loading-spinner" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Creating tests...</span>
+                    </div>
+                </div>
+
+                <!-- Tests Management Controls -->
+                <div class="tests-controls-section">
+                    <h3>📋 Test Management</h3>
+                    <div class="section-controls">
+                        <div class="search-filters">
+                            <input type="text" id="test-search" placeholder="🔍 Search tests..." class="search-input">
+                            <select id="status-filter" class="filter-select">
+                                <option value="">All Statuses</option>
+                                <option value="activated">Activated</option>
+                                <option value="pending">Pending</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="loadTestsFromAPI()">🔄 Refresh Tests</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Test ID</th>
+                                    <th>Status</th>
+                                    <th>Customer</th>
+                                    <th>Order</th>
+                                    <th>Batch</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tests-table-body">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 40px;">
+                                        <div>Loading tests...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- Supplements Section -->
@@ -313,12 +528,21 @@
 
             <!-- Analytics Section -->
             <div id="analytics" class="content-section">
-                <h2 style="margin-bottom: 20px;">📈 Analytics</h2>
-                <div class="section-controls">
-                    <button class="btn btn-primary">📊 Generate Report</button>
-                    <button class="btn btn-secondary">📤 Export Data</button>
+                <div class="section-header">
+                    <h2>📈 Analytics & Reports</h2>
+                    <p>Comprehensive analytics and performance metrics</p>
                 </div>
-                <p>Analytics functionality will be implemented here.</p>
+                
+                <div class="section-controls">
+                    <button class="btn btn-primary" onclick="loadAnalytics()">🔄 Refresh Analytics</button>
+                    <button class="btn btn-secondary" onclick="exportAnalytics()">📤 Export Report</button>
+                </div>
+
+                <div id="analytics-content">
+                    <div style="text-align: center; padding: 40px;">
+                        <div>Loading analytics...</div>
+                    </div>
+                </div>
             </div>
 
             <!-- System Health Section -->
@@ -410,6 +634,289 @@
                 console.error('❌ Error loading dashboard stats:', error);
                 showAlert('⚠️ Could not load dashboard statistics', 'warning');
             }
+        }
+
+        // TEST MANAGEMENT FUNCTIONALITY
+        function initTestManagement() {
+            console.log('🚀 Initializing Test Management...');
+            
+            setTimeout(() => {
+                const form = document.getElementById('bulk-creation-form');
+                const button = document.getElementById('create-test-btn');
+                
+                if (form && button) {
+                    console.log('✅ Found test form and button');
+                    
+                    // Remove existing listeners
+                    const newForm = form.cloneNode(true);
+                    form.parentNode.replaceChild(newForm, form);
+                    
+                    // Add event listener
+                    const finalForm = document.getElementById('bulk-creation-form');
+                    finalForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        console.log('📝 Test batch form submitted!');
+                        
+                        const quantity = parseInt(document.getElementById('test-quantity').value);
+                        const notes = document.getElementById('batch-notes').value || '';
+                        const finalButton = document.getElementById('create-test-btn');
+                        
+                        if (quantity < 1 || quantity > 1000) {
+                            showAlert('Quantity must be between 1 and 1000', 'error');
+                            return;
+                        }
+                        
+                        // Show loading
+                        finalButton.disabled = true;
+                        finalButton.textContent = '⏳ Creating...';
+                        
+                        try {
+                            const response = await fetch(`${API_BASE}/api/admin/create-test-batch`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ quantity, notes })
+                            });
+                            
+                            const result = await response.json();
+                            
+                            if (result.success) {
+                                const totalCreated = result.data.quantity;
+                                const samplesShown = result.data.sample_test_ids.length;
+                                
+                                let message = `✅ SUCCESS!\nCreated ${totalCreated} tests\n\nBatch ID: ${result.data.batch_id}\n\n`;
+                        
+                                if (totalCreated <= 5) {
+                                    message += `All Test IDs:\n${result.data.sample_test_ids.join('\n')}`;
+                                } else {
+                                    message += `Sample Test IDs (showing first ${samplesShown} of ${totalCreated} total):\n`;
+                                    message += `${result.data.sample_test_ids.join('\n')}\n\n`;
+                                    message += `✨ ${totalCreated - samplesShown} additional tests were also created in this batch\n\n`;
+                                    message += `All ${totalCreated} tests are ready for shipping and use!`;
+                                }
+                                
+                                alert(message);
+                                
+                                // Reset form
+                                finalForm.reset();
+                                document.getElementById('test-quantity').value = 10;
+                                
+                                showAlert(`✅ Successfully created ${totalCreated} tests!`, 'success');
+                                console.log('✅ Test creation completed successfully');
+                            } else {
+                                showAlert('❌ Error: ' + (result.message || 'Failed to create test batch'), 'error');
+                            }
+                            
+                        } catch (error) {
+                            console.error('❌ Error creating tests:', error);
+                            showAlert('❌ Network error: ' + error.message, 'error');
+                        } finally {
+                            // Reset button state
+                            finalButton.disabled = false;
+                            finalButton.textContent = '📦 Create Tests';
+                        }
+                    });
+                    
+                    // Set up test ID preview animation
+                    function updatePreview() {
+                        const preview = document.getElementById('test-id-preview');
+                        if (preview) {
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const randomId = Math.floor(Math.random() * 1000) + 100;
+                            const randomSuffix = Math.floor(Math.random() * 90000) + 10000;
+                            preview.textContent = `${year}-${month}-${randomId}-${randomSuffix}`;
+                        }
+                    }
+                    
+                    updatePreview();
+                    setInterval(updatePreview, 3000);
+                    
+                    console.log('✅ Test Management fully configured and ready!');
+                } else {
+                    console.error('❌ Test form or button not found');
+                }
+            }, 500);
+        }
+
+        // Load tests from API
+        async function loadTestsFromAPI() {
+            console.log('🧪 Loading tests from API...');
+            
+            const tbody = document.getElementById('tests-table-body');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Loading tests...</td></tr>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/tests`);
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    renderTestsTable(result.data);
+                    showAlert(`✅ Loaded ${result.data.length} tests`, 'success');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">No tests found</td></tr>';
+                }
+            } catch (error) {
+                console.error('❌ Error loading tests:', error);
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: red;">Error loading tests</td></tr>';
+            }
+        }
+
+        // Render tests table
+        function renderTestsTable(tests) {
+            const tbody = document.getElementById('tests-table-body');
+            if (!tbody) return;
+            
+            if (tests.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px;">
+                            <div>
+                                <h4>🧪 No Tests Found</h4>
+                                <p>No tests match your search criteria.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            tests.forEach(test => {
+                const row = document.createElement('tr');
+                const status = test.is_activated ? 'activated' : 'pending';
+                const statusLabel = test.is_activated ? 'Activated' : 'Pending';
+                const createdDate = new Date(test.created_date).toLocaleDateString();
+                const batchDisplay = test.batch_id ? test.batch_id.split('-').pop() : 'Individual';
+                
+                row.innerHTML = `
+                    <td><strong>${test.test_id}</strong></td>
+                    <td><span class="badge" style="padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ${test.is_activated ? '#d4edda' : '#fff3cd'}; color: ${test.is_activated ? '#155724' : '#856404'};">${statusLabel}</span></td>
+                    <td>${test.customer_id || 'N/A'}</td>
+                    <td>${test.order_id ? `#${test.order_id}` : 'Manual'}</td>
+                    <td>${batchDisplay}</td>
+                    <td>${createdDate}</td>
+                    <td>
+                        <button class="btn btn-sm" onclick="viewTest('${test.test_id}')" style="margin-right: 5px;">👁️ View</button>
+                        ${!test.is_activated ? `<button class="btn btn-sm btn-success" onclick="activateTest('${test.test_id}')">⚡ Activate</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Test action functions
+        function viewTest(testId) {
+            showAlert(`👁️ Viewing test ${testId} - Coming soon!`, 'info');
+        }
+
+        function activateTest(testId) {
+            showAlert(`⚡ Activating test ${testId} - Coming soon!`, 'info');
+        }
+
+        // ANALYTICS FUNCTIONALITY
+        async function loadAnalytics() {
+            console.log('📈 Loading analytics data...');
+            showAlert('🔄 Loading analytics data...', 'info');
+            
+            try {
+                // Load dashboard stats as base for analytics
+                const response = await fetch(`${API_BASE}/api/dashboard/stats`);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    updateAnalyticsDisplay(data.stats);
+                    showAlert('✅ Analytics data loaded successfully!', 'success');
+                } else {
+                    throw new Error(data.error || 'Failed to load analytics');
+                }
+            } catch (error) {
+                console.error('❌ Error loading analytics:', error);
+                showAnalyticsError(error.message);
+            }
+        }
+
+        function updateAnalyticsDisplay(stats) {
+            const analyticsContent = document.getElementById('analytics-content');
+            if (!analyticsContent) return;
+            
+            const total = stats.total_tests || 1;
+            const activationRate = ((stats.activated_tests / total) * 100).toFixed(1);
+            const completionRate = ((stats.completed_tests / total) * 100).toFixed(1);
+            
+            analyticsContent.innerHTML = `
+                <div class="analytics-summary">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">${activationRate}%</div>
+                            <div class="stat-label">Activation Rate</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${completionRate}%</div>
+                            <div class="stat-label">Completion Rate</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.pending_tests}</div>
+                            <div class="stat-label">Pending Tests</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.total_tests}</div>
+                            <div class="stat-label">Total Tests</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analytics-charts">
+                    <div style="background: white; padding: 20px; border-radius: 12px; margin-top: 20px;">
+                        <h4>📊 Test Performance Overview</h4>
+                        <div style="margin: 20px 0;">
+                            <div style="margin-bottom: 10px;">
+                                <span>Tests Activated:</span>
+                                <div style="background: #e9ecef; height: 20px; border-radius: 10px; overflow: hidden;">
+                                    <div style="background: #28a745; height: 100%; width: ${activationRate}%; transition: width 0.3s ease;"></div>
+                                </div>
+                                <small>${stats.activated_tests} of ${stats.total_tests} tests (${activationRate}%)</small>
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <span>Tests Completed:</span>
+                                <div style="background: #e9ecef; height: 20px; border-radius: 10px; overflow: hidden;">
+                                    <div style="background: #007bff; height: 100%; width: ${completionRate}%; transition: width 0.3s ease;"></div>
+                                </div>
+                                <small>${stats.completed_tests} of ${stats.total_tests} tests (${completionRate}%)</small>
+                            </div>
+                        </div>
+                        
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                            <h5>📈 Key Insights</h5>
+                            <ul style="margin: 10px 0 0 20px;">
+                                <li>Total tests created: <strong>${stats.total_tests}</strong></li>
+                                <li>Tests pending activation: <strong>${stats.pending_tests}</strong></li>
+                                <li>Average activation rate: <strong>${activationRate}%</strong></li>
+                                <li>Tests requiring attention: <strong>${stats.pending_tests}</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showAnalyticsError(errorMessage) {
+            const analyticsContent = document.getElementById('analytics-content');
+            if (!analyticsContent) return;
+            
+            analyticsContent.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h4 style="color: #dc3545;">⚠️ Error Loading Analytics</h4>
+                    <p>${errorMessage}</p>
+                    <button class="btn btn-primary" onclick="loadAnalytics()">🔄 Try Again</button>
+                </div>
+            `;
+        }
+
+        function exportAnalytics() {
+            showAlert('📊 Export analytics - Coming soon!', 'info');
         }
 
         // SUPPLEMENTS FUNCTIONALITY
@@ -539,9 +1046,18 @@
                         case 'overview':
                             loadDashboardStats();
                             break;
+                        case 'tests':
+                            console.log('🔄 Auto-loading tests');
+                            initTestManagement();
+                            loadTestsFromAPI();
+                            break;
                         case 'supplements':
                             console.log('🔄 Auto-loading supplements');
                             loadSupplements();
+                            break;
+                        case 'analytics':
+                            console.log('🔄 Auto-loading analytics');
+                            loadAnalytics();
                             break;
                         case 'system':
                             testSystemHealth();
@@ -567,8 +1083,15 @@
                     case 'overview':
                         loadDashboardStats();
                         break;
+                    case 'tests':
+                        initTestManagement();
+                        loadTestsFromAPI();
+                        break;
                     case 'supplements':
                         loadSupplements();
+                        break;
+                    case 'analytics':
+                        loadAnalytics();
                         break;
                     default:
                         showAlert('✅ Data refreshed!', 'success');
@@ -593,6 +1116,8 @@
                             <li>✅ Database connections are stable</li>
                             <li>✅ User management system is operational</li>
                             <li>✅ Supplement management is functional</li>
+                            <li>✅ Test management is working</li>
+                            <li>✅ Analytics system is operational</li>
                         </ul>
                     </div>
                 `;
@@ -645,6 +1170,16 @@
         window.showAlert = showAlert;
         window.refreshData = refreshData;
         window.loadDashboardStats = loadDashboardStats;
+        window.loadSupplements = loadSupplements;
+        window.initTestManagement = initTestManagement;
+        window.loadTestsFromAPI = loadTestsFromAPI;
+        window.loadAnalytics = loadAnalytics;
+        window.viewTest = viewTest;
+        window.activateTest = activateTest;
+        window.exportAnalytics = exportAnalytics;
+        window.showAddSupplementForm = showAddSupplementForm;
+        window.editSupplement = editSupplement;
+        window.toggleSupplement = toggleSupplement;
         window.testSystemHealth = testSystemHealth;
         window.testAPIEndpoints = testAPIEndpoints;
 
