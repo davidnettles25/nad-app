@@ -1494,6 +1494,11 @@ function renderBatchList(batches) {
                 <h4>Batch ${batch.batch_id.split('-').pop()}</h4>
                 <p>Created: ${new Date(batch.created_date).toLocaleDateString()}</p>
                 <p>Sample IDs: ${batch.sample_test_ids}</p>
+                ${batch.notes && batch.notes.trim() ? `
+                    <div class="batch-notes">
+                        <small><strong>Notes:</strong> ${batch.notes}</small>
+                    </div>
+                ` : ''}
             </div>
             <div class="badge success">${batch.tests_created} Tests</div>
             <div>Requested: ${batch.batch_size}</div>

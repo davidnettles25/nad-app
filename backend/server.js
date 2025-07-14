@@ -1282,9 +1282,9 @@ app.post('/api/admin/create-test-batch', async (req, res) => {
             // Insert placeholder record to get auto-increment ID
             const [insertResult] = await connection.execute(
                 `INSERT INTO nad_test_ids (
-                    test_id, batch_id, batch_size, generated_by, order_id, customer_id, created_date
-                ) VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-                ['TEMP', batchId, quantity, null, null, null]
+                    test_id, batch_id, batch_size, notes, generated_by, order_id, customer_id, created_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+                ['TEMP', batchId, quantity, notes, null, null, null]
             );
             
             const autoIncrementId = insertResult.insertId;
@@ -1342,6 +1342,7 @@ app.get('/api/admin/test-batches', async (req, res) => {
                 batch_size,
                 COUNT(*) as tests_created,
                 MIN(created_date) as created_date,
+                MAX(notes) as notes,
                 GROUP_CONCAT(test_id ORDER BY id LIMIT 3) as sample_test_ids
             FROM nad_test_ids 
             WHERE batch_id IS NOT NULL 
@@ -1369,7 +1370,11 @@ app.get('/api/admin/test-batch/:batchId', async (req, res) => {
     
     try {
         const [tests] = await db.execute(
-            'SELECT * FROM nad_test_ids WHERE batch_id = ? ORDER BY id',
+            `SELECT id, test_id, batch_id, batch_size, notes, is_activated, 
+                    activated_date, order_id, customer_id, created_date 
+             FROM nad_test_ids 
+             WHERE batch_id = ? 
+             ORDER BY id`,
             [batchId]
         );
         
