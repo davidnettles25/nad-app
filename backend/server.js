@@ -1756,49 +1756,6 @@ app.get('/api/notifications', async (req, res) => {
 });
 
 // ============================================================================
-// ERROR HANDLING MIDDLEWARE
-// ============================================================================
-
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        error: 'Endpoint not found',
-        path: req.path,
-        method: req.method,
-        available_endpoints: [
-            'GET /health',
-            'GET /api/dashboard/stats',
-            'GET /api/users',
-            'GET /api/users/stats',
-            'GET /api/users/debug-all',
-            'GET /api/users/simple',
-            'GET /api/supplements',
-            'GET /api/tests/scores',
-            'GET /api/analytics/overview'
-        ]
-    });
-});
-
-app.use((error, req, res, next) => {
-    console.error('❌ Unhandled error:', error);
-    
-    if (error instanceof multer.MulterError) {
-        if (error.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({
-                success: false,
-                error: 'File too large. Maximum size is 10MB.'
-            });
-        }
-    }
-    
-    res.status(500).json({
-        success: false,
-        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
-        timestamp: new Date().toISOString()
-    });
-});
-
-// ============================================================================
 // BATCH PRINTING ENDPOINTS
 // ============================================================================
 
@@ -1858,6 +1815,53 @@ app.get('/api/admin/printable-batches', async (req, res) => {
         });
     }
 });
+
+// ============================================================================
+// ERROR HANDLING MIDDLEWARE
+// ============================================================================
+
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        error: 'Endpoint not found',
+        path: req.path,
+        method: req.method,
+        available_endpoints: [
+            'GET /health',
+            'GET /api/dashboard/stats',
+            'GET /api/users',
+            'GET /api/users/stats',
+            'GET /api/users/debug-all',
+            'GET /api/users/simple',
+            'GET /api/supplements',
+            'GET /api/tests/scores',
+            'GET /api/analytics/overview',
+            'GET /api/admin/printable-batches',
+            'GET /api/admin/batch-details/:batchId',
+            'POST /api/admin/print-batch'
+        ]
+    });
+});
+
+app.use((error, req, res, next) => {
+    console.error('❌ Unhandled error:', error);
+    
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+                success: false,
+                error: 'File too large. Maximum size is 10MB.'
+            });
+        }
+    }
+    
+    res.status(500).json({
+        success: false,
+        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
+        timestamp: new Date().toISOString()
+    });
+});
+
 
 // Get detailed information for a specific batch
 app.get('/api/admin/batch-details/:batchId', async (req, res) => {
