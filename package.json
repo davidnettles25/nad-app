@@ -6,13 +6,26 @@
   "scripts": {
     "start": "cd backend && npm start",
     "dev": "cd backend && npm run dev",
-    "deploy": "./deployment/deploy.sh"
+    "deploy": "./deployment/deploy.sh",
+    "lint": "eslint frontend/**/*.js backend/**/*.js",
+    "lint:fix": "eslint frontend/**/*.js backend/**/*.js --fix",
+    "lint:html": "eslint --ext .html frontend/**/*.html"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/davidnettles25/nad-app.git"
   },
-  "keywords": ["nad", "health", "testing", "nodejs", "dashboard"],
+  "keywords": [
+    "nad",
+    "health",
+    "testing",
+    "nodejs",
+    "dashboard"
+  ],
   "author": "David Nettles",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.31.0",
+    "eslint-plugin-html": "^8.1.3"
+  }
 }

@@ -728,6 +728,228 @@
                             element.textContent = value;
                         }
                     });
+                    
+                    const total = data.stats.total_tests || 1;
+                    const activationRate = ((data.stats.activated_tests / total) * 100).toFixed(1);
+                    const completionRate = ((data.stats.completed_tests / total) * 100).toFixed(1);
+                    
+                    const overviewStats = document.getElementById('overview-stats');
+                    if (overviewStats) {
+                        overviewStats.innerHTML = `
+                            📊 <strong>${data.stats.total_tests} tests created</strong> • 
+                            🎯 <strong>${data.stats.activated_tests} activated (${activationRate}%)</strong> • 
+                            ⏳ <strong>${data.stats.pending_tests} pending</strong> • 
+                            🏁 <strong>${data.stats.completed_tests} completed</strong>
+                        `;
+                    }
+                    
+                    showAlert('✅ Dashboard statistics loaded successfully!', 'success');
+                } else {
+                    throw new Error(data.error || 'Failed to load dashboard stats');
+                }
+            } catch (error) {
+                console.error('❌ Error loading dashboard stats:', error);
+                showAlert('⚠️ Could not load dashboard statistics', 'warning');
+            }
+        }
+
+        // TEST MANAGEMENT FUNCTIONALITY
+        function initTestManagement() {
+            console.log('🚀 Initializing Test Management...');
+            
+            setTimeout(() => {
+                const form = document.getElementById('bulk-creation-form');
+                const button = document.getElementById('create-test-btn');
+                
+                if (form && button) {
+                    console.log('✅ Found test form and button');
+                    
+                    // Remove existing listeners
+                    const newForm = form.cloneNode(true);
+                    form.parentNode.replaceChild(newForm, form);
+                    
+                    // Add event listener
+                    const finalForm = document.getElementById('bulk-creation-form');
+                    finalForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        console.log('📝 Test batch form submitted!');
+                        
+                        const quantity = parseInt(document.getElementById('test-quantity').value);
+                        const notes = document.getElementById('batch-notes').value || '';
+                        const finalButton = document.getElementById('create-test-btn');
+                        
+                        if (quantity < 1 || quantity > 1000) {
+                            showAlert('Quantity must be between 1 and 1000', 'error');
+                            return;
+                        }
+                        
+                        // Show loading
+                        finalButton.disabled = true;
+                        finalButton.textContent = '⏳ Creating...';
+                        
+                        try {
+                            const response = await fetch(`${API_BASE}/api/admin/create-test-batch`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ quantity, notes })
+                            });
+                            
+                            const result = await response.json();
+                            
+                            if (result.success) {
+                                const totalCreated = result.data.quantity;
+                                const samplesShown = result.data.sample_test_ids.length;
+                                
+                                let message = `✅ SUCCESS!\nCreated ${totalCreated} tests\n\nBatch ID: ${result.data.batch_id}\n\n`;
+                        
+                                if (totalCreated <= 5) {
+                                    message += `All Test IDs:\n${result.data.sample_test_ids.join('\n')}`;
+                                } else {
+                                    message += `Sample Test IDs (showing first ${samplesShown} of ${totalCreated} total):\n`;
+                                    message += `${result.data.sample_test_ids.join('\n')}\n\n`;
+                                    message += `✨ ${totalCreated - samplesShown} additional tests were also created in this batch\n\n`;
+                                    message += `All ${totalCreated} tests are ready for shipping and use!`;
+                                }
+                                
+                                alert(message);
+                                
+                                // Reset form
+                                finalForm.reset();
+                                document.getElementById('test-quantity').value = 10;
+                                
+                                showAlert(`✅ Successfully created ${totalCreated} tests!`, 'success');
+                                console.log('✅ Test creation completed successfully');
+                                
+                                // Refresh data
+                                loadTestsFromAPI();
+                                loadAllBatches();
+                            } else {
+                                showAlert('❌ Error: ' + (result.message || 'Failed to create test batch'), 'error');
+                            }
+                            
+                        } catch (error) {
+                            console.error('❌ Error creating tests:', error);
+                            showAlert('❌ Network error: ' + error.message, 'error');
+                        } finally {
+                            // Reset button state
+                            finalButton.disabled = false;
+                            finalButton.textContent = '📦 Create Tests';
+                        }
+                    });
+                    
+                    // Set up test ID preview animation
+                    function updatePreview() {
+                        const preview = document.getElementById('test-id-preview');
+                        if (preview) {
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const randomId = Math.floor(Math.random() * 1000) + 100;
+                            const randomSuffix = Math.floor(Math.random() * 90000) + 10000;
+                            preview.textContent = `${year}-${month}-${randomId}-${randomSuffix}`;
+                        }
+                    }
+                    
+                    updatePreview();
+                    setInterval(updatePreview, 3000);
+                    
+                    console.log('✅ Test Management fully configured and ready!');
+                } else {
+                    console.error('❌ Test form or button not found');
+                }
+            }, 500);
+        }
+
+        // Load tests from API
+        async function loadTestsFromAPI() {
+            console.log('🧪 Loading tests from API...');
+            
+            const tbody = document.getElementById('tests-table-body');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Loading tests...</td></tr>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/tests`);
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    window.allTests = result.data;
+                    renderTestsTable(result.data);
+                    updateTestStats();
+                    showAlert(`✅ Loaded ${result.data.length} tests`, 'success');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">No tests found</td></tr>';
+                }
+            } catch (error) {
+                console.error('❌ Error loading tests:', error);
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: red;">Error loading tests</td></tr>';
+            }
+        }
+
+        // Load all batches from API
+        async function loadAllBatches() {
+            console.log('📊 Loading all batches...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/test-batches`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    window.allBatches = result.data;
+                    renderBatchList(result.data);
+                    console.log(`✅ Loaded ${result.data.length} batches`);
+                } else {
+                    console.error('Failed to load batches:', result.message);
+                    showBatchesError('Failed to load batches');
+                }
+            } catch (error) {
+                console.error('Error loading batches:', error);
+                showBatchesError('Network error loading batches');
+            }
+        }
+
+        // Render tests table
+        function renderTestsTable(tests) {
+            const tbody = document.getElementById('tests-table-body');
+            if (!tbody) return;
+            
+            if (tests.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px;">
+                            <div>
+                                <h4>🧪 No Tests Found</h4>
+                                <p>No tests match your search criteria.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            tests.forEach(test => {
+                const row = document.createElement('tr');
+                const status = test.is_activated ? 'activated' : 'pending';
+                const statusLabel = test.is_activated ? 'Activated' : 'Pending';
+                const createdDate = new Date(test.created_date).toLocaleDateString();
+                const batchDisplay = test.batch_id ? test.batch_id.split('-').pop() : 'Individual';
+                
+                row.innerHTML = `
+                    <td><strong>${test.test_id}</strong></td>
+                    <td><span class="badge" style="padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ${test.is_activated ? '#d4edda' : '#fff3cd'}; color: ${test.is_activated ? '#155724' : '#856404'};">${statusLabel}</span></td>
+                    <td>${test.customer_id || 'N/A'}</td>
+                    <td>${test.order_id ? `#${test.order_id}` : 'Manual'}</td>
+                    <td>${batchDisplay}</td>
+                    <td>${createdDate}</td>
+                    <td>
+                        <button class="btn btn-sm" onclick="viewTest('${test.test_id}')" style="margin-right: 5px;">👁️ View</button>
+                        ${!test.is_activated ? `<button class="btn btn-sm btn-success" onclick="activateTest('${test.test_id}')">⚡ Activate</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
         }
 
         // Render batch list
@@ -874,233 +1096,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 }
             } catch (error) {
                 showAlert('❌ Network error: ' + error.message, 'error');
-                    
-                    const total = data.stats.total_tests || 1;
-                    const activationRate = ((data.stats.activated_tests / total) * 100).toFixed(1);
-                    const completionRate = ((data.stats.completed_tests / total) * 100).toFixed(1);
-                    
-                    const overviewStats = document.getElementById('overview-stats');
-                    if (overviewStats) {
-                        overviewStats.innerHTML = `
-                            📊 <strong>${data.stats.total_tests} tests created</strong> • 
-                            🎯 <strong>${data.stats.activated_tests} activated (${activationRate}%)</strong> • 
-                            ⏳ <strong>${data.stats.pending_tests} pending</strong> • 
-                            🏁 <strong>${data.stats.completed_tests} completed</strong>
-                        `;
-                    }
-                    
-                    showAlert('✅ Dashboard statistics loaded successfully!', 'success');
-                } else {
-                    throw new Error(data.error || 'Failed to load dashboard stats');
-                }
-            } catch (error) {
-                console.error('❌ Error loading dashboard stats:', error);
-                showAlert('⚠️ Could not load dashboard statistics', 'warning');
             }
-        }
-
-        // TEST MANAGEMENT FUNCTIONALITY
-        function initTestManagement() {
-            console.log('🚀 Initializing Test Management...');
-            
-            setTimeout(() => {
-                const form = document.getElementById('bulk-creation-form');
-                const button = document.getElementById('create-test-btn');
-                
-                if (form && button) {
-                    console.log('✅ Found test form and button');
-                    
-                    // Remove existing listeners
-                    const newForm = form.cloneNode(true);
-                    form.parentNode.replaceChild(newForm, form);
-                    
-                    // Add event listener
-                    const finalForm = document.getElementById('bulk-creation-form');
-                    finalForm.addEventListener('submit', async (e) => {
-                        e.preventDefault();
-                        console.log('📝 Test batch form submitted!');
-                        
-                        const quantity = parseInt(document.getElementById('test-quantity').value);
-                        const notes = document.getElementById('batch-notes').value || '';
-                        const finalButton = document.getElementById('create-test-btn');
-                        
-                        if (quantity < 1 || quantity > 1000) {
-                            showAlert('Quantity must be between 1 and 1000', 'error');
-                            return;
-                        }
-                        
-                        // Show loading
-                        finalButton.disabled = true;
-                        finalButton.textContent = '⏳ Creating...';
-                        
-                        try {
-                            const response = await fetch(`${API_BASE}/api/admin/create-test-batch`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ quantity, notes })
-                            });
-                            
-                            const result = await response.json();
-                            
-                            if (result.success) {
-                                const totalCreated = result.data.quantity;
-                                const samplesShown = result.data.sample_test_ids.length;
-                                
-                                let message = `✅ SUCCESS!\nCreated ${totalCreated} tests\n\nBatch ID: ${result.data.batch_id}\n\n`;
-                        
-                                if (totalCreated <= 5) {
-                                    message += `All Test IDs:\n${result.data.sample_test_ids.join('\n')}`;
-                                } else {
-                                    message += `Sample Test IDs (showing first ${samplesShown} of ${totalCreated} total):\n`;
-                                    message += `${result.data.sample_test_ids.join('\n')}\n\n`;
-                                    message += `✨ ${totalCreated - samplesShown} additional tests were also created in this batch\n\n`;
-                                    message += `All ${totalCreated} tests are ready for shipping and use!`;
-                                }
-                                
-                                alert(message);
-                                
-                                // Reset form
-                                finalForm.reset();
-                                document.getElementById('test-quantity').value = 10;
-                                
-                                showAlert(`✅ Successfully created ${totalCreated} tests!`, 'success');
-                                console.log('✅ Test creation completed successfully');
-                            } else {
-                                showAlert('❌ Error: ' + (result.message || 'Failed to create test batch'), 'error');
-                            }
-                            
-                        } catch (error) {
-                            console.error('❌ Error creating tests:', error);
-                            showAlert('❌ Network error: ' + error.message, 'error');
-                        } finally {
-                            // Reset button state
-                            finalButton.disabled = false;
-                            finalButton.textContent = '📦 Create Tests';
-                        }
-                    });
-                    
-                    // Set up test ID preview animation
-                    function updatePreview() {
-                        const preview = document.getElementById('test-id-preview');
-                        if (preview) {
-                            const now = new Date();
-                            const year = now.getFullYear();
-                            const month = String(now.getMonth() + 1).padStart(2, '0');
-                            const randomId = Math.floor(Math.random() * 1000) + 100;
-                            const randomSuffix = Math.floor(Math.random() * 90000) + 10000;
-                            preview.textContent = `${year}-${month}-${randomId}-${randomSuffix}`;
-                        }
-                    }
-                    
-                    updatePreview();
-                    setInterval(updatePreview, 3000);
-                    
-                    console.log('✅ Test Management fully configured and ready!');
-                } else {
-                    console.error('❌ Test form or button not found');
-                }
-            }, 500);
-        }
-
-        // Load tests from API
-        async function loadTestsFromAPI() {
-            console.log('🧪 Loading tests from API...');
-            
-            const tbody = document.getElementById('tests-table-body');
-            if (!tbody) return;
-            
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Loading tests...</td></tr>';
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/tests`);
-                const result = await response.json();
-                
-                if (result.success && result.data) {
-                    window.allTests = result.data;
-                    renderTestsTable(result.data);
-                    updateTestStats();
-                    showAlert(`✅ Loaded ${result.data.length} tests`, 'success');
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">No tests found</td></tr>';
-                }
-            } catch (error) {
-                console.error('❌ Error loading tests:', error);
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: red;">Error loading tests</td></tr>';
-            }
-        }
-
-        // Load all batches from API
-        async function loadAllBatches() {
-            console.log('📊 Loading all batches...');
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/admin/test-batches`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    window.allBatches = result.data;
-                    renderBatchList(result.data);
-                    console.log(`✅ Loaded ${result.data.length} batches`);
-                } else {
-                    console.error('Failed to load batches:', result.message);
-                    showBatchesError('Failed to load batches');
-                }
-            } catch (error) {
-                console.error('Error loading batches:', error);
-                showBatchesError('Network error loading batches');
-            }
-        }
-
-        // Render tests table
-        function renderTestsTable(tests) {
-            const tbody = document.getElementById('tests-table-body');
-            if (!tbody) return;
-            
-            if (tests.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" style="text-align: center; padding: 40px;">
-                            <div>
-                                <h4>🧪 No Tests Found</h4>
-                                <p>No tests match your search criteria.</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            tbody.innerHTML = '';
-            tests.forEach(test => {
-                const row = document.createElement('tr');
-                const status = test.is_activated ? 'activated' : 'pending';
-                const statusLabel = test.is_activated ? 'Activated' : 'Pending';
-                const createdDate = new Date(test.created_date).toLocaleDateString();
-                const batchDisplay = test.batch_id ? test.batch_id.split('-').pop() : 'Individual';
-                
-                row.innerHTML = `
-                    <td><strong>${test.test_id}</strong></td>
-                    <td><span class="badge" style="padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ${test.is_activated ? '#d4edda' : '#fff3cd'}; color: ${test.is_activated ? '#155724' : '#856404'};">${statusLabel}</span></td>
-                    <td>${test.customer_id || 'N/A'}</td>
-                    <td>${test.order_id ? `#${test.order_id}` : 'Manual'}</td>
-                    <td>${batchDisplay}</td>
-                    <td>${createdDate}</td>
-                    <td>
-                        <button class="btn btn-sm" onclick="viewTest('${test.test_id}')" style="margin-right: 5px;">👁️ View</button>
-                        ${!test.is_activated ? `<button class="btn btn-sm btn-success" onclick="activateTest('${test.test_id}')">⚡ Activate</button>` : ''}
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // Test action functions
-        function viewTest(testId) {
-            showAlert(`👁️ Viewing test ${testId} - Coming soon!`, 'info');
-        }
-
-        function activateTest(testId) {
-            showAlert(`⚡ Activating test ${testId} - Coming soon!`, 'info');
         }
 
         // ANALYTICS FUNCTIONALITY
