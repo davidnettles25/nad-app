@@ -1640,11 +1640,15 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         
             // Setup navigation
             document.querySelectorAll('.nav-link').forEach(link => {
+                console.log('🔗 Setting up nav link:', link.getAttribute('data-section'));
                 link.addEventListener('click', function(e) {
+                    console.log('🔗 Nav link clicked:', this.getAttribute('data-section'));
                     e.preventDefault();
                     const sectionName = this.getAttribute('data-section');
                     if (sectionName) {
                         showSection(sectionName);
+                    } else {
+                        console.error('❌ No data-section attribute found');
                     }
                 });
             });
