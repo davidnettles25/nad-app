@@ -440,7 +440,6 @@
             <div>
                 <a href="#overview" class="nav-link active" data-section="overview">📊 Overview</a>
                 <a href="#tests" class="nav-link" data-section="tests">🧪 Test Management</a>
-                <a href="#batch-printing" class="nav-link" data-section="batch-printing">🖨️ Batch Printing</a>
                 <a href="#supplements" class="nav-link" data-section="supplements">💊 Supplements</a>
                 <a href="#analytics" class="nav-link" data-section="analytics">📈 Analytics</a>
                 <a href="#system" class="nav-link" data-section="system">⚙️ System Health</a>
@@ -499,28 +498,6 @@
                     <h2>🧪 Test Management</h2>
                     <p>Create test blocks and manage test lifecycle</p>
                 </div>
-
-                <!-- Test Statistics -->
-                <div class="test-stats-section">
-                    <h3>📊 Test Statistics</h3>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number" id="total-created">-</div>
-                            <div class="stat-label">Total Created</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" id="total-activated">-</div>
-                            <div class="stat-label">Activated</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" id="total-pending">-</div>
-                            <div class="stat-label">Pending</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" id="total-batches">-</div>
-                            <div class="stat-label">Batches</div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Bulk Test Creation Section -->
@@ -529,37 +506,6 @@
                     <p>Generate a batch of test IDs for shipping. Tests will use the new format: <code>yyyy-mm-n-xxxxxx</code></p>
                     
                     <div class="success-message" id="test-success-message" style="display: none;"></div>
-                    <div class="error-message" id="test-error-message" style="display: none;"></div>
-                    
-                    <form id="bulk-creation-form" class="creation-form">
-                        <div class="form-group">
-                            <label for="test-quantity">Number of Tests</label>
-                            <input type="number" id="test-quantity" min="1" max="1000" value="10" required>
-                            <small>Min: 1, Max: 1000</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="batch-notes">Notes (Optional)</label>
-                            <input type="text" id="batch-notes" placeholder="e.g., Q1 2025 Inventory">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Preview Format</label>
-                            <div class="test-id-preview" id="test-id-preview">
-                                2025-07-123-45678
-                            </div>
-                        </div>
-                        
-                        <button type="submit" class="create-btn" id="create-test-btn">
-                            📦 Create Tests
-                        </button>
-                    </form>
-                    
-                    <div class="loading-spinner" id="test-loading-spinner" style="display: none;">
-                        <div class="spinner"></div>
-                        <span>Creating tests...</span>
-                    </div>
-                </div>
 
         <!-- Batch Printing Section -->
         <div class="content-section" id="batch-printing" style="display: none;">
@@ -644,6 +590,37 @@
                 </div>
             </div>
         </div>
+                    <div class="error-message" id="test-error-message" style="display: none;"></div>
+                    
+                    <form id="bulk-creation-form" class="creation-form">
+                        <div class="form-group">
+                            <label for="test-quantity">Number of Tests</label>
+                            <input type="number" id="test-quantity" min="1" max="1000" value="10" required>
+                            <small>Min: 1, Max: 1000</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="batch-notes">Notes (Optional)</label>
+                            <input type="text" id="batch-notes" placeholder="e.g., Q1 2025 Inventory">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Preview Format</label>
+                            <div class="test-id-preview" id="test-id-preview">
+                                2025-07-123-45678
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="create-btn" id="create-test-btn">
+                            📦 Create Tests
+                        </button>
+                    </form>
+                    
+                    <div class="loading-spinner" id="test-loading-spinner" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Creating tests...</span>
+                    </div>
+                </div>
 
                 <!-- Tests Management Controls -->
                 <div class="tests-controls-section">
@@ -695,6 +672,28 @@
                     </div>
                 </div>
 
+                <!-- Test Statistics -->
+                <div class="test-stats-section">
+                    <h3>📊 Test Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-created">-</div>
+                            <div class="stat-label">Total Created</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-activated">-</div>
+                            <div class="stat-label">Activated</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-pending">-</div>
+                            <div class="stat-label">Pending</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-batches">-</div>
+                            <div class="stat-label">Batches</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Supplements Section -->
@@ -774,15 +773,15 @@
         // Global alert system
         function showAlert(message, type = 'info') {
             console.log('📢 Alert:', message, '| Type:', type);
-        
+            
             const alertDiv = document.getElementById('global-alert');
             if (alertDiv) {
-                const alertClass = type === 'error' ? 'alert-danger' :
-                    type === 'warning' ? 'alert-warning' :
-                        type === 'success' ? 'alert-success' : 'alert-info';
-        
+                const alertClass = type === 'error' ? 'alert-danger' : 
+                                  type === 'warning' ? 'alert-warning' : 
+                                  type === 'success' ? 'alert-success' : 'alert-info';
+                
                 alertDiv.innerHTML = `<div class="alert ${alertClass}" role="alert">${message}</div>`;
-        
+                
                 // Auto-hide success and info messages
                 if (type === 'success' || type === 'info') {
                     setTimeout(() => {
@@ -800,7 +799,7 @@
             try {
                 const response = await fetch(`${API_BASE}/api/dashboard/stats`);
                 const data = await response.json();
-        
+                
                 if (response.ok && data.success) {
                     console.log('✅ Dashboard stats loaded:', data.stats);
                     const elements = {
@@ -809,17 +808,18 @@
                         'completed-tests': data.stats.completed_tests || 0,
                         'pending-tests': data.stats.pending_tests || 0
                     };
-        
+                    
                     Object.entries(elements).forEach(([id, value]) => {
                         const element = document.getElementById(id);
                         if (element) {
                             element.textContent = value;
                         }
                     });
-        
+                    
                     const total = data.stats.total_tests || 1;
                     const activationRate = ((data.stats.activated_tests / total) * 100).toFixed(1);
-        
+                    const completionRate = ((data.stats.completed_tests / total) * 100).toFixed(1);
+                    
                     const overviewStats = document.getElementById('overview-stats');
                     if (overviewStats) {
                         overviewStats.innerHTML = `
@@ -829,7 +829,7 @@
                             🏁 <strong>${data.stats.completed_tests} completed</strong>
                         `;
                     }
-        
+                    
                     showAlert('✅ Dashboard statistics loaded successfully!', 'success');
                 } else {
                     throw new Error(data.error || 'Failed to load dashboard stats');
@@ -843,52 +843,52 @@
         // TEST MANAGEMENT FUNCTIONALITY
         function initTestManagement() {
             console.log('🚀 Initializing Test Management...');
-        
+            
             setTimeout(() => {
                 const form = document.getElementById('bulk-creation-form');
                 const button = document.getElementById('create-test-btn');
-        
+                
                 if (form && button) {
                     console.log('✅ Found test form and button');
-        
+                    
                     // Remove existing listeners
                     const newForm = form.cloneNode(true);
                     form.parentNode.replaceChild(newForm, form);
-        
+                    
                     // Add event listener
                     const finalForm = document.getElementById('bulk-creation-form');
                     finalForm.addEventListener('submit', async (e) => {
                         e.preventDefault();
                         console.log('📝 Test batch form submitted!');
-        
+                        
                         const quantity = parseInt(document.getElementById('test-quantity').value);
                         const notes = document.getElementById('batch-notes').value || '';
                         const finalButton = document.getElementById('create-test-btn');
-        
+                        
                         if (quantity < 1 || quantity > 1000) {
                             showAlert('Quantity must be between 1 and 1000', 'error');
                             return;
                         }
-        
+                        
                         // Show loading
                         finalButton.disabled = true;
                         finalButton.textContent = '⏳ Creating...';
-        
+                        
                         try {
                             const response = await fetch(`${API_BASE}/api/admin/create-test-batch`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ quantity, notes })
                             });
-        
+                            
                             const result = await response.json();
-        
+                            
                             if (result.success) {
                                 const totalCreated = result.data.quantity;
                                 const samplesShown = result.data.sample_test_ids.length;
-        
+                                
                                 let message = `✅ SUCCESS!\nCreated ${totalCreated} tests\n\nBatch ID: ${result.data.batch_id}\n\n`;
-        
+                        
                                 if (totalCreated <= 5) {
                                     message += `All Test IDs:\n${result.data.sample_test_ids.join('\n')}`;
                                 } else {
@@ -897,23 +897,23 @@
                                     message += `✨ ${totalCreated - samplesShown} additional tests were also created in this batch\n\n`;
                                     message += `All ${totalCreated} tests are ready for shipping and use!`;
                                 }
-        
+                                
                                 alert(message);
-        
+                                
                                 // Reset form
                                 finalForm.reset();
                                 document.getElementById('test-quantity').value = 10;
-        
+                                
                                 showAlert(`✅ Successfully created ${totalCreated} tests!`, 'success');
                                 console.log('✅ Test creation completed successfully');
-        
+                                
                                 // Refresh data
                                 loadTestsFromAPI();
                                 loadAllBatches();
                             } else {
                                 showAlert('❌ Error: ' + (result.message || 'Failed to create test batch'), 'error');
                             }
-        
+                            
                         } catch (error) {
                             console.error('❌ Error creating tests:', error);
                             showAlert('❌ Network error: ' + error.message, 'error');
@@ -923,7 +923,7 @@
                             finalButton.textContent = '📦 Create Tests';
                         }
                     });
-        
+                    
                     // Set up test ID preview animation
                     function updatePreview() {
                         const preview = document.getElementById('test-id-preview');
@@ -936,10 +936,10 @@
                             preview.textContent = `${year}-${month}-${randomId}-${randomSuffix}`;
                         }
                     }
-        
+                    
                     updatePreview();
                     setInterval(updatePreview, 3000);
-        
+                    
                     console.log('✅ Test Management fully configured and ready!');
                 } else {
                     console.error('❌ Test form or button not found');
@@ -950,16 +950,16 @@
         // Load tests from API
         async function loadTestsFromAPI() {
             console.log('🧪 Loading tests from API...');
-        
+            
             const tbody = document.getElementById('tests-table-body');
-            if (!tbody) {return;}
-        
+            if (!tbody) return;
+            
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Loading tests...</td></tr>';
-        
+            
             try {
                 const response = await fetch(`${API_BASE}/api/tests`);
                 const result = await response.json();
-        
+                
                 if (result.success && result.data) {
                     window.allTests = result.data;
                     window.filteredTests = [...result.data]; // Create filtered copy
@@ -980,14 +980,14 @@
         function setupSearchAndFilter() {
             const searchInput = document.getElementById('test-search');
             const statusFilter = document.getElementById('status-filter');
-        
+            
             if (searchInput) {
                 // Remove existing listeners
                 searchInput.removeEventListener('input', handleSearch);
                 searchInput.addEventListener('input', handleSearch);
                 console.log('✅ Search input listener added');
             }
-        
+            
             if (statusFilter) {
                 // Remove existing listeners
                 statusFilter.removeEventListener('change', handleFilter);
@@ -1023,40 +1023,40 @@
         // Apply both search and filter
         function applyFilters(searchTerm, statusFilter) {
             const allTests = window.allTests || [];
-        
+            
             let filtered = allTests;
-        
+            
             // Apply search filter
             if (searchTerm) {
-                filtered = filtered.filter(test =>
+                filtered = filtered.filter(test => 
                     test.test_id.toLowerCase().includes(searchTerm) ||
                     (test.customer_id && test.customer_id.toString().toLowerCase().includes(searchTerm)) ||
                     (test.order_id && test.order_id.toString().toLowerCase().includes(searchTerm)) ||
                     (test.batch_id && test.batch_id.toLowerCase().includes(searchTerm))
                 );
             }
-        
+            
             // Apply status filter
             if (statusFilter) {
                 filtered = filtered.filter(test => {
                     switch(statusFilter) {
-                    case 'activated':
-                        return test.is_activated === true;
-                    case 'pending':
-                        return test.is_activated === false;
-                    default:
-                        return true;
+                        case 'activated':
+                            return test.is_activated === true;
+                        case 'pending':
+                            return test.is_activated === false;
+                        default:
+                            return true;
                     }
                 });
             }
-        
+            
             window.filteredTests = filtered;
             renderTestsTable(filtered);
-        
+            
             // Update search results info
             const resultsInfo = `Showing ${filtered.length} of ${allTests.length} tests`;
             console.log('🔍 Filter applied:', resultsInfo);
-        
+            
             if (searchTerm || statusFilter) {
                 showAlert(`🔍 ${resultsInfo}`, 'info');
             }
@@ -1066,25 +1066,25 @@
         function clearFilters() {
             const searchInput = document.getElementById('test-search');
             const statusFilter = document.getElementById('status-filter');
-        
-            if (searchInput) {searchInput.value = '';}
-            if (statusFilter) {statusFilter.value = '';}
-        
+            
+            if (searchInput) searchInput.value = '';
+            if (statusFilter) statusFilter.value = '';
+            
             const allTests = window.allTests || [];
             window.filteredTests = [...allTests];
             renderTestsTable(window.filteredTests);
-        
+            
             showAlert('✅ Filters cleared', 'success');
         }
 
         // Load all batches from API
         async function loadAllBatches() {
             console.log('📊 Loading all batches...');
-        
+            
             try {
                 const response = await fetch(`${API_BASE}/api/admin/test-batches`);
                 const result = await response.json();
-        
+                
                 if (result.success) {
                     window.allBatches = result.data;
                     renderBatchList(result.data);
@@ -1102,8 +1102,8 @@
         // Render tests table
         function renderTestsTable(tests) {
             const tbody = document.getElementById('tests-table-body');
-            if (!tbody) {return;}
-        
+            if (!tbody) return;
+            
             if (tests.length === 0) {
                 tbody.innerHTML = `
                     <tr>
@@ -1117,14 +1117,15 @@
                 `;
                 return;
             }
-        
+            
             tbody.innerHTML = '';
             tests.forEach(test => {
                 const row = document.createElement('tr');
+                const status = test.is_activated ? 'activated' : 'pending';
                 const statusLabel = test.is_activated ? 'Activated' : 'Pending';
                 const createdDate = new Date(test.created_date).toLocaleDateString();
                 const batchDisplay = test.batch_id ? test.batch_id.split('-').pop() : 'Individual';
-        
+                
                 row.innerHTML = `
                     <td><strong>${test.test_id}</strong></td>
                     <td><span class="badge" style="padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ${test.is_activated ? '#d4edda' : '#fff3cd'}; color: ${test.is_activated ? '#155724' : '#856404'};">${statusLabel}</span></td>
@@ -1144,8 +1145,8 @@
         // Render batch list
         function renderBatchList(batches) {
             const batchList = document.getElementById('batch-list');
-            if (!batchList) {return;}
-        
+            if (!batchList) return;
+            
             if (batches.length === 0) {
                 batchList.innerHTML = `
                     <div style="text-align: center; padding: 40px;">
@@ -1155,15 +1156,15 @@
                 `;
                 return;
             }
-        
+            
             batchList.innerHTML = '';
             batches.forEach(batch => {
                 const batchDiv = document.createElement('div');
                 batchDiv.className = 'batch-item';
-        
+                
                 const batchIdShort = batch.batch_id ? batch.batch_id.split('-').pop() : 'Unknown';
                 const createdDate = new Date(batch.created_date).toLocaleDateString();
-        
+                
                 batchDiv.innerHTML = `
                     <div class="batch-info">
                         <h4>Batch ${batchIdShort}</h4>
@@ -1180,7 +1181,7 @@
                     <div>${batch.tests_created === batch.batch_size ? '✅ Complete' : '⚠️ Partial'}</div>
                     <button class="view-btn" onclick="viewBatch('${batch.batch_id}')">View Details</button>
                 `;
-        
+                
                 batchList.appendChild(batchDiv);
             });
         }
@@ -1188,8 +1189,8 @@
         // Show batches error
         function showBatchesError(errorMessage) {
             const batchList = document.getElementById('batch-list');
-            if (!batchList) {return;}
-        
+            if (!batchList) return;
+            
             batchList.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
                     <h4 style="color: #dc3545;">⚠️ Error Loading Batches</h4>
@@ -1203,19 +1204,19 @@
         function updateTestStats() {
             const allTests = window.allTests || [];
             const allBatches = window.allBatches || [];
-        
+            
             const total = allTests.length;
             const activated = allTests.filter(t => t.is_activated).length;
             const pending = total - activated;
             const batches = allBatches.length;
-        
+            
             const elements = {
                 'total-created': total,
                 'total-activated': activated,
                 'total-pending': pending,
                 'total-batches': batches
             };
-        
+            
             Object.entries(elements).forEach(([id, value]) => {
                 const element = document.getElementById(id);
                 if (element) {
@@ -1247,12 +1248,12 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             try {
                 const response = await fetch(`${API_BASE}/api/admin/test-batch/${batchId}`);
                 const result = await response.json();
-        
+                
                 if (result.success) {
                     const tests = result.data;
                     const testIds = tests.slice(0, 10).map(t => t.test_id).join('\n');
                     const message = `Batch ${batchId} contains ${tests.length} tests.\n\nFirst ${Math.min(10, tests.length)} test IDs:\n${testIds}`;
-        
+                    
                     if (tests.length > 10) {
                         alert(message + `\n\n... and ${tests.length - 10} more tests.`);
                     } else {
@@ -1268,15 +1269,15 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         // Activate test
         async function activateTest(testId) {
-            if (!confirm(`Activate test ${testId}?`)) {return;}
-        
+            if (!confirm(`Activate test ${testId}?`)) return;
+            
             try {
                 const response = await fetch(`${API_BASE}/api/tests/${testId}/activate`, {
                     method: 'POST'
                 });
-        
+                
                 const result = await response.json();
-        
+                
                 if (result.success) {
                     showAlert(`✅ Test ${testId} activated successfully`, 'success');
                     loadTestsFromAPI(); // Refresh the table
@@ -1292,12 +1293,12 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         async function loadAnalytics() {
             console.log('📈 Loading analytics data...');
             showAlert('🔄 Loading analytics data...', 'info');
-        
+            
             try {
                 // Load dashboard stats as base for analytics
                 const response = await fetch(`${API_BASE}/api/dashboard/stats`);
                 const data = await response.json();
-        
+                
                 if (response.ok && data.success) {
                     updateAnalyticsDisplay(data.stats);
                     showAlert('✅ Analytics data loaded successfully!', 'success');
@@ -1312,12 +1313,12 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         function updateAnalyticsDisplay(stats) {
             const analyticsContent = document.getElementById('analytics-content');
-            if (!analyticsContent) {return;}
-        
+            if (!analyticsContent) return;
+            
             const total = stats.total_tests || 1;
             const activationRate = ((stats.activated_tests / total) * 100).toFixed(1);
             const completionRate = ((stats.completed_tests / total) * 100).toFixed(1);
-        
+            
             analyticsContent.innerHTML = `
                 <div class="analytics-summary">
                     <div class="stats-grid">
@@ -1376,8 +1377,8 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         function showAnalyticsError(errorMessage) {
             const analyticsContent = document.getElementById('analytics-content');
-            if (!analyticsContent) {return;}
-        
+            if (!analyticsContent) return;
+            
             analyticsContent.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
                     <h4 style="color: #dc3545;">⚠️ Error Loading Analytics</h4>
@@ -1394,16 +1395,16 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         // SUPPLEMENTS FUNCTIONALITY
         window.loadSupplements = function() {
             console.log('💊 Loading supplements from API...');
-        
+            
             const tbody = document.getElementById('supplements-table-body');
             if (!tbody) {
                 console.error('❌ supplements-table-body not found');
                 return;
             }
-        
+            
             // Show loading state
             tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Loading supplements...</td></tr>';
-        
+            
             // Make API call
             fetch(`${API_BASE}/api/supplements`)
                 .then(response => {
@@ -1412,15 +1413,15 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 })
                 .then(data => {
                     console.log('📦 Supplements data received:', data);
-        
+                    
                     if (data.success && data.supplements && data.supplements.length > 0) {
                         // Render supplements
                         tbody.innerHTML = '';
                         data.supplements.forEach(supplement => {
                             const row = document.createElement('tr');
-                            const dose = supplement.default_dose ?
+                            const dose = supplement.default_dose ? 
                                 `${supplement.default_dose} ${supplement.unit || 'mg'}` : 'Not set';
-        
+                            
                             row.innerHTML = `
                                 <td><strong>${supplement.name}</strong><br><small style="color: #666;">${supplement.description || 'No description'}</small></td>
                                 <td>${supplement.category || 'Uncategorized'}</td>
@@ -1439,7 +1440,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                             `;
                             tbody.appendChild(row);
                         });
-        
+                        
                         console.log(`✅ Loaded ${data.supplements.length} supplements successfully`);
                         showAlert(`✅ Loaded ${data.supplements.length} supplements successfully!`, 'success');
                     } else {
@@ -1492,17 +1493,17 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         // Section navigation
         function showSection(sectionName) {
             console.log('📍 Switching to section:', sectionName);
-        
+            
             // Hide all sections
             document.querySelectorAll('.content-section').forEach(section => {
                 section.classList.remove('active');
             });
-        
+            
             // Show selected section
             const targetSection = document.getElementById(sectionName);
             if (targetSection) {
                 targetSection.classList.add('active');
-        
+                
                 // Update navigation
                 document.querySelectorAll('.nav-link').forEach(link => {
                     link.classList.remove('active');
@@ -1511,41 +1512,33 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 if (navLink) {
                     navLink.classList.add('active');
                 }
-        
+                
                 // Auto-load section data
                 setTimeout(() => {
                     switch(sectionName) {
-                    case 'overview':
-                        loadDashboardStats();
-                        break;
-                    case 'tests':
-                        console.log('🔄 Auto-loading tests');
-                        initTestManagement();
-                        loadTestsFromAPI();
-                        loadAllBatches();
-                        break;
-                    case 'batch-printing':
-                        console.log('🔄 Auto-loading batch printing...');
-                        if (typeof loadPrintableBatches === 'function') {
-                            loadPrintableBatches(); // eslint-disable-line no-undef
-                        } else {
-                            console.log('📋 Batch printing functionality not yet implemented');
-                        }
-                        break;
-                    case 'supplements':
-                        console.log('🔄 Auto-loading supplements');
-                        loadSupplements();
-                        break;
-                    case 'analytics':
-                        console.log('🔄 Auto-loading analytics');
-                        loadAnalytics();
-                        break;
-                    case 'system':
-                        testSystemHealth();
-                        break;
+                        case 'overview':
+                            loadDashboardStats();
+                            break;
+                        case 'tests':
+                            console.log('🔄 Auto-loading tests');
+                            initTestManagement();
+                            loadTestsFromAPI();
+                            loadAllBatches();
+                            break;
+                        case 'supplements':
+                            console.log('🔄 Auto-loading supplements');
+                            loadSupplements();
+                            break;
+                        case 'analytics':
+                            console.log('🔄 Auto-loading analytics');
+                            loadAnalytics();
+                            break;
+                        case 'system':
+                            testSystemHealth();
+                            break;
                     }
                 }, 200);
-        
+                
                 console.log('✅ Section activated:', sectionName);
             } else {
                 console.warn(`Section ${sectionName} not found`);
@@ -1557,26 +1550,26 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         function refreshData() {
             console.log('🔄 Refreshing dashboard data...');
             showAlert('🔄 Refreshing data from API...', 'info');
-        
+            
             const activeSection = document.querySelector('.content-section.active');
             if (activeSection) {
                 switch (activeSection.id) {
-                case 'overview':
-                    loadDashboardStats();
-                    break;
-                case 'tests':
-                    initTestManagement();
-                    loadTestsFromAPI();
-                    loadAllBatches();
-                    break;
-                case 'supplements':
-                    loadSupplements();
-                    break;
-                case 'analytics':
-                    loadAnalytics();
-                    break;
-                default:
-                    showAlert('✅ Data refreshed!', 'success');
+                    case 'overview':
+                        loadDashboardStats();
+                        break;
+                    case 'tests':
+                        initTestManagement();
+                        loadTestsFromAPI();
+                        loadAllBatches();
+                        break;
+                    case 'supplements':
+                        loadSupplements();
+                        break;
+                    case 'analytics':
+                        loadAnalytics();
+                        break;
+                    default:
+                        showAlert('✅ Data refreshed!', 'success');
                 }
             } else {
                 loadDashboardStats();
@@ -1587,7 +1580,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         function testSystemHealth() {
             console.log('🔍 Testing system health...');
             showAlert('🔍 Running system health check...', 'info');
-        
+            
             const resultsDiv = document.getElementById('system-test-results');
             if (resultsDiv) {
                 resultsDiv.innerHTML = `
@@ -1604,7 +1597,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                     </div>
                 `;
             }
-        
+            
             setTimeout(() => {
                 showAlert('✅ System health check completed - all systems operational!', 'success');
             }, 2000);
@@ -1613,16 +1606,16 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         function testAPIEndpoints() {
             console.log('🌐 Testing API endpoints...');
             showAlert('🌐 Testing API connectivity...', 'info');
-        
+            
             setTimeout(() => {
                 showAlert('✅ API endpoints test completed!', 'success');
             }, 2000);
         }
 
         // Event listeners and initialization
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', function() {
             console.log('📋 NAD Admin Dashboard initializing...');
-        
+            
             // Setup navigation
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', function(e) {
@@ -1633,14 +1626,14 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                     }
                 });
             });
-        
+            
             // Load initial data
             setTimeout(() => {
                 loadDashboardStats();
             }, 500);
-        
+            
             console.log('✅ Admin dashboard initialization complete!');
-        
+            
             // Show welcome message
             setTimeout(() => {
                 showAlert('✅ Dashboard loaded successfully!', 'success');
@@ -1675,8 +1668,8 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         // Batch Printing function
         function showBatchPrinting() {
             showSection('batch-printing');
-            if (typeof batchPrintingManager !== 'undefined' && batchPrintingManager && !batchPrintingManager.isInitialized) { // eslint-disable-line no-undef
-                batchPrintingManager.init(); // eslint-disable-line no-undef
+            if (batchPrintingManager && !batchPrintingManager.isInitialized) {
+                batchPrintingManager.init();
             }
         }
         window.showBatchPrinting = showBatchPrinting;
@@ -1695,9 +1688,9 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 console.log('🔧 INLINE final fix...');
 
 // Wait a bit then apply fix
-setTimeout(() => {
+setTimeout(function() {
     console.log('🔧 INLINE applying fix...');
-
+    
     const statusFilter = document.getElementById('status-filter');
     if (statusFilter) {
         const parent = statusFilter.parentNode;
@@ -1705,28 +1698,113 @@ setTimeout(() => {
         newFilter.onchange = null;
         newFilter.removeAttribute('onchange');
         parent.replaceChild(newFilter, statusFilter);
-
-        newFilter.addEventListener('change', (e) => {
+        
+        newFilter.addEventListener('change', function(e) {
             const status = e.target.value;
             console.log('🔽 INLINE: Status:', status);
-
+            
             const tests = window.allTests || [];
             let filtered = tests;
-
+            
             if (status === 'activated') {
                 filtered = tests.filter(t => t.is_activated);
             } else if (status === 'pending') {
                 filtered = tests.filter(t => !t.is_activated);
             }
-
+            
             if (window.renderTestsTable) {
                 window.renderTestsTable(filtered);
             }
             console.log(`INLINE: ${filtered.length} tests shown`);
         });
-
+        
         console.log('✅ INLINE fix applied');
     }
 }, 3000);
 </script>
 
+        <!-- Batch Printing Section -->
+        <div class="content-section" id="batch-printing" style="display: none;">
+            <div class="section-header">
+                <h2>🖨️ Batch Printing</h2>
+                <p>Select and print test batches for shipping labels and documentation</p>
+            </div>
+
+            <div class="batch-printing-section">
+                <!-- Batch Selection Grid -->
+                <div class="batch-selector">
+                    <div class="section-controls">
+                        <h4>📦 Available Batches</h4>
+                        <div class="batch-controls">
+                            <button class="btn btn-sm secondary" onclick="refreshPrintableBatches()">🔄 Refresh</button>
+                            <button class="btn btn-sm secondary" onclick="showPrintHistory()">📈 Print History</button>
+                        </div>
+                    </div>
+                    
+                    <div class="batch-grid" id="printable-batches">
+                        <div class="loading-state" style="text-align: center; padding: 40px;">
+                            <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                            <p>Click Refresh to load printable batches...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Print Options Panel -->
+                <div class="print-options" id="print-options" style="display: none; background: #f8f9fa; border: 2px solid #007bff; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <h4>🖨️ Print Options</h4>
+                    <div class="selected-batch-info" id="selected-batch-info" style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <!-- Will be populated when batch is selected -->
+                    </div>
+                    
+                    <div class="print-format-selector" style="margin-bottom: 20px;">
+                        <h5>Print Format:</h5>
+                        <label style="display: block; margin-bottom: 10px; cursor: pointer; padding: 10px; border: 1px solid #dee2e6; border-radius: 6px; background: white;">
+                            <input type="radio" name="print_format" value="individual_labels" checked style="margin-right: 10px;">
+                            <span>
+                                <strong>📋 Individual Test ID Labels</strong><br>
+                                <small style="color: #6c757d;">One label per test ID (recommended for label printers)</small>
+                            </span>
+                        </label>
+                        
+                        <label style="display: block; margin-bottom: 10px; cursor: pointer; padding: 10px; border: 1px solid #dee2e6; border-radius: 6px; background: white;">
+                            <input type="radio" name="print_format" value="batch_summary" style="margin-right: 10px;">
+                            <span>
+                                <strong>📊 Batch Summary Sheet</strong><br>
+                                <small style="color: #6c757d;">All test IDs on one page for records</small>
+                            </span>
+                        </label>
+                        
+                        <label style="display: block; margin-bottom: 10px; cursor: pointer; padding: 10px; border: 1px solid #dee2e6; border-radius: 6px; background: white;">
+                            <input type="radio" name="print_format" value="shipping_list" style="margin-right: 10px;">
+                            <span>
+                                <strong>📦 Shipping Checklist</strong><br>
+                                <small style="color: #6c757d;">Printable checklist for packing verification</small>
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <div class="printer-selector" style="margin-bottom: 20px;">
+                        <label for="printer-select" style="display: block; margin-bottom: 8px; font-weight: 500;">🖨️ Printer:</label>
+                        <select id="printer-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                            <option value="default">Default Label Printer</option>
+                            <option value="zebra_zp450">Zebra ZP450 Label Printer</option>
+                            <option value="dymo_450">DYMO LabelWriter 450</option>
+                            <option value="brother_ql">Brother QL Series</option>
+                            <option value="generic">Generic Printer</option>
+                        </select>
+                    </div>
+                    
+                    <div class="print-actions" style="display: flex; gap: 12px; justify-content: center;">
+                        <button class="btn primary" onclick="printSelectedBatch()" style="min-width: 120px;">
+                            🖨️ Print Batch
+                        </button>
+                        <button class="btn secondary" onclick="previewPrint()" style="min-width: 120px;">
+                            👁️ Preview
+                        </button>
+                        <button class="btn secondary" onclick="cancelPrintSelection()" style="min-width: 120px;">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
