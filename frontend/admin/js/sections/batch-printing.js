@@ -95,72 +95,33 @@ function renderBatchCards() {
     
     console.log('🔨 Creating HTML for', printableBatches.length, 'batches');
     
-    // Create simple test HTML first
-    const testHtml = `
-        <div style="background: red; color: white; padding: 20px; margin: 10px; border: 2px solid black;">
-            <h3>TEST CARD 1</h3>
-            <p>This is a test to see if HTML renders</p>
-        </div>
-        <div style="background: green; color: white; padding: 20px; margin: 10px; border: 2px solid black;">
-            <h3>TEST CARD 2</h3>
-            <p>If you see this, HTML rendering works</p>
-        </div>
-    `;
-    
     const html = printableBatches.map(batch => createBatchCard(batch)).join('');
     console.log('📄 Generated HTML length:', html.length);
     
-    // Set test HTML first to verify rendering works
-    container.innerHTML = testHtml;
-    console.log('🧪 Set test HTML first');
-    
-    // Also try creating and appending elements directly
-    const testDiv = document.createElement('div');
-    testDiv.style.cssText = 'background: purple; color: white; padding: 30px; margin: 10px; border: 5px solid orange; font-size: 20px; position: absolute; top: 100px; left: 100px; z-index: 99999;';
-    testDiv.innerHTML = '<h2>DIRECT DOM TEST</h2><p>This should be visible if DOM manipulation works</p>';
-    document.body.appendChild(testDiv);
-    console.log('🔬 Added direct DOM test element to body');
-    
-    // Then try the real HTML after a delay
-    setTimeout(() => {
-        container.innerHTML = html;
-        console.log('🔄 Set real HTML after test');
-    }, 2000);
+    // Set the actual batch cards HTML
+    container.innerHTML = html;
     console.log('✅ HTML set to container');
     
-    // Force container visibility and debug styles with !important
+    // Force container visibility and proper grid styles
     container.style.cssText = `
-        display: block !important;
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+        gap: 20px !important;
         width: 100% !important;
-        height: 400px !important;
-        min-height: 400px !important;
-        max-height: none !important;
-        border: 5px solid red !important;
-        background: yellow !important;
-        position: relative !important;
-        z-index: 99999 !important;
+        min-height: 200px !important;
         margin: 20px 0 !important;
         padding: 20px !important;
         overflow: visible !important;
         visibility: visible !important;
         opacity: 1 !important;
     `;
-    console.log('🔥 Applied aggressive container styles with !important');
+    console.log('🎨 Applied proper grid styles with !important');
     
     // Also force parent containers to be visible
     const batchSection = document.getElementById('batch-printing');
     if (batchSection) {
         batchSection.style.display = 'block';
-        batchSection.style.minHeight = '300px';
-        batchSection.style.border = '3px solid blue';
         console.log('🎨 Forced batch-printing section visible');
-        
-        // Try adding test content directly to the section instead of the container
-        const directTest = document.createElement('div');
-        directTest.style.cssText = 'background: cyan; color: black; padding: 20px; margin: 20px; border: 3px solid magenta; font-size: 16px;';
-        directTest.innerHTML = '<h3>SECTION DIRECT TEST</h3><p>This tests if the batch-printing section can display content</p>';
-        batchSection.appendChild(directTest);
-        console.log('🧪 Added direct test to batch-printing section');
     }
     
     console.log('🎨 Forced container styles applied');
