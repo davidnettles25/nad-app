@@ -1581,7 +1581,5 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         console.log('🎯 NAD Admin Dashboard ready!');
     </script>
-    <script src="admin/js/dropdown-fix.js"></script>
-    <script src="admin/js/filter-helpers.js"></script>
 </body>
 </html>
