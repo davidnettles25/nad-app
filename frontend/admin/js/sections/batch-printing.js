@@ -93,6 +93,15 @@ function renderBatchCards() {
     console.log('📄 Generated HTML length:', html.length);
     container.innerHTML = html;
     console.log('✅ HTML set to container');
+    
+    // Force container visibility and debug styles
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+    container.style.gap = '20px';
+    container.style.margin = '20px 0';
+    container.style.minHeight = '200px';
+    container.style.border = '2px solid red'; // Debug border
+    console.log('🎨 Forced container styles applied');
 }
 
 // Create batch card HTML
