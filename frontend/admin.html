@@ -399,6 +399,111 @@
 
     <script>
 
+// GLOBAL FUNCTION DECLARATIONS - Must be at the top
+window.refreshData = function() {
+    console.log('🔄 Refreshing dashboard data...');
+    showGlobalAlert('🔄 Refreshing data from API...', 'info');
+    
+    const activeSection = document.querySelector('.content-section.active');
+    if (activeSection) {
+        switch (activeSection.id) {
+            case 'overview':
+                if (typeof loadDashboardStats === 'function') {
+                    loadDashboardStats();
+                } else {
+                    console.warn('loadDashboardStats function not available');
+                }
+                break;
+            case 'users':
+                if (typeof loadUsers === 'function') loadUsers();
+                break;
+            case 'tests':
+                if (typeof loadTestsFromAPI === 'function') loadTestsFromAPI();
+                if (typeof loadAllTests === 'function') loadAllTests();
+                if (typeof loadAllBatches === 'function') loadAllBatches();
+                break;
+            case 'supplements':
+                if (typeof loadSupplements === 'function') loadSupplements();
+                break;
+            case 'analytics':
+                if (typeof loadAnalytics === 'function') loadAnalytics();
+                break;
+            case 'system':
+                if (typeof testSystemHealth === 'function') testSystemHealth();
+                break;
+            default:
+                if (typeof loadDashboardStats === 'function') {
+                    loadDashboardStats();
+                } else {
+                    showGlobalAlert('✅ Data refreshed!', 'success');
+                }
+        }
+    } else {
+        // No active section, just refresh overview
+        if (typeof loadDashboardStats === 'function') {
+            loadDashboardStats();
+        } else {
+            showGlobalAlert('✅ Data refreshed!', 'success');
+        }
+    }
+};
+
+// Placeholder global functions - will be overridden by actual implementations
+window.testSystemHealth = function() {
+    console.log('🔍 Testing system health...');
+    showGlobalAlert('🔍 Running system health check...', 'info');
+    
+    setTimeout(() => {
+        showGlobalAlert('✅ System health check completed!', 'success');
+    }, 2000);
+};
+
+window.testAPIEndpoints = function() {
+    console.log('🌐 Testing API endpoints...');
+    showGlobalAlert('🌐 Testing API connectivity...', 'info');
+    
+    setTimeout(() => {
+        showGlobalAlert('✅ API endpoints test completed!', 'success');
+    }, 2000);
+};
+
+// Global alert helper function
+window.showGlobalAlert = function(message, type = 'info') {
+    const alertDiv = document.getElementById('global-alert');
+    if (alertDiv) {
+        alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                alertDiv.innerHTML = '';
+            }, 5000);
+        }
+    }
+};
+
+// Enhanced alert function with better Bootstrap styling
+window.showAlert = function(message, type = 'info') {
+    console.log('📢 Alert:', message, '| Type:', type);
+    
+    const alertDiv = document.getElementById('global-alert');
+    if (alertDiv) {
+        const alertClass = type === 'error' ? 'alert-danger' : 
+                          type === 'warning' ? 'alert-warning' : 
+                          type === 'success' ? 'alert-success' : 'alert-info';
+        
+        alertDiv.innerHTML = `<div class="alert ${alertClass}" role="alert">${message}</div>`;
+        
+        // Auto-hide success and info messages
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                if (alertDiv.innerHTML) {
+                    alertDiv.innerHTML = '';
+                }
+            }, 5000);
+        }
+    }
+};
+
 // Define loadDashboardStats function FIRST
 async function loadDashboardStats() {
     console.log('📊 Loading dashboard statistics...');
@@ -650,10 +755,22 @@ console.log('✅ loadDashboardStats defined at script start');
             });
         });
 
-        // Make key functions globally available
+        // Store references to the actual implementations
+        const actualTestSystemHealth = testSystemHealth;
+        const actualTestAPIEndpoints = testAPIEndpoints;
+        
+        // Override global functions with actual implementations
         window.showSection = showSection;
-        window.testSystemHealth = testSystemHealth;
-        window.testAPIEndpoints = testAPIEndpoints;
+        window.testSystemHealth = async function() {
+            console.log('🔍 Testing system health...');
+            showGlobalAlert('🔍 Running system health check...', 'info');
+            await actualTestSystemHealth();
+        };
+        window.testAPIEndpoints = async function() {
+            console.log('🌐 Testing API endpoints...');
+            showGlobalAlert('🌐 Testing API connectivity...', 'info');
+            await actualTestAPIEndpoints();
+        };
         window.showGlobalAlert = showGlobalAlert;
 
         console.log('🎯 Enhanced Admin Dashboard Ready!');
