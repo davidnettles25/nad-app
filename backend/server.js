@@ -1799,6 +1799,369 @@ app.use((error, req, res, next) => {
 });
 
 // ============================================================================
+// BATCH PRINTING ENDPOINTS
+// ============================================================================
+
+// Get all printable batches with print status
+app.get('/api/admin/printable-batches', async (req, res) => {
+    try {
+        console.log('🖨️ Fetching printable batches...');
+        
+        const [batches] = await db.execute(`
+            SELECT 
+                batch_id,
+                total_tests,
+                printed_tests,
+                last_printed_date,
+                batch_size,
+                created_date,
+                batch_notes,
+                print_status,
+                print_percentage
+            FROM batch_print_status 
+            ORDER BY created_date DESC
+            LIMIT 50
+        `);
+        
+        // Get sample test IDs for each batch
+        for (let batch of batches) {
+            const [sampleTests] = await db.execute(
+                'SELECT test_id FROM nad_test_ids WHERE batch_id = ? ORDER BY id LIMIT 3',
+                [batch.batch_id]
+            );
+            batch.sample_test_ids = sampleTests.map(t => t.test_id);
+        }
+        
+        console.log(`✅ Found ${batches.length} printable batches`);
+        
+        res.json({
+            success: true,
+            data: batches
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching printable batches:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch printable batches',
+            error: error.message 
+        });
+    }
+});
+
+// Get detailed information for a specific batch
+app.get('/api/admin/batch-details/:batchId', async (req, res) => {
+    const { batchId } = req.params;
+    
+    try {
+        console.log(`🔍 Fetching details for batch: ${batchId}`);
+        
+        // Get batch summary
+        const [batchInfo] = await db.execute(
+            'SELECT * FROM batch_print_status WHERE batch_id = ?',
+            [batchId]
+        );
+        
+        if (batchInfo.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Batch not found'
+            });
+        }
+        
+        // Get all tests in this batch
+        const [tests] = await db.execute(`
+            SELECT 
+                test_id, 
+                is_activated, 
+                is_printed, 
+                printed_date, 
+                printed_by,
+                customer_id,
+                order_id,
+                created_date
+            FROM nad_test_ids 
+            WHERE batch_id = ? 
+            ORDER BY id
+        `, [batchId]);
+        
+        // Get print history for this batch
+        const [printHistory] = await db.execute(
+            'SELECT * FROM batch_print_history WHERE batch_id = ? ORDER BY printed_date DESC',
+            [batchId]
+        );
+        
+        res.json({
+            success: true,
+            data: {
+                batch_info: batchInfo[0],
+                tests: tests,
+                print_history: printHistory
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching batch details:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// Print a batch (mark as printed and log the print job)
+app.post('/api/admin/print-batch', async (req, res) => {
+    const { batch_id, print_format, printer_name, notes } = req.body;
+    const printed_by = 'admin'; // TODO: Get from session/auth
+    
+    // Validate input
+    if (!batch_id) {
+        return res.status(400).json({
+            success: false,
+            message: 'Batch ID is required'
+        });
+    }
+    
+    const validFormats = ['individual_labels', 'batch_summary', 'shipping_list'];
+    if (!validFormats.includes(print_format)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid print format'
+        });
+    }
+    
+    const connection = await db.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+        
+        console.log(`🖨️ Processing print job for batch: ${batch_id}`);
+        
+        // Get all tests in this batch
+        const [tests] = await connection.execute(
+            'SELECT test_id, batch_id, is_printed FROM nad_test_ids WHERE batch_id = ?',
+            [batch_id]
+        );
+        
+        if (tests.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'Batch not found or contains no tests'
+            });
+        }
+        
+        console.log(`📋 Found ${tests.length} tests in batch ${batch_id}`);
+        
+        // Mark all tests in batch as printed
+        const [updateResult] = await connection.execute(
+            `UPDATE nad_test_ids 
+             SET is_printed = TRUE, printed_date = NOW(), printed_by = ? 
+             WHERE batch_id = ?`,
+            [printed_by, batch_id]
+        );
+        
+        console.log(`✅ Marked ${updateResult.affectedRows} tests as printed`);
+        
+        // Generate unique print job ID
+        const print_job_id = `PJ${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        
+        // Log the print job in history
+        const [historyResult] = await connection.execute(
+            `INSERT INTO batch_print_history 
+             (batch_id, print_format, printed_by, test_count, printer_name, print_job_id, notes) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [batch_id, print_format, printed_by, tests.length, printer_name || 'Default', print_job_id, notes || '']
+        );
+        
+        // Generate print data based on format
+        const printData = generatePrintData(tests, print_format, batch_id);
+        
+        await connection.commit();
+        
+        console.log(`✅ Print job logged with ID: ${print_job_id}`);
+        
+        res.json({
+            success: true,
+            message: `Batch ${batch_id} marked as printed successfully`,
+            data: {
+                print_job_id: print_job_id,
+                batch_id: batch_id,
+                test_count: tests.length,
+                print_format: print_format,
+                printer_name: printer_name || 'Default',
+                print_data: printData,
+                previously_printed: tests.filter(t => t.is_printed).length
+            }
+        });
+        
+    } catch (error) {
+        await connection.rollback();
+        console.error('❌ Error processing print job:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to process print job',
+            error: error.message 
+        });
+    } finally {
+        connection.release();
+    }
+});
+
+// Get print history
+app.get('/api/admin/print-history', async (req, res) => {
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+    
+    try {
+        const [history] = await db.execute(`
+            SELECT 
+                bph.id,
+                bph.batch_id,
+                bph.print_format,
+                bph.printed_by,
+                bph.printed_date,
+                bph.test_count,
+                bph.printer_name,
+                bph.print_job_id,
+                bph.notes,
+                SUBSTRING_INDEX(bph.batch_id, '-', -1) as batch_short_id
+            FROM batch_print_history bph
+            ORDER BY bph.printed_date DESC
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+        
+        // Get total count for pagination
+        const [countResult] = await db.execute(
+            'SELECT COUNT(*) as total FROM batch_print_history'
+        );
+        
+        res.json({ 
+            success: true, 
+            data: {
+                history: history,
+                total: countResult[0].total,
+                limit: limit,
+                offset: offset
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching print history:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// Reset print status for a batch (for reprinting)
+app.post('/api/admin/reset-print-status', async (req, res) => {
+    const { batch_id, reason } = req.body;
+    
+    if (!batch_id) {
+        return res.status(400).json({
+            success: false,
+            message: 'Batch ID is required'
+        });
+    }
+    
+    try {
+        const [result] = await db.execute(
+            `UPDATE nad_test_ids 
+             SET is_printed = FALSE, printed_date = NULL, printed_by = NULL 
+             WHERE batch_id = ?`,
+            [batch_id]
+        );
+        
+        // Log the reset action
+        const reset_reason = reason || 'Print status reset via admin';
+        await db.execute(
+            `INSERT INTO batch_print_history 
+             (batch_id, print_format, printed_by, test_count, notes) 
+             VALUES (?, 'status_reset', 'admin', ?, ?)`,
+            [batch_id, result.affectedRows, `RESET: ${reset_reason}`]
+        );
+        
+        console.log(`🔄 Reset print status for ${result.affectedRows} tests in batch ${batch_id}`);
+        
+        res.json({
+            success: true,
+            message: `Print status reset for batch ${batch_id}`,
+            data: {
+                tests_reset: result.affectedRows,
+                reason: reset_reason
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Error resetting print status:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function generatePrintData(tests, format, batch_id) {
+    const batch_short_id = batch_id.split('-').pop();
+    
+    switch (format) {
+        case 'individual_labels':
+            return {
+                type: 'individual_labels',
+                labels: tests.map(test => ({
+                    test_id: test.test_id,
+                    batch_id: batch_id,
+                    batch_short_id: batch_short_id,
+                    qr_code_data: test.test_id, // This could be used for QR code generation
+                    print_date: new Date().toISOString()
+                }))
+            };
+            
+        case 'batch_summary':
+            return {
+                type: 'batch_summary',
+                batch_id: batch_id,
+                batch_short_id: batch_short_id,
+                test_count: tests.length,
+                test_ids: tests.map(t => t.test_id),
+                created_date: new Date().toISOString(),
+                summary_title: `Batch ${batch_short_id} Summary`
+            };
+            
+        case 'shipping_list':
+            return {
+                type: 'shipping_list',
+                batch_id: batch_id,
+                batch_short_id: batch_short_id,
+                checklist_title: `Shipping Checklist - Batch ${batch_short_id}`,
+                items: tests.map(test => ({
+                    test_id: test.test_id,
+                    checked: false,
+                    notes: ''
+                })),
+                total_items: tests.length
+            };
+            
+        default:
+            throw new Error(`Unsupported print format: ${format}`);
+    }
+}
+
+// Generate QR code data (placeholder - you can integrate with QR library)
+function generateQRCode(data) {
+    // This is a placeholder - integrate with actual QR code library
+    return `QR:${data}`;
+}
+
+console.log('✅ Batch printing endpoints loaded');
+
+// ============================================================================
 // SERVER STARTUP AND SHUTDOWN
 // ============================================================================
 
