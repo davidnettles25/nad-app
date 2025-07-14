@@ -256,14 +256,28 @@ function renderBatchCards() {
             z-index: 1000 !important;
         `;
         
-        // Test with simple HTML first to see if the container appears
+        // Create very simple batch cards instead of complex ones
+        const simpleBatchCards = printableBatches.map(batch => `
+            <div style="background: white; border: 2px solid #007bff; padding: 15px; margin: 10px; border-radius: 8px; min-height: 150px;">
+                <h4 style="color: #007bff; margin: 0 0 10px 0;">Batch #${batch.batch_id.split('-').pop()}</h4>
+                <p style="margin: 5px 0;"><strong>Tests:</strong> ${batch.total_tests}</p>
+                <p style="margin: 5px 0;"><strong>Status:</strong> ${batch.print_status}</p>
+                <p style="margin: 5px 0;"><strong>Created:</strong> ${new Date(batch.created_date).toLocaleDateString()}</p>
+                <button style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    🖨️ Print
+                </button>
+            </div>
+        `).join('');
+        
         simpleBatchDisplay.innerHTML = `
             <div style="background: yellow; padding: 20px; margin: 10px; border: 2px solid black; font-size: 18px; font-weight: bold;">
                 🎯 SIMPLE BATCH CONTAINER TEST
                 <p>Found ${printableBatches.length} batches</p>
-                <p>HTML Length: ${html.length} characters</p>
+                <p>Creating simple cards...</p>
             </div>
-            ${html}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 10px;">
+                ${simpleBatchCards}
+            </div>
         `;
         
         // Remove any existing simple display
