@@ -548,6 +548,7 @@
                                 <option value="pending">Pending</option>
                             </select>
                             <button class="btn btn-secondary" onclick="loadTestsFromAPI()">🔄 Refresh Tests</button>
+                            <button class="btn btn-secondary" onclick="clearFilters()">🗑️ Clear Filters</button>
                         </div>
                     </div>
 
@@ -875,8 +876,10 @@
                 
                 if (result.success && result.data) {
                     window.allTests = result.data;
-                    renderTestsTable(result.data);
+                    window.filteredTests = [...result.data]; // Create filtered copy
+                    renderTestsTable(window.filteredTests);
                     updateTestStats();
+                    setupSearchAndFilter(); // Set up search/filter after loading
                     showAlert(`✅ Loaded ${result.data.length} tests`, 'success');
                 } else {
                     tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">No tests found</td></tr>';
@@ -885,6 +888,107 @@
                 console.error('❌ Error loading tests:', error);
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: red;">Error loading tests</td></tr>';
             }
+        }
+
+        // Set up search and filter functionality
+        function setupSearchAndFilter() {
+            const searchInput = document.getElementById('test-search');
+            const statusFilter = document.getElementById('status-filter');
+            
+            if (searchInput) {
+                // Remove existing listeners
+                searchInput.removeEventListener('input', handleSearch);
+                searchInput.addEventListener('input', handleSearch);
+                console.log('✅ Search input listener added');
+            }
+            
+            if (statusFilter) {
+                // Remove existing listeners
+                statusFilter.removeEventListener('change', handleFilter);
+                statusFilter.addEventListener('change', handleFilter);
+                console.log('✅ Status filter listener added');
+            }
+        }
+
+        // Handle search input
+        function handleSearch(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            applyFilters(searchTerm, getCurrentStatusFilter());
+        }
+
+        // Handle status filter
+        function handleFilter(e) {
+            const statusFilter = e.target.value;
+            applyFilters(getCurrentSearchTerm(), statusFilter);
+        }
+
+        // Get current search term
+        function getCurrentSearchTerm() {
+            const searchInput = document.getElementById('test-search');
+            return searchInput ? searchInput.value.toLowerCase().trim() : '';
+        }
+
+        // Get current status filter
+        function getCurrentStatusFilter() {
+            const statusFilter = document.getElementById('status-filter');
+            return statusFilter ? statusFilter.value : '';
+        }
+
+        // Apply both search and filter
+        function applyFilters(searchTerm, statusFilter) {
+            const allTests = window.allTests || [];
+            
+            let filtered = allTests;
+            
+            // Apply search filter
+            if (searchTerm) {
+                filtered = filtered.filter(test => 
+                    test.test_id.toLowerCase().includes(searchTerm) ||
+                    (test.customer_id && test.customer_id.toString().toLowerCase().includes(searchTerm)) ||
+                    (test.order_id && test.order_id.toString().toLowerCase().includes(searchTerm)) ||
+                    (test.batch_id && test.batch_id.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Apply status filter
+            if (statusFilter) {
+                filtered = filtered.filter(test => {
+                    switch(statusFilter) {
+                        case 'activated':
+                            return test.is_activated === true;
+                        case 'pending':
+                            return test.is_activated === false;
+                        default:
+                            return true;
+                    }
+                });
+            }
+            
+            window.filteredTests = filtered;
+            renderTestsTable(filtered);
+            
+            // Update search results info
+            const resultsInfo = `Showing ${filtered.length} of ${allTests.length} tests`;
+            console.log('🔍 Filter applied:', resultsInfo);
+            
+            if (searchTerm || statusFilter) {
+                showAlert(`🔍 ${resultsInfo}`, 'info');
+            }
+        }
+
+        // Clear filters
+        function clearFilters() {
+            const searchInput = document.getElementById('test-search');
+            const statusFilter = document.getElementById('status-filter');
+            
+            if (searchInput) searchInput.value = '';
+            if (statusFilter) statusFilter.value = '';
+            
+            const allTests = window.allTests || [];
+            window.filteredTests = [...allTests];
+            renderTestsTable(window.filteredTests);
+            
+            showAlert('✅ Filters cleared', 'success');
         }
 
         // Load all batches from API
@@ -1471,6 +1575,9 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         window.toggleSupplement = toggleSupplement;
         window.testSystemHealth = testSystemHealth;
         window.testAPIEndpoints = testAPIEndpoints;
+        window.setupSearchAndFilter = setupSearchAndFilter;
+        window.clearFilters = clearFilters;
+        window.applyFilters = applyFilters;
 
         console.log('🎯 NAD Admin Dashboard ready!');
     </script>
