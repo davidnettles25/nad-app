@@ -1547,6 +1547,8 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                         break;
                     case 'batch-printing':
                         console.log('🔄 Auto-loading batch printing...');
+                        // Create batch printing content directly in the active section
+                        createBatchPrintingContent();
                         if (typeof loadPrintableBatches === 'function') {
                             loadPrintableBatches(); // eslint-disable-line no-undef
                         } else {
@@ -1566,6 +1568,34 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                         break;
                     }
                 }, 200);
+                
+                // Function to create batch printing content directly
+                function createBatchPrintingContent() {
+                    const batchSection = document.getElementById('batch-printing');
+                    if (batchSection) {
+                        batchSection.innerHTML = `
+                            <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+                                <h3 style="margin-bottom: 20px;">🖨️ Batch Printing</h3>
+                                <p style="margin-bottom: 30px;">Select and print test batches for shipping labels and documentation.</p>
+                                
+                                <div style="margin-bottom: 20px;">
+                                    <h4 style="margin-bottom: 15px;">📦 Available Batches</h4>
+                                    <div style="margin-bottom: 20px;">
+                                        <button class="btn btn-sm secondary" onclick="refreshPrintableBatches()" style="margin-right: 10px;">🔄 Refresh</button>
+                                        <button class="btn btn-sm secondary" onclick="showPrintHistory()">📈 Print History</button>
+                                    </div>
+                                </div>
+                                
+                                <div id="printable-batches" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; min-height: 200px;">
+                                    <div style="text-align: center; padding: 40px; grid-column: 1 / -1;">
+                                        <p>Loading batch data...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        console.log('✅ Created batch printing content directly');
+                    }
+                }
             } else {
                 console.error('❌ Section not found:', sectionName);
             }
