@@ -60,7 +60,7 @@
         }
 
         .content-section {
-            display: none !important;
+            display: none;
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(10px);
             border-radius: 15px;
@@ -70,6 +70,9 @@
 
         .content-section.active {
             display: block !important;
+            background: rgba(255,255,255,0.95) !important;
+            border: 3px solid red !important;
+            min-height: 400px !important;
         }
 
         .header {
@@ -1507,6 +1510,10 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             const targetSection = document.getElementById(sectionName);
             if (targetSection) {
                 targetSection.classList.add('active');
+                console.log('✅ Section activated:', sectionName);
+                console.log('📱 Section element:', targetSection);
+                console.log('📱 Section has active class:', targetSection.classList.contains('active'));
+                console.log('📱 Section computed display:', window.getComputedStyle(targetSection).display);
         
                 // Update navigation
                 document.querySelectorAll('.nav-link').forEach(link => {
@@ -1516,6 +1523,9 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 if (navLink) {
                     navLink.classList.add('active');
                 }
+            } else {
+                console.error('❌ Section not found:', sectionName);
+            }
         
                 // Auto-load section data
                 setTimeout(() => {
