@@ -69,7 +69,7 @@
         }
 
         .content-section.active {
-            display: block;
+            display: block !important;
         }
 
         .header {
@@ -567,10 +567,6 @@
                 <h3>🖨️ Batch Printing</h3>
                 <p>Select and print test batches for shipping labels and documentation.</p>
                 
-                <!-- Simple test element -->
-                <div style="background: yellow; border: 3px solid red; padding: 20px; margin: 20px 0; font-size: 18px; font-weight: bold;">
-                    🧪 STATIC TEST ELEMENT - If you see this, the batch printing section can display content!
-                </div>
                 
                 <!-- Batch Selection Grid -->
                 <div class="batch-selector">
@@ -1498,19 +1494,23 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         function showSection(sectionName) {
             console.log('📍 Switching to section:', sectionName);
         
-            // Hide all sections
+            // Hide all sections and clean up any dynamic content
             document.querySelectorAll('.content-section').forEach(section => {
                 section.classList.remove('active');
+                // Clear batch printing container when leaving that section
+                if (section.id === 'batch-printing') {
+                    const container = document.getElementById('printable-batches');
+                    if (container) {
+                        container.innerHTML = '';
+                        container.style.cssText = '';
+                    }
+                }
             });
         
             // Show selected section
             const targetSection = document.getElementById(sectionName);
             if (targetSection) {
                 targetSection.classList.add('active');
-                console.log('✅ Section activated:', sectionName);
-                console.log('📱 Section element:', targetSection);
-                console.log('📱 Section has active class:', targetSection.classList.contains('active'));
-                console.log('📱 Section computed display:', window.getComputedStyle(targetSection).display);
         
                 // Update navigation
                 document.querySelectorAll('.nav-link').forEach(link => {
@@ -1627,32 +1627,16 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         // Event listeners and initialization
         document.addEventListener('DOMContentLoaded', () => {
             console.log('📋 NAD Admin Dashboard initializing...');
-            console.log('🔍 DOMContentLoaded fired');
         
             // Setup navigation
-            const navLinks = document.querySelectorAll('.nav-link');
-            console.log('🔍 Found nav links:', navLinks.length);
-            
-            navLinks.forEach((link, index) => {
-                console.log(`🔗 Setting up nav link ${index}:`, link.getAttribute('data-section'), link);
+            document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', function(e) {
-                    console.log('🔗 Nav link clicked:', this.getAttribute('data-section'));
                     e.preventDefault();
                     const sectionName = this.getAttribute('data-section');
                     if (sectionName) {
                         showSection(sectionName);
-                    } else {
-                        console.error('❌ No data-section attribute found');
                     }
                 });
-            });
-            
-            // Test if ANY click events work
-            document.body.addEventListener('click', function(e) {
-                console.log('🖱️ Body click detected:', e.target);
-                if (e.target.classList.contains('nav-link')) {
-                    console.log('🎯 Nav link detected in body click:', e.target.getAttribute('data-section'));
-                }
             });
         
             // Load initial data

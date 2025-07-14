@@ -23,16 +23,6 @@ function initBatchPrinting() {
 async function loadPrintableBatches() {
     console.log('🔄 Loading printable batches...');
     
-    // First check if the batch-printing section is actually visible
-    const batchSection = document.getElementById('batch-printing');
-    if (batchSection) {
-        const isVisible = batchSection.classList.contains('active');
-        const computedStyle = window.getComputedStyle(batchSection);
-        console.log('🔍 Batch section active class:', isVisible);
-        console.log('🔍 Batch section display:', computedStyle.display);
-        console.log('🔍 Batch section visibility:', computedStyle.visibility);
-    }
-    
     const container = document.getElementById('printable-batches');
     if (!container) {
         console.warn('⚠️ Printable batches container not found');
@@ -76,6 +66,14 @@ async function loadPrintableBatches() {
 // Render batch cards
 function renderBatchCards() {
     console.log('🎨 renderBatchCards called with', printableBatches.length, 'batches');
+    
+    // Only render if batch-printing section is active
+    const batchSection = document.getElementById('batch-printing');
+    if (!batchSection || !batchSection.classList.contains('active')) {
+        console.log('📝 Batch printing section not active, skipping render');
+        return;
+    }
+    
     const container = document.getElementById('printable-batches');
     if (!container) {
         console.error('❌ Container printable-batches not found!');
@@ -95,28 +93,25 @@ function renderBatchCards() {
         return;
     }
     
-    // Create simplified batch display that works reliably
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-        // Create clean batch display container
-        const batchDisplay = document.createElement('div');
-        batchDisplay.id = 'batch-display';
-        batchDisplay.style.cssText = `
-            background: white;
-            margin: 20px;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            min-height: 300px;
-        `;
-        
-        // Create simplified batch cards
-        const batchCards = printableBatches.map(batch => `
-            <div style="background: white; border: 2px solid #007bff; padding: 15px; margin: 10px; border-radius: 8px; min-height: 150px;">
-                <h4 style="color: #007bff; margin: 0 0 10px 0;">Batch #${batch.batch_id.split('-').pop()}</h4>
-                <p style="margin: 5px 0;"><strong>Tests:</strong> ${batch.total_tests}</p>
-                <p style="margin: 5px 0;"><strong>Status:</strong> ${batch.print_status}</p>
-                <p style="margin: 5px 0;"><strong>Created:</strong> ${new Date(batch.created_date).toLocaleDateString()}</p>
+    // Use the existing container and apply proper grid styling
+    container.style.cssText = `
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+        gap: 20px !important;
+        padding: 20px !important;
+        background: white !important;
+        border-radius: 8px !important;
+        margin: 20px 0 !important;
+    `;
+    
+    // Create simplified batch cards
+    const batchCards = printableBatches.map(batch => `
+        <div style="background: white; border: 2px solid #007bff; padding: 15px; border-radius: 8px; min-height: 150px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h4 style="color: #007bff; margin: 0 0 10px 0;">Batch #${batch.batch_id.split('-').pop()}</h4>
+            <p style="margin: 5px 0;"><strong>Tests:</strong> ${batch.total_tests}</p>
+            <p style="margin: 5px 0;"><strong>Status:</strong> ${batch.print_status}</p>
+            <p style="margin: 5px 0;"><strong>Created:</strong> ${new Date(batch.created_date).toLocaleDateString()}</p>
+            <div style="margin-top: 15px;">
                 <button onclick="selectBatchForPrint('${batch.batch_id}')" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                     🖨️ Print
                 </button>
@@ -124,23 +119,11 @@ function renderBatchCards() {
                     👁️ Details
                 </button>
             </div>
-        `).join('');
-        
-        batchDisplay.innerHTML = `
-            <h3 style="margin-bottom: 20px; color: #333;">📦 Printable Batches (${printableBatches.length})</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-                ${batchCards}
-            </div>
-        `;
-        
-        // Remove any existing display
-        const existing = document.getElementById('batch-display');
-        if (existing) existing.remove();
-        
-        // Add to main content
-        mainContent.appendChild(batchDisplay);
-        console.log('✅ Added batch display to main content');
-    }
+        </div>
+    `).join('');
+    
+    container.innerHTML = batchCards;
+    console.log('✅ Rendered batch cards in proper container');
 }
 
 // Create batch card HTML
