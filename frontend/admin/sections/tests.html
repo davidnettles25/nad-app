@@ -4,6 +4,7 @@
         <p>Create test blocks and manage test lifecycle</p>
     </div>
 
+    <!-- Bulk Test Creation Section -->
     <div class="bulk-creation-section">
         <h3>📦 Create Test Block</h3>
         <p>Generate a batch of test IDs for shipping. Tests will use the new format: <code>yyyy-mm-n-xxxxxx</code></p>
@@ -38,6 +39,85 @@
         <div class="loading-spinner" id="test-loading-spinner" style="display: none;">
             <div class="spinner"></div>
             <span>Creating tests...</span>
+        </div>
+    </div>
+
+    <!-- Tests Management Controls -->
+    <div class="tests-controls-section">
+        <h3>📋 Existing Tests</h3>
+        <div class="section-controls">
+            <div class="search-filters">
+                <input type="text" id="test-search" placeholder="🔍 Search tests..." class="search-input">
+                <select id="status-filter" class="filter-select">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="activated">Activated</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <button class="btn secondary" onclick="exportTests()">📊 Export</button>
+                <button class="btn primary" onclick="loadAllTests()">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <!-- Tests Table -->
+        <div class="table-container">
+            <table class="data-table" id="tests-table">
+                <thead>
+                    <tr>
+                        <th>Test ID</th>
+                        <th>Status</th>
+                        <th>Customer ID</th>
+                        <th>Order ID</th>
+                        <th>Batch</th>
+                        <th>Created Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tests-table-body">
+                    <tr>
+                        <td colspan="7">
+                            <div class="loading-state">
+                                <div class="spinner"></div>
+                                <p>Loading tests...</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Batches Section -->
+    <div class="batch-history-section">
+        <h3>📋 Recent Test Batches</h3>
+        <div id="batch-list">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading batches...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Statistics -->
+    <div class="test-stats-section">
+        <h3>📊 Test Statistics</h3>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number" id="total-created">-</div>
+                <div class="stat-label">Total Created</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="total-activated">-</div>
+                <div class="stat-label">Activated</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="total-pending">-</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="total-batches">-</div>
+                <div class="stat-label">Batches</div>
+            </div>
         </div>
     </div>
 </div>
