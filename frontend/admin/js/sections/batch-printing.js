@@ -67,13 +67,6 @@ async function loadPrintableBatches() {
 function renderBatchCards() {
     console.log('🎨 renderBatchCards called with', printableBatches.length, 'batches');
     
-    // Only render if batch-printing section is active
-    const batchSection = document.getElementById('batch-printing');
-    if (!batchSection || !batchSection.classList.contains('active')) {
-        console.log('📝 Batch printing section not active, skipping render');
-        return;
-    }
-    
     const container = document.getElementById('printable-batches');
     if (!container) {
         console.error('❌ Container printable-batches not found!');

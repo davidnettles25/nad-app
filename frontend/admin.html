@@ -1494,17 +1494,9 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         function showSection(sectionName) {
             console.log('📍 Switching to section:', sectionName);
         
-            // Hide all sections and clean up any dynamic content
+            // Hide all sections
             document.querySelectorAll('.content-section').forEach(section => {
                 section.classList.remove('active');
-                // Clear batch printing container when leaving that section
-                if (section.id === 'batch-printing') {
-                    const container = document.getElementById('printable-batches');
-                    if (container) {
-                        container.innerHTML = '';
-                        container.style.cssText = '';
-                    }
-                }
             });
         
             // Show selected section
