@@ -328,6 +328,90 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Batch History Styles */
+        .batch-history-section {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .batch-history-section h3 {
+            margin: 0 0 20px 0;
+            color: #495057;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .batch-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 1fr 120px 100px 100px auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .batch-info h4 {
+            margin: 0 0 5px 0;
+            color: #495057;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .batch-info p {
+            margin: 0;
+            color: #6c757d;
+            font-size: 12px;
+        }
+
+        .batch-notes {
+            margin-top: 5px;
+            padding: 4px 8px;
+            background: #e9ecef;
+            border-radius: 3px;
+            font-style: italic;
+            color: #6c757d;
+        }
+
+        .batch-notes strong {
+            color: #495057;
+        }
+
+        .view-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .view-btn:hover {
+            background: #0056b3;
+        }
+
+        /* Test Statistics Section */
+        .test-stats-section {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .test-stats-section h3 {
+            margin: 0 0 20px 0;
+            color: #495057;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
         @media (max-width: 768px) {
             .creation-form {
                 grid-template-columns: 1fr;
@@ -490,6 +574,39 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Recent Batches Section -->
+                <div class="batch-history-section">
+                    <h3>📋 Recent Test Batches</h3>
+                    <div id="batch-list">
+                        <div style="text-align: center; padding: 20px;">
+                            <div>Loading batches...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Statistics -->
+                <div class="test-stats-section">
+                    <h3>📊 Test Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-created">-</div>
+                            <div class="stat-label">Total Created</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-activated">-</div>
+                            <div class="stat-label">Activated</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-pending">-</div>
+                            <div class="stat-label">Pending</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-batches">-</div>
+                            <div class="stat-label">Batches</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Supplements Section -->
@@ -611,6 +728,152 @@
                             element.textContent = value;
                         }
                     });
+        }
+
+        // Render batch list
+        function renderBatchList(batches) {
+            const batchList = document.getElementById('batch-list');
+            if (!batchList) return;
+            
+            if (batches.length === 0) {
+                batchList.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <h4>📦 No Test Batches Found</h4>
+                        <p>Create your first batch using the form above.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            batchList.innerHTML = '';
+            batches.forEach(batch => {
+                const batchDiv = document.createElement('div');
+                batchDiv.className = 'batch-item';
+                
+                const batchIdShort = batch.batch_id ? batch.batch_id.split('-').pop() : 'Unknown';
+                const createdDate = new Date(batch.created_date).toLocaleDateString();
+                
+                batchDiv.innerHTML = `
+                    <div class="batch-info">
+                        <h4>Batch ${batchIdShort}</h4>
+                        <p>Created: ${createdDate}</p>
+                        <p>Sample IDs: ${batch.sample_test_ids || 'N/A'}</p>
+                        ${batch.notes && batch.notes.trim() ? `
+                            <div class="batch-notes">
+                                <small><strong>Notes:</strong> ${batch.notes}</small>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="badge" style="padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #d4edda; color: #155724;">${batch.tests_created} Tests</div>
+                    <div>Requested: ${batch.batch_size}</div>
+                    <div>${batch.tests_created === batch.batch_size ? '✅ Complete' : '⚠️ Partial'}</div>
+                    <button class="view-btn" onclick="viewBatch('${batch.batch_id}')">View Details</button>
+                `;
+                
+                batchList.appendChild(batchDiv);
+            });
+        }
+
+        // Show batches error
+        function showBatchesError(errorMessage) {
+            const batchList = document.getElementById('batch-list');
+            if (!batchList) return;
+            
+            batchList.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h4 style="color: #dc3545;">⚠️ Error Loading Batches</h4>
+                    <p>${errorMessage}</p>
+                    <button class="btn btn-primary" onclick="loadAllBatches()">🔄 Try Again</button>
+                </div>
+            `;
+        }
+
+        // Update test statistics
+        function updateTestStats() {
+            const allTests = window.allTests || [];
+            const allBatches = window.allBatches || [];
+            
+            const total = allTests.length;
+            const activated = allTests.filter(t => t.is_activated).length;
+            const pending = total - activated;
+            const batches = allBatches.length;
+            
+            const elements = {
+                'total-created': total,
+                'total-activated': activated,
+                'total-pending': pending,
+                'total-batches': batches
+            };
+            
+            Object.entries(elements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                }
+            });
+        }
+
+        // View test details
+        function viewTest(testId) {
+            const allTests = window.allTests || [];
+            const test = allTests.find(t => t.test_id === testId);
+            if (test) {
+                const details = `
+Test ID: ${test.test_id}
+Status: ${test.is_activated ? 'Activated' : 'Pending'}
+Customer ID: ${test.customer_id || 'N/A'}
+Order ID: ${test.order_id || 'Manual'}
+Batch: ${test.batch_id || 'Individual'}
+Created: ${new Date(test.created_date).toLocaleString()}
+${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleString()}` : ''}
+                `.trim();
+                alert(details);
+            }
+        }
+
+        // View batch details
+        async function viewBatch(batchId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/test-batch/${batchId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const tests = result.data;
+                    const testIds = tests.slice(0, 10).map(t => t.test_id).join('\n');
+                    const message = `Batch ${batchId} contains ${tests.length} tests.\n\nFirst ${Math.min(10, tests.length)} test IDs:\n${testIds}`;
+                    
+                    if (tests.length > 10) {
+                        alert(message + `\n\n... and ${tests.length - 10} more tests.`);
+                    } else {
+                        alert(message);
+                    }
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error loading batch details: ' + error.message);
+            }
+        }
+
+        // Activate test
+        async function activateTest(testId) {
+            if (!confirm(`Activate test ${testId}?`)) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/tests/${testId}/activate`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(`✅ Test ${testId} activated successfully`, 'success');
+                    loadTestsFromAPI(); // Refresh the table
+                } else {
+                    showAlert('❌ Failed to activate test: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('❌ Network error: ' + error.message, 'error');
                     
                     const total = data.stats.total_tests || 1;
                     const activationRate = ((data.stats.activated_tests / total) * 100).toFixed(1);
@@ -753,7 +1016,9 @@
                 const result = await response.json();
                 
                 if (result.success && result.data) {
+                    window.allTests = result.data;
                     renderTestsTable(result.data);
+                    updateTestStats();
                     showAlert(`✅ Loaded ${result.data.length} tests`, 'success');
                 } else {
                     tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">No tests found</td></tr>';
@@ -761,6 +1026,28 @@
             } catch (error) {
                 console.error('❌ Error loading tests:', error);
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: red;">Error loading tests</td></tr>';
+            }
+        }
+
+        // Load all batches from API
+        async function loadAllBatches() {
+            console.log('📊 Loading all batches...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/test-batches`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    window.allBatches = result.data;
+                    renderBatchList(result.data);
+                    console.log(`✅ Loaded ${result.data.length} batches`);
+                } else {
+                    console.error('Failed to load batches:', result.message);
+                    showBatchesError('Failed to load batches');
+                }
+            } catch (error) {
+                console.error('Error loading batches:', error);
+                showBatchesError('Network error loading batches');
             }
         }
 
@@ -1050,6 +1337,7 @@
                             console.log('🔄 Auto-loading tests');
                             initTestManagement();
                             loadTestsFromAPI();
+                            loadAllBatches();
                             break;
                         case 'supplements':
                             console.log('🔄 Auto-loading supplements');
@@ -1086,6 +1374,7 @@
                     case 'tests':
                         initTestManagement();
                         loadTestsFromAPI();
+                        loadAllBatches();
                         break;
                     case 'supplements':
                         loadSupplements();
@@ -1173,8 +1462,12 @@
         window.loadSupplements = loadSupplements;
         window.initTestManagement = initTestManagement;
         window.loadTestsFromAPI = loadTestsFromAPI;
-        window.loadAnalytics = loadAnalytics;
+        window.loadAllBatches = loadAllBatches;
+        window.renderBatchList = renderBatchList;
+        window.updateTestStats = updateTestStats;
         window.viewTest = viewTest;
+        window.viewBatch = viewBatch;
+        window.loadAnalytics = loadAnalytics;
         window.activateTest = activateTest;
         window.exportAnalytics = exportAnalytics;
         window.showAddSupplementForm = showAddSupplementForm;
