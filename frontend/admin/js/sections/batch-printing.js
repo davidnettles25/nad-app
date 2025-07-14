@@ -236,6 +236,44 @@ function renderBatchCards() {
         emergencyTest.remove();
         console.log('🗑️ Removed emergency test element');
     }, 10000);
+    
+    // FINAL SOLUTION: Inject batch cards directly into main-content area
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        // Create a simple batch display that bypasses all the problematic CSS
+        const simpleBatchDisplay = document.createElement('div');
+        simpleBatchDisplay.id = 'simple-batch-display';
+        simpleBatchDisplay.style.cssText = `
+            background: cyan !important;
+            margin: 20px !important;
+            padding: 20px !important;
+            border: 5px solid magenta !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+            min-height: 300px !important;
+            width: calc(100% - 40px) !important;
+            position: relative !important;
+            z-index: 1000 !important;
+        `;
+        
+        // Test with simple HTML first to see if the container appears
+        simpleBatchDisplay.innerHTML = `
+            <div style="background: yellow; padding: 20px; margin: 10px; border: 2px solid black; font-size: 18px; font-weight: bold;">
+                🎯 SIMPLE BATCH CONTAINER TEST
+                <p>Found ${printableBatches.length} batches</p>
+                <p>HTML Length: ${html.length} characters</p>
+            </div>
+            ${html}
+        `;
+        
+        // Remove any existing simple display
+        const existing = document.getElementById('simple-batch-display');
+        if (existing) existing.remove();
+        
+        // Add to main content
+        mainContent.appendChild(simpleBatchDisplay);
+        console.log('✅ Added simple batch display to main content');
+    }
 }
 
 // Create batch card HTML
