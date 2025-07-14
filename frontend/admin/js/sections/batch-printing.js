@@ -73,6 +73,11 @@ function renderBatchCards() {
     }
     
     console.log('📦 Container found:', container);
+    console.log('📦 Container parent:', container.parentElement);
+    console.log('📦 Container computed styles:', window.getComputedStyle(container));
+    console.log('📦 Container offsetHeight:', container.offsetHeight);
+    console.log('📦 Container offsetWidth:', container.offsetWidth);
+    console.log('📦 Container visible:', container.offsetHeight > 0 && container.offsetWidth > 0);
     
     if (printableBatches.length === 0) {
         console.log('📝 No batches to display');
@@ -108,6 +113,13 @@ function renderBatchCards() {
     // Set test HTML first to verify rendering works
     container.innerHTML = testHtml;
     console.log('🧪 Set test HTML first');
+    
+    // Also try creating and appending elements directly
+    const testDiv = document.createElement('div');
+    testDiv.style.cssText = 'background: purple; color: white; padding: 30px; margin: 10px; border: 5px solid orange; font-size: 20px; position: absolute; top: 100px; left: 100px; z-index: 99999;';
+    testDiv.innerHTML = '<h2>DIRECT DOM TEST</h2><p>This should be visible if DOM manipulation works</p>';
+    document.body.appendChild(testDiv);
+    console.log('🔬 Added direct DOM test element to body');
     
     // Then try the real HTML after a delay
     setTimeout(() => {
