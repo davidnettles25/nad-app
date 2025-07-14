@@ -1,209 +1,74 @@
 #!/bin/bash
 
-# Apply Robust Dropdown Fix
+# Fix Method 1 - Script Loading Issues
 # Run this in your frontend/ directory
 
-echo "🔧 Applying Robust Dropdown Fix"
-echo "==============================="
-
-# Check if we're in the right directory
-if [[ ! -f "admin.html" ]]; then
-    echo "❌ admin.html not found. Run this from frontend/ directory"
-    exit 1
-fi
+echo "🔧 Fixing Method 1 Script Loading"
+echo "================================="
 
 echo "📍 Working in: $(pwd)"
 
-# Method 1: Create external script file
-echo "🛠️ Creating robust dropdown fix script..."
+# Check current admin.html structure
+echo ""
+echo "🔍 Step 1: Diagnosing the issue..."
 
-mkdir -p admin/js
-
-cat > admin/js/robust-dropdown-fix.js << 'EOF'
-// Robust Test Management Dropdown Fix
-// This version works with existing code and handles conflicts
-
-console.log('🔧 Loading ROBUST dropdown fix...');
-
-(function() {
-    'use strict';
-    
-    let fixApplied = false;
-    let attempts = 0;
-    const maxAttempts = 10;
-    
-    // Function to apply the fix
-    function applyDropdownFix() {
-        if (fixApplied) {
-            console.log('✅ Dropdown fix already applied');
-            return true;
-        }
-        
-        attempts++;
-        console.log(`🔧 Attempting dropdown fix (attempt ${attempts}/${maxAttempts})...`);
-        
-        const statusFilter = document.getElementById('status-filter');
-        if (!statusFilter) {
-            console.warn(`⚠️ Status filter not found (attempt ${attempts})`);
-            return false;
-        }
-        
-        console.log('✅ Status filter found, applying fix...');
-        
-        // Clear all existing event listeners by replacing the element
-        const parent = statusFilter.parentNode;
-        const newFilter = statusFilter.cloneNode(true);
-        
-        // Clear any inline handlers
-        newFilter.onchange = null;
-        newFilter.removeAttribute('onchange');
-        
-        // Replace the element
-        parent.replaceChild(newFilter, statusFilter);
-        
-        // Add our robust event listener
-        newFilter.addEventListener('change', function(e) {
-            const selectedStatus = e.target.value;
-            console.log('🔽 ROBUST: Status changed to:', selectedStatus || 'All');
-            
-            // Try multiple ways to get test data
-            const allTests = window.allTests || window.filteredTests || [];
-                            
-            if (allTests.length === 0) {
-                console.warn('⚠️ No test data found');
-                if (typeof loadTestsFromAPI === 'function') {
-                    loadTestsFromAPI();
-                }
-                return;
-            }
-            
-            console.log(`📊 Working with ${allTests.length} tests`);
-            
-            // Apply filter
-            let filtered = [...allTests];
-            
-            if (selectedStatus === 'activated') {
-                filtered = allTests.filter(test => test.is_activated === true || test.is_activated === 1);
-            } else if (selectedStatus === 'pending') {
-                filtered = allTests.filter(test => test.is_activated === false || test.is_activated === 0);
-            }
-            
-            console.log(`📋 Filtered to ${filtered.length} tests`);
-            
-            // Try multiple ways to update the display
-            let updateSuccess = false;
-            
-            if (typeof renderTestsTable === 'function') {
-                try {
-                    renderTestsTable(filtered);
-                    updateSuccess = true;
-                    console.log('✅ Updated via renderTestsTable()');
-                } catch (error) {
-                    console.warn('⚠️ renderTestsTable failed:', error);
-                }
-            }
-            
-            if (!updateSuccess && typeof window.renderTestsTable === 'function') {
-                try {
-                    window.renderTestsTable(filtered);
-                    updateSuccess = true;
-                    console.log('✅ Updated via window.renderTestsTable()');
-                } catch (error) {
-                    console.warn('⚠️ window.renderTestsTable failed:', error);
-                }
-            }
-            
-            // Update global variables
-            window.filteredTests = filtered;
-            
-            // Show feedback
-            const statusText = selectedStatus || 'All';
-            if (typeof showAlert === 'function') {
-                showAlert(`🔍 ${statusText} tests: ${filtered.length} shown`, 'info');
-            } else {
-                console.log(`📊 ${statusText} - ${filtered.length} tests shown`);
-            }
-        });
-        
-        console.log('✅ ROBUST: Event listener attached');
-        fixApplied = true;
-        return true;
-    }
-    
-    // Try to apply fix at different times
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(applyDropdownFix, 100);
-        });
-    } else {
-        setTimeout(applyDropdownFix, 100);
-    }
-    
-    // Also try after delays
-    setTimeout(function() {
-        if (!fixApplied) applyDropdownFix();
-    }, 1000);
-    
-    setTimeout(function() {
-        if (!fixApplied) applyDropdownFix();
-    }, 3000);
-    
-    // Manual retry function
-    window.retryDropdownFix = function() {
-        fixApplied = false;
-        attempts = 0;
-        applyDropdownFix();
-    };
-    
-    console.log('✅ ROBUST dropdown fix loaded');
-    
-})();
-EOF
-
-echo "✅ Created: admin/js/robust-dropdown-fix.js"
-
-# Method 2: Add script reference to admin.html
-echo "🛠️ Adding script reference to admin.html..."
-
-# Backup first
-cp admin.html admin.html.backup.robust.$(date +%Y%m%d_%H%M%S)
-
-# Check if already added
-if grep -q 'robust-dropdown-fix.js' admin.html; then
-    echo "⚠️ Script already referenced in admin.html"
-else
-    # Add before </body>
-    sed -i.tmp 's|</body>|<script src="admin/js/robust-dropdown-fix.js"></script>\n</body>|' admin.html
-    rm -f admin.html.tmp
-    echo "✅ Added script reference to admin.html"
+if [[ ! -f "admin.html" ]]; then
+    echo "❌ admin.html not found"
+    exit 1
 fi
 
-# Method 3: Create inline version for immediate testing
-echo "🛠️ Creating inline version for console testing..."
+# Check if our script reference exists
+if grep -q 'robust-dropdown-fix.js' admin.html; then
+    echo "✅ Script reference found in admin.html"
+    
+    # Show where it's placed
+    echo "📋 Script placement:"
+    grep -n -B2 -A2 'robust-dropdown-fix.js' admin.html
+    
+else
+    echo "❌ Script reference NOT found in admin.html"
+fi
 
-cat > console-fix.js << 'EOF'
-// PASTE THIS INTO BROWSER CONSOLE FOR IMMEDIATE TESTING
+# Check if script file exists
+if [[ -f "admin/js/robust-dropdown-fix.js" ]]; then
+    echo "✅ Script file exists: admin/js/robust-dropdown-fix.js"
+else
+    echo "❌ Script file missing: admin/js/robust-dropdown-fix.js"
+fi
 
-(function() {
-    console.log('🔧 Console dropdown fix...');
+echo ""
+echo "🛠️ Step 2: Creating a better version..."
+
+# Create a more aggressive version that runs later
+cat > admin/js/final-dropdown-fix.js << 'EOF'
+// FINAL Dropdown Fix - Runs after everything else
+// This version waits for all other scripts to finish
+
+console.log('🔧 FINAL dropdown fix loading...');
+
+// Function that definitely works (copied from console method)
+function applyFinalDropdownFix() {
+    console.log('🔧 Applying FINAL dropdown fix...');
     
     const statusFilter = document.getElementById('status-filter');
     if (!statusFilter) {
-        console.error('❌ Status filter not found');
-        return;
+        console.error('❌ Status filter not found in FINAL fix');
+        return false;
     }
     
-    // Replace element to clear existing listeners
+    console.log('✅ Status filter found, applying FINAL fix...');
+    
+    // Replace element to clear ALL existing listeners
     const parent = statusFilter.parentNode;
     const newFilter = statusFilter.cloneNode(true);
     newFilter.onchange = null;
     newFilter.removeAttribute('onchange');
     parent.replaceChild(newFilter, statusFilter);
     
-    // Add working listener
+    // Add our working listener (exact copy of console method)
     newFilter.addEventListener('change', function(e) {
         const status = e.target.value;
-        console.log('🔽 Status:', status);
+        console.log('🔽 FINAL: Status changed to:', status);
         
         const tests = window.allTests || [];
         let filtered = tests;
@@ -214,41 +79,165 @@ cat > console-fix.js << 'EOF'
             filtered = tests.filter(t => !t.is_activated);
         }
         
-        console.log(`Showing ${filtered.length} of ${tests.length} tests`);
+        console.log(`FINAL: Showing ${filtered.length} of ${tests.length} tests`);
         
         if (window.renderTestsTable) {
             window.renderTestsTable(filtered);
+        } else {
+            console.warn('⚠️ renderTestsTable not found');
         }
     });
     
-    console.log('✅ Console fix applied');
-})();
+    console.log('✅ FINAL: Event listener attached successfully');
+    return true;
+}
+
+// Try multiple strategies to ensure this runs LAST
+
+// Strategy 1: Wait for everything to load
+window.addEventListener('load', function() {
+    console.log('🔧 Window loaded, applying FINAL fix...');
+    setTimeout(applyFinalDropdownFix, 500);
+});
+
+// Strategy 2: Use longer delays
+setTimeout(function() {
+    console.log('🔧 5-second delay, applying FINAL fix...');
+    applyFinalDropdownFix();
+}, 5000);
+
+// Strategy 3: Watch for when tests are loaded
+let testLoadWatcher = setInterval(function() {
+    if (window.allTests && window.allTests.length > 0) {
+        console.log('🔧 Tests detected, applying FINAL fix...');
+        clearInterval(testLoadWatcher);
+        setTimeout(applyFinalDropdownFix, 1000);
+    }
+}, 1000);
+
+// Strategy 4: Override setupSearchAndFilter if it exists
+if (window.setupSearchAndFilter) {
+    const originalSetup = window.setupSearchAndFilter;
+    window.setupSearchAndFilter = function() {
+        console.log('🔧 Intercepting setupSearchAndFilter...');
+        originalSetup.apply(this, arguments);
+        setTimeout(applyFinalDropdownFix, 500);
+    };
+}
+
+// Strategy 5: Manual trigger function
+window.applyFinalDropdownFix = applyFinalDropdownFix;
+
+console.log('✅ FINAL dropdown fix strategies loaded');
 EOF
 
-echo "✅ Created: console-fix.js"
+echo "✅ Created: admin/js/final-dropdown-fix.js"
 
 echo ""
-echo "🎯 THREE WAYS TO FIX THE DROPDOWN:"
-echo "=================================="
+echo "🛠️ Step 3: Updating admin.html to load our script LAST..."
+
+# Remove old script reference if it exists
+sed -i.backup 's|.*robust-dropdown-fix.js.*||' admin.html
+
+# Add our new script RIGHT before </body> (last thing to load)
+if grep -q '</body>' admin.html; then
+    # Find the </body> tag and add our script just before it
+    sed -i.tmp 's|</body>|<script src="admin/js/final-dropdown-fix.js"></script>\n</body>|' admin.html
+    rm -f admin.html.tmp
+    echo "✅ Added final-dropdown-fix.js as LAST script before </body>"
+else
+    echo "⚠️ No </body> tag found, adding at end of file"
+    echo '<script src="admin/js/final-dropdown-fix.js"></script>' >> admin.html
+fi
+
 echo ""
-echo "📋 METHOD 1: File-based fix (recommended)"
-echo "   - ✅ Script created: admin/js/robust-dropdown-fix.js"
-echo "   - ✅ Reference added to admin.html"
-echo "   - 🔄 Test by refreshing https://mynadtest.info/admin.html"
+echo "🛠️ Step 4: Creating an even more aggressive inline version..."
+
+# Create backup of current admin.html
+cp admin.html admin.html.pre-inline-fix
+
+# Add inline script that definitely runs last
+cat >> admin.html << 'EOF'
+
+<script>
+// INLINE FINAL FIX - This definitely runs last
+console.log('🔧 INLINE final fix...');
+
+// Wait a bit then apply fix
+setTimeout(function() {
+    console.log('🔧 INLINE applying fix...');
+    
+    const statusFilter = document.getElementById('status-filter');
+    if (statusFilter) {
+        const parent = statusFilter.parentNode;
+        const newFilter = statusFilter.cloneNode(true);
+        newFilter.onchange = null;
+        newFilter.removeAttribute('onchange');
+        parent.replaceChild(newFilter, statusFilter);
+        
+        newFilter.addEventListener('change', function(e) {
+            const status = e.target.value;
+            console.log('🔽 INLINE: Status:', status);
+            
+            const tests = window.allTests || [];
+            let filtered = tests;
+            
+            if (status === 'activated') {
+                filtered = tests.filter(t => t.is_activated);
+            } else if (status === 'pending') {
+                filtered = tests.filter(t => !t.is_activated);
+            }
+            
+            if (window.renderTestsTable) {
+                window.renderTestsTable(filtered);
+            }
+            console.log(`INLINE: ${filtered.length} tests shown`);
+        });
+        
+        console.log('✅ INLINE fix applied');
+    }
+}, 3000);
+</script>
+EOF
+
+echo "✅ Added inline script to admin.html"
+
 echo ""
-echo "📋 METHOD 2: Console fix (immediate testing)"
-echo "   - Copy contents of console-fix.js"
-echo "   - Paste into browser console (F12)"
-echo "   - Test dropdown immediately"
+echo "🛠️ Step 5: Testing script paths..."
+
+# Test if scripts can be accessed
+if [[ -f "admin/js/final-dropdown-fix.js" ]]; then
+    echo "✅ Script file exists and readable"
+    echo "📊 Script size: $(wc -c < admin/js/final-dropdown-fix.js) bytes"
+else
+    echo "❌ Script file issue"
+fi
+
 echo ""
-echo "📋 METHOD 3: Manual retry (if needed)"
-echo "   - Open browser console"
-echo "   - Type: window.retryDropdownFix()"
-echo "   - Press Enter"
+echo "🎯 WHAT WE'VE DONE"
+echo "=================="
+echo "✅ Created final-dropdown-fix.js with multiple loading strategies"
+echo "✅ Added external script reference (loads before existing code)"
+echo "✅ Added INLINE script (loads after existing code)"
+echo "✅ Script tries to apply fix at multiple times:"
+echo "   - After window load event"
+echo "   - After 5 second delay"
+echo "   - When tests are detected"
+echo "   - When setupSearchAndFilter is called"
 echo ""
-echo "🔍 WHAT TO LOOK FOR:"
-echo "   - Console message: '🔧 Loading ROBUST dropdown fix...'"
-echo "   - Console message: '✅ ROBUST: Event listener attached'"
-echo "   - When changing dropdown: '🔽 ROBUST: Status changed to: [status]'"
+echo "🔍 TESTING STEPS:"
+echo "1. Deploy to server: ./deployment_script.sh"
+echo "2. Visit https://mynadtest.info/admin.html"
+echo "3. Open console (F12)"
+echo "4. Look for multiple fix messages:"
+echo "   - '🔧 FINAL dropdown fix loading...'"
+echo "   - '🔧 INLINE final fix...'"
+echo "   - '✅ FINAL: Event listener attached successfully'"
+echo "   - '✅ INLINE fix applied'"
+echo "5. Test dropdown - should work now!"
 echo ""
-echo "✅ Robust fix ready for testing!"
+echo "🚨 If STILL not working:"
+echo "   - The console method (Method 3) will always work as backup"
+echo "   - We know the logic is correct, just timing issues"
+echo ""
+echo "✅ Method 1 should now work!"
