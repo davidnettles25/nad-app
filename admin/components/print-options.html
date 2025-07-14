@@ -1,0 +1,58 @@
+<!-- Print Options Component -->
+<div class="print-options" id="print-options" style="display: none;">
+    <h4>🖨️ Print Options</h4>
+    
+    <div class="selected-batch-info" id="selected-batch-info">
+        <!-- Will be populated when batch is selected -->
+    </div>
+    
+    <div class="print-format-selector">
+        <h5>Print Format:</h5>
+        <label class="radio-option">
+            <input type="radio" name="print_format" value="individual_labels" checked>
+            <span class="radio-label">
+                <strong>📋 Individual Test ID Labels</strong>
+                <small>One label per test ID (recommended for label printers)</small>
+            </span>
+        </label>
+        
+        <label class="radio-option">
+            <input type="radio" name="print_format" value="batch_summary">
+            <span class="radio-label">
+                <strong>📊 Batch Summary Sheet</strong>
+                <small>All test IDs on one page for records</small>
+            </span>
+        </label>
+        
+        <label class="radio-option">
+            <input type="radio" name="print_format" value="shipping_list">
+            <span class="radio-label">
+                <strong>📦 Shipping Checklist</strong>
+                <small>Printable checklist for packing verification</small>
+            </span>
+        </label>
+    </div>
+    
+    <div class="printer-selector">
+        <label for="printer-select">🖨️ Printer:</label>
+        <select id="printer-select" class="form-control">
+            <option value="default">Default Label Printer</option>
+            <option value="zebra_zp450">Zebra ZP450 Label Printer</option>
+            <option value="dymo_450">DYMO LabelWriter 450</option>
+            <option value="brother_ql">Brother QL Series</option>
+            <option value="generic">Generic Printer</option>
+        </select>
+    </div>
+    
+    <div class="print-actions">
+        <button class="btn primary" onclick="printSelectedBatch()">
+            🖨️ Print Batch
+        </button>
+        <button class="btn secondary" onclick="previewPrint()">
+            👁️ Preview
+        </button>
+        <button class="btn secondary" onclick="cancelPrintSelection()">
+            ❌ Cancel
+        </button>
+    </div>
+</div>

@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="shared/css/components.css">
     <!-- Load Admin CSS -->
     <link rel="stylesheet" href="admin/css/admin-dashboard.css">
+    <link rel="stylesheet" href="admin/css/batch-printing.css">
     <style>
         /* Critical inline styles for immediate rendering */
         * {
@@ -1579,10 +1580,20 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         window.clearFilters = clearFilters;
         window.applyFilters = applyFilters;
 
+        // Batch Printing function
+        function showBatchPrinting() {
+            showSection('batch-printing');
+            if (batchPrintingManager && !batchPrintingManager.isInitialized) {
+                batchPrintingManager.init();
+            }
+        }
+        window.showBatchPrinting = showBatchPrinting;
+
         console.log('🎯 NAD Admin Dashboard ready!');
     </script>
     <script src="admin/js/dropdown-fix.js"></script>
     <script src="admin/js/filter-helpers.js"></script>
+    <script src="admin/js/sections/batch-printing.js"></script>
 
 <script src="admin/js/final-dropdown-fix.js"></script>
 </body>
