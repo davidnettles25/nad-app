@@ -82,30 +82,7 @@ function renderBatchCards() {
         return;
     }
     
-    console.log('📦 Container found:', container);
-    console.log('📦 Container parent:', container.parentElement);
-    
-    const computedStyles = window.getComputedStyle(container);
-    console.log('📦 Container display:', computedStyles.display);
-    console.log('📦 Container width:', computedStyles.width);
-    console.log('📦 Container height:', computedStyles.height);
-    console.log('📦 Container visibility:', computedStyles.visibility);
-    console.log('📦 Container opacity:', computedStyles.opacity);
-    console.log('📦 Container position:', computedStyles.position);
-    console.log('📦 Container overflow:', computedStyles.overflow);
-    
-    console.log('📦 Container offsetHeight:', container.offsetHeight);
-    console.log('📦 Container offsetWidth:', container.offsetWidth);
-    console.log('📦 Container visible:', container.offsetHeight > 0 && container.offsetWidth > 0);
-    
-    // Check parent styles too
-    const parentStyles = window.getComputedStyle(container.parentElement);
-    console.log('📦 Parent display:', parentStyles.display);
-    console.log('📦 Parent height:', parentStyles.height);
-    console.log('📦 Parent overflow:', parentStyles.overflow);
-    
     if (printableBatches.length === 0) {
-        console.log('📝 No batches to display');
         container.innerHTML = `
             <div style="text-align: center; padding: 40px;">
                 <h4>📦 No Printable Batches</h4>
@@ -118,175 +95,51 @@ function renderBatchCards() {
         return;
     }
     
-    console.log('🔨 Creating HTML for', printableBatches.length, 'batches');
-    
-    const html = printableBatches.map(batch => createBatchCard(batch)).join('');
-    console.log('📄 Generated HTML length:', html.length);
-    
-    // Set the actual batch cards HTML
-    container.innerHTML = html;
-    console.log('✅ HTML set to container');
-    
-    // Create a completely independent container that bypasses all CSS issues
-    const workingContainer = document.createElement('div');
-    workingContainer.id = 'working-batch-container';
-    workingContainer.style.cssText = `
-        display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
-        gap: 20px !important;
-        width: calc(100% - 40px) !important;
-        min-height: 300px !important;
-        margin: 20px !important;
-        padding: 20px !important;
-        background: white !important;
-        border: 2px solid #007bff !important;
-        border-radius: 8px !important;
-        position: relative !important;
-        z-index: 1000 !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
-    `;
-    workingContainer.innerHTML = html;
-    
-    // Find the batch-printing section and append our working container
-    const batchSection = document.getElementById('batch-printing');
-    if (batchSection) {
-        // Clear any existing content and add our working container
-        const existingWorking = document.getElementById('working-batch-container');
-        if (existingWorking) {
-            existingWorking.remove();
-        }
-        batchSection.appendChild(workingContainer);
-        console.log('✅ Created working container and added to batch section');
-    }
-    
-    // Force the parent and all ancestors to be visible (but preserve content-section behavior)
-    let parent = container.parentElement;
-    while (parent && parent !== document.body) {
-        // Don't override content-section display behavior
-        if (!parent.classList.contains('content-section')) {
-            parent.style.display = 'block';
-        }
-        parent.style.height = 'auto';
-        parent.style.minHeight = 'fit-content';
-        parent.style.overflow = 'visible';
-        console.log('🔧 Fixed parent:', parent.className || parent.tagName);
-        parent = parent.parentElement;
-    }
-    
-    // Success! Remove this test code in production
-    
-    // Reset batch-printing section display to follow CSS (reuse existing batchSection)
-    if (batchSection) {
-        // Remove any forced display style to let CSS handle it
-        batchSection.style.display = '';
-        console.log('🎨 Reset batch-printing section display to follow CSS');
-        
-        // Add a simple test element to see if the section is visible
-        const testElement = document.createElement('div');
-        testElement.style.cssText = `
-            background: orange !important;
-            color: black !important;
-            padding: 20px !important;
-            margin: 20px 0 !important;
-            border: 3px solid red !important;
-            font-size: 16px !important;
-            font-weight: bold !important;
-            position: relative !important;
-            z-index: 99999 !important;
-        `;
-        testElement.innerHTML = `
-            <h3>🧪 BATCH SECTION TEST</h3>
-            <p>If you see this, the batch-printing section is visible!</p>
-            <p>Found ${printableBatches.length} batches in data.</p>
-        `;
-        batchSection.appendChild(testElement);
-        console.log('🧪 Added test element to batch-printing section');
-    }
-    
-    console.log('🎨 Forced container styles applied');
-    
-    // EMERGENCY TEST: Create a simple element that should be visible NO MATTER WHAT
-    const emergencyTest = document.createElement('div');
-    emergencyTest.style.cssText = `
-        position: fixed !important;
-        top: 300px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        width: 400px !important;
-        background: red !important;
-        color: white !important;
-        padding: 30px !important;
-        font-size: 24px !important;
-        font-weight: bold !important;
-        text-align: center !important;
-        z-index: 999999 !important;
-        border: 5px solid yellow !important;
-        border-radius: 10px !important;
-    `;
-    emergencyTest.innerHTML = `
-        🚨 EMERGENCY TEST 🚨<br>
-        Batch Printing Section Active!<br>
-        Found ${printableBatches.length} batches
-    `;
-    document.body.appendChild(emergencyTest);
-    console.log('🚨 Added emergency test element to body');
-    
-    // Remove it after 10 seconds
-    setTimeout(() => {
-        emergencyTest.remove();
-        console.log('🗑️ Removed emergency test element');
-    }, 10000);
-    
-    // FINAL SOLUTION: Inject batch cards directly into main-content area
+    // Create simplified batch display that works reliably
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
-        // Create a simple batch display that bypasses all the problematic CSS
-        const simpleBatchDisplay = document.createElement('div');
-        simpleBatchDisplay.id = 'simple-batch-display';
-        simpleBatchDisplay.style.cssText = `
-            background: cyan !important;
-            margin: 20px !important;
-            padding: 20px !important;
-            border: 5px solid magenta !important;
-            border-radius: 8px !important;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
-            min-height: 300px !important;
-            width: calc(100% - 40px) !important;
-            position: relative !important;
-            z-index: 1000 !important;
+        // Create clean batch display container
+        const batchDisplay = document.createElement('div');
+        batchDisplay.id = 'batch-display';
+        batchDisplay.style.cssText = `
+            background: white;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            min-height: 300px;
         `;
         
-        // Create very simple batch cards instead of complex ones
-        const simpleBatchCards = printableBatches.map(batch => `
+        // Create simplified batch cards
+        const batchCards = printableBatches.map(batch => `
             <div style="background: white; border: 2px solid #007bff; padding: 15px; margin: 10px; border-radius: 8px; min-height: 150px;">
                 <h4 style="color: #007bff; margin: 0 0 10px 0;">Batch #${batch.batch_id.split('-').pop()}</h4>
                 <p style="margin: 5px 0;"><strong>Tests:</strong> ${batch.total_tests}</p>
                 <p style="margin: 5px 0;"><strong>Status:</strong> ${batch.print_status}</p>
                 <p style="margin: 5px 0;"><strong>Created:</strong> ${new Date(batch.created_date).toLocaleDateString()}</p>
-                <button style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                <button onclick="selectBatchForPrint('${batch.batch_id}')" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                     🖨️ Print
+                </button>
+                <button onclick="viewBatchDetails('${batch.batch_id}')" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    👁️ Details
                 </button>
             </div>
         `).join('');
         
-        simpleBatchDisplay.innerHTML = `
-            <div style="background: yellow; padding: 20px; margin: 10px; border: 2px solid black; font-size: 18px; font-weight: bold;">
-                🎯 SIMPLE BATCH CONTAINER TEST
-                <p>Found ${printableBatches.length} batches</p>
-                <p>Creating simple cards...</p>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 10px;">
-                ${simpleBatchCards}
+        batchDisplay.innerHTML = `
+            <h3 style="margin-bottom: 20px; color: #333;">📦 Printable Batches (${printableBatches.length})</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                ${batchCards}
             </div>
         `;
         
-        // Remove any existing simple display
-        const existing = document.getElementById('simple-batch-display');
+        // Remove any existing display
+        const existing = document.getElementById('batch-display');
         if (existing) existing.remove();
         
         // Add to main content
-        mainContent.appendChild(simpleBatchDisplay);
-        console.log('✅ Added simple batch display to main content');
+        mainContent.appendChild(batchDisplay);
+        console.log('✅ Added batch display to main content');
     }
 }
 
