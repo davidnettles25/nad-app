@@ -74,6 +74,19 @@
             border: 3px solid red !important;
             min-height: 400px !important;
         }
+        
+        /* Force batch printing section content to be visible */
+        #batch-printing.content-section.active * {
+            visibility: visible !important;
+            display: block !important;
+            opacity: 1 !important;
+        }
+        
+        #batch-printing.content-section.active .batch-printing-section {
+            display: block !important;
+            background: white !important;
+            min-height: 300px !important;
+        }
 
         .header {
             background: rgba(255,255,255,0.95);
