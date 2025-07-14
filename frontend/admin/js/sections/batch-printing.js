@@ -128,16 +128,24 @@ function renderBatchCards() {
     }, 2000);
     console.log('✅ HTML set to container');
     
-    // Force container visibility and debug styles
-    container.style.display = 'grid';
-    container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-    container.style.gap = '20px';
-    container.style.margin = '20px 0';
-    container.style.minHeight = '200px';
-    container.style.border = '2px solid red'; // Debug border
-    container.style.background = 'yellow'; // Debug background
-    container.style.position = 'relative';
-    container.style.zIndex = '9999';
+    // Force container visibility and debug styles with !important
+    container.style.cssText = `
+        display: block !important;
+        width: 100% !important;
+        height: 400px !important;
+        min-height: 400px !important;
+        max-height: none !important;
+        border: 5px solid red !important;
+        background: yellow !important;
+        position: relative !important;
+        z-index: 99999 !important;
+        margin: 20px 0 !important;
+        padding: 20px !important;
+        overflow: visible !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    `;
+    console.log('🔥 Applied aggressive container styles with !important');
     
     // Also force parent containers to be visible
     const batchSection = document.getElementById('batch-printing');
@@ -146,6 +154,13 @@ function renderBatchCards() {
         batchSection.style.minHeight = '300px';
         batchSection.style.border = '3px solid blue';
         console.log('🎨 Forced batch-printing section visible');
+        
+        // Try adding test content directly to the section instead of the container
+        const directTest = document.createElement('div');
+        directTest.style.cssText = 'background: cyan; color: black; padding: 20px; margin: 20px; border: 3px solid magenta; font-size: 16px;';
+        directTest.innerHTML = '<h3>SECTION DIRECT TEST</h3><p>This tests if the batch-printing section can display content</p>';
+        batchSection.appendChild(directTest);
+        console.log('🧪 Added direct test to batch-printing section');
     }
     
     console.log('🎨 Forced container styles applied');
