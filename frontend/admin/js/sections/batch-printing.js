@@ -117,26 +117,22 @@ function renderBatchCards() {
     container.innerHTML = html;
     console.log('✅ HTML set to container');
     
-    // Try replacing the problematic container entirely
-    const newContainer = document.createElement('div');
-    newContainer.id = 'printable-batches-new';
-    newContainer.style.cssText = `
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-        width: 100%;
-        min-height: 200px;
-        margin: 20px 0;
-        padding: 20px;
-        background: white;
-        border: 2px solid #ccc;
-        border-radius: 8px;
+    // Fix the original container instead of creating a new one
+    container.style.cssText = `
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+        gap: 20px !important;
+        width: 100% !important;
+        min-height: 200px !important;
+        margin: 20px 0 !important;
+        padding: 20px !important;
+        background: white !important;
+        border: 2px solid #ccc !important;
+        border-radius: 8px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     `;
-    newContainer.innerHTML = html;
-    
-    // Replace the old container
-    container.parentElement.appendChild(newContainer);
-    console.log('🔄 Created new working container');
+    console.log('🔄 Fixed original container with stronger CSS');
     
     // Force the parent and all ancestors to be visible (but preserve content-section behavior)
     let parent = container.parentElement;
