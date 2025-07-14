@@ -101,6 +101,19 @@ function renderBatchCards() {
     container.style.margin = '20px 0';
     container.style.minHeight = '200px';
     container.style.border = '2px solid red'; // Debug border
+    container.style.background = 'yellow'; // Debug background
+    container.style.position = 'relative';
+    container.style.zIndex = '9999';
+    
+    // Also force parent containers to be visible
+    const batchSection = document.getElementById('batch-printing');
+    if (batchSection) {
+        batchSection.style.display = 'block';
+        batchSection.style.minHeight = '300px';
+        batchSection.style.border = '3px solid blue';
+        console.log('🎨 Forced batch-printing section visible');
+    }
+    
     console.log('🎨 Forced container styles applied');
 }
 
