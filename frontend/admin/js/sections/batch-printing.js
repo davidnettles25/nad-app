@@ -138,10 +138,13 @@ function renderBatchCards() {
     container.parentElement.appendChild(newContainer);
     console.log('🔄 Created new working container');
     
-    // Force the parent and all ancestors to be visible
+    // Force the parent and all ancestors to be visible (but preserve content-section behavior)
     let parent = container.parentElement;
     while (parent && parent !== document.body) {
-        parent.style.display = 'block';
+        // Don't override content-section display behavior
+        if (!parent.classList.contains('content-section')) {
+            parent.style.display = 'block';
+        }
         parent.style.height = 'auto';
         parent.style.minHeight = 'fit-content';
         parent.style.overflow = 'visible';
@@ -151,11 +154,12 @@ function renderBatchCards() {
     
     // Success! Remove this test code in production
     
-    // Also force parent containers to be visible
+    // Only ensure batch-printing section follows normal content-section behavior
     const batchSection = document.getElementById('batch-printing');
     if (batchSection) {
-        batchSection.style.display = 'block';
-        console.log('🎨 Forced batch-printing section visible');
+        // Remove any forced display style to let CSS handle it
+        batchSection.style.display = '';
+        console.log('🎨 Reset batch-printing section display to follow CSS');
     }
     
     console.log('🎨 Forced container styles applied');
