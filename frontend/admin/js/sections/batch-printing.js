@@ -74,10 +74,25 @@ function renderBatchCards() {
     
     console.log('📦 Container found:', container);
     console.log('📦 Container parent:', container.parentElement);
-    console.log('📦 Container computed styles:', window.getComputedStyle(container));
+    
+    const computedStyles = window.getComputedStyle(container);
+    console.log('📦 Container display:', computedStyles.display);
+    console.log('📦 Container width:', computedStyles.width);
+    console.log('📦 Container height:', computedStyles.height);
+    console.log('📦 Container visibility:', computedStyles.visibility);
+    console.log('📦 Container opacity:', computedStyles.opacity);
+    console.log('📦 Container position:', computedStyles.position);
+    console.log('📦 Container overflow:', computedStyles.overflow);
+    
     console.log('📦 Container offsetHeight:', container.offsetHeight);
     console.log('📦 Container offsetWidth:', container.offsetWidth);
     console.log('📦 Container visible:', container.offsetHeight > 0 && container.offsetWidth > 0);
+    
+    // Check parent styles too
+    const parentStyles = window.getComputedStyle(container.parentElement);
+    console.log('📦 Parent display:', parentStyles.display);
+    console.log('📦 Parent height:', parentStyles.height);
+    console.log('📦 Parent overflow:', parentStyles.overflow);
     
     if (printableBatches.length === 0) {
         console.log('📝 No batches to display');
@@ -102,20 +117,26 @@ function renderBatchCards() {
     container.innerHTML = html;
     console.log('✅ HTML set to container');
     
-    // Force container visibility and proper grid styles
-    container.style.cssText = `
-        display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
-        gap: 20px !important;
-        width: 100% !important;
-        min-height: 200px !important;
-        margin: 20px 0 !important;
-        padding: 20px !important;
-        overflow: visible !important;
-        visibility: visible !important;
-        opacity: 1 !important;
+    // Try replacing the problematic container entirely
+    const newContainer = document.createElement('div');
+    newContainer.id = 'printable-batches-new';
+    newContainer.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        width: 100%;
+        min-height: 200px;
+        margin: 20px 0;
+        padding: 20px;
+        background: white;
+        border: 2px solid #ccc;
+        border-radius: 8px;
     `;
-    console.log('🎨 Applied proper grid styles with !important');
+    newContainer.innerHTML = html;
+    
+    // Replace the old container
+    container.parentElement.appendChild(newContainer);
+    console.log('🔄 Created new working container');
     
     // Also force parent containers to be visible
     const batchSection = document.getElementById('batch-printing');
