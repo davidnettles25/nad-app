@@ -1,0 +1,7 @@
+node_modules/
+dist/
+build/
+*.min.js
+backend/node_modules/
+# Ignore test files that have intentional global issues
+frontend/admin/test-*.html

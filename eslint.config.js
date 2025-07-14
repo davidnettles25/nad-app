@@ -32,7 +32,29 @@ export default [
                 HTMLElement: "readonly",
                 Event: "readonly",
                 NodeList: "readonly",
-                HTMLCollection: "readonly"
+                HTMLCollection: "readonly",
+                // Project-specific globals
+                loadSupplements: "writable",
+                showAlert: "writable",
+                refreshData: "writable",
+                loadDashboardStats: "writable",
+                initTestManagement: "writable",
+                loadTestsFromAPI: "writable",
+                loadAllBatches: "writable",
+                renderBatchList: "writable",
+                updateTestStats: "writable",
+                viewTest: "writable",
+                viewBatch: "writable",
+                loadAnalytics: "writable",
+                activateTest: "writable",
+                exportAnalytics: "writable",
+                showAddSupplementForm: "writable",
+                editSupplement: "writable",
+                toggleSupplement: "writable",
+                testSystemHealth: "writable",
+                testAPIEndpoints: "writable",
+                showSection: "writable",
+                confirm: "readonly"
             }
         },
         rules: {
@@ -64,7 +86,7 @@ export default [
             "no-implied-eval": "error",
             "no-global-assign": "error",
             "no-proto": "error",
-            "no-redeclare": "error",
+            "no-redeclare": "off", // Allow redeclaring globals in HTML context
             "no-shadow": "warn",
             "no-use-before-define": ["error", { "functions": false }]
         }

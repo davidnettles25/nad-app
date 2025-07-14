@@ -472,16 +472,16 @@
                         <div class="stat-label">Total Tests</div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-number" id="activated-tests">0</div>
+                        <div class="stat-label">Activated Tests</div>
+                    </div>
+                    <div class="stat-card">
                         <div class="stat-number" id="completed-tests">0</div>
                         <div class="stat-label">Completed Tests</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number" id="pending-tests">0</div>
                         <div class="stat-label">Pending Tests</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="active-users">0</div>
-                        <div class="stat-label">Active Users</div>
                     </div>
                 </div>
 
@@ -717,9 +717,9 @@
                     console.log('✅ Dashboard stats loaded:', data.stats);
                     const elements = {
                         'total-tests': data.stats.total_tests || 0,
+                        'activated-tests': data.stats.activated_tests || 0,
                         'completed-tests': data.stats.completed_tests || 0,
-                        'pending-tests': data.stats.pending_tests || 0,
-                        'active-users': data.stats.activated_tests || 0
+                        'pending-tests': data.stats.pending_tests || 0
                     };
                     
                     Object.entries(elements).forEach(([id, value]) => {
