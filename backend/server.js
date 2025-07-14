@@ -1867,11 +1867,29 @@ app.get('/api/admin/batch-details/:batchId', async (req, res) => {
     try {
         console.log(`🔍 Fetching details for batch: ${batchId}`);
         
-        // Get batch summary
-        const [batchInfo] = await db.execute(
-            'SELECT * FROM batch_print_status WHERE batch_id = ?',
-            [batchId]
-        );
+        // Get batch summary from nad_test_ids
+        const [batchInfo] = await db.execute(`
+            SELECT 
+                batch_id,
+                COUNT(*) as total_tests,
+                SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) as printed_tests,
+                MAX(printed_date) as last_printed_date,
+                batch_size,
+                MIN(created_date) as created_date,
+                notes as batch_notes,
+                CASE 
+                    WHEN SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) = 0 THEN 'not_printed'
+                    WHEN SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) = COUNT(*) THEN 'fully_printed'
+                    ELSE 'partially_printed'
+                END as print_status,
+                ROUND(
+                    (SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 
+                    1
+                ) as print_percentage
+            FROM nad_test_ids 
+            WHERE batch_id = ?
+            GROUP BY batch_id, batch_size, notes
+        `, [batchId]);
         
         if (batchInfo.length === 0) {
             return res.status(404).json({
@@ -1892,7 +1910,7 @@ app.get('/api/admin/batch-details/:batchId', async (req, res) => {
                 order_id,
                 created_date
             FROM nad_test_ids 
-            WHERE batch_id = ? 
+            WHERE batch_id = ?
             ORDER BY id
         `, [batchId]);
         
