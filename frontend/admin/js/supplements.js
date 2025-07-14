@@ -190,4 +190,28 @@ window.activateSupplement = activateSupplement;
 window.deactivateSupplement = deactivateSupplement;
 window.showSupplementAlert = showSupplementAlert;
 
-console.log('✅ Supplements management module loaded');
+// Enhanced navigation setup
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📋 Setting up navigation with auto-load...');
+    
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sectionName = this.getAttribute('data-section');
+            console.log('🔗 Navigation clicked:', sectionName);
+            
+            if (sectionName) {
+                showSection(sectionName);
+            }
+        });
+    });
+    
+    // Show overview by default
+    showSection('overview');
+    
+    console.log('✅ Navigation setup complete with auto-loading');
+});
+
+// Set flag to indicate supplements module is loaded
+window.supplementsLoaded = true;
+console.log('✅ Supplements management module loaded and flagged');

@@ -392,6 +392,7 @@
     <script src="shared/js/api-client.js"></script>
     <script src="shared/js/components.js"></script>
     <script src="admin/js/admin-dashboard.js"></script>
+    <script src="admin/js/supplements.js"></script>
     <script src="admin/js/analytics-fix.js"></script>
     <script src="admin/js/supplement-delete-fix.js"></script> 
     <script src="admin/js/supplement-search-fix.js"></script>
@@ -402,49 +403,29 @@
 // GLOBAL FUNCTION DECLARATIONS - Must be at the top
 window.refreshData = function() {
     console.log('🔄 Refreshing dashboard data...');
-    showGlobalAlert('🔄 Refreshing data from API...', 'info');
     
     const activeSection = document.querySelector('.content-section.active');
     if (activeSection) {
         switch (activeSection.id) {
             case 'overview':
-                if (typeof loadDashboardStats === 'function') {
-                    loadDashboardStats();
-                } else {
-                    console.warn('loadDashboardStats function not available');
-                }
+                if (typeof loadDashboardStats === 'function') loadDashboardStats();
                 break;
-            case 'users':
-                if (typeof loadUsers === 'function') loadUsers();
+            case 'supplements':
+                if (typeof loadSupplements === 'function') {
+                    loadSupplements();
+                } else {
+                    console.error('loadSupplements function not available');
+                }
                 break;
             case 'tests':
                 if (typeof loadTestsFromAPI === 'function') loadTestsFromAPI();
-                if (typeof loadAllTests === 'function') loadAllTests();
-                if (typeof loadAllBatches === 'function') loadAllBatches();
-                break;
-            case 'supplements':
-                if (typeof loadSupplements === 'function') loadSupplements();
-                break;
-            case 'analytics':
-                if (typeof loadAnalytics === 'function') loadAnalytics();
-                break;
-            case 'system':
-                if (typeof testSystemHealth === 'function') testSystemHealth();
                 break;
             default:
-                if (typeof loadDashboardStats === 'function') {
-                    loadDashboardStats();
-                } else {
-                    showGlobalAlert('✅ Data refreshed!', 'success');
-                }
+                if (typeof loadDashboardStats === 'function') loadDashboardStats();
         }
     } else {
-        // No active section, just refresh overview
-        if (typeof loadDashboardStats === 'function') {
-            loadDashboardStats();
-        } else {
-            showGlobalAlert('✅ Data refreshed!', 'success');
-        }
+        console.log('No active section found, refreshing overview');
+        if (typeof loadDashboardStats === 'function') loadDashboardStats();
     }
 };
 
@@ -682,7 +663,7 @@ console.log('✅ loadDashboardStats defined at script start');
             }
         }
 
-        // Enhanced navigation with better error handling
+        // Enhanced navigation function with better timing
         function showSection(sectionName) {
             console.log('📍 Switching to section:', sectionName);
             
@@ -705,31 +686,77 @@ console.log('✅ loadDashboardStats defined at script start');
                     navLink.classList.add('active');
                 }
                 
-                // Auto-load section data
-                switch(sectionName) {
-                    case 'users':
-                        if (typeof loadUsers === 'function') loadUsers();
-                        break;
-                    case 'tests':
-                        if (typeof loadTestsFromAPI === 'function') loadTestsFromAPI();
-                        break;
-                    case 'supplements':
-                        if (typeof loadSupplements === 'function') loadSupplements();
-                        break;
-                    case 'analytics':
-                        if (typeof loadAnalytics === 'function') loadAnalytics();
-                        break;
-                    case 'overview':
-                        if (typeof loadDashboardStats === 'function') loadDashboardStats();
-                        break;
-                    case 'system':
-                        testSystemHealth();
-                        break;
-                }
+                // Auto-load section data with proper timing
+                setTimeout(() => {
+                    switch(sectionName) {
+                        case 'users':
+                            if (typeof loadUsers === 'function') {
+                                console.log('🔄 Auto-loading users...');
+                                loadUsers();
+                            }
+                            break;
+                        case 'tests':
+                            if (typeof loadTestsFromAPI === 'function') {
+                                console.log('🔄 Auto-loading tests...');
+                                loadTestsFromAPI();
+                            }
+                            break;
+                        case 'supplements':
+                            if (typeof loadSupplements === 'function') {
+                                console.log('🔄 Auto-loading supplements...');
+                                loadSupplements();
+                            } else {
+                                console.error('❌ loadSupplements function not available');
+                                // Try to load the supplements script if it's missing
+                                if (!window.supplementsLoaded) {
+                                    loadSupplementsScript();
+                                }
+                            }
+                            break;
+                        case 'analytics':
+                            if (typeof loadAnalytics === 'function') {
+                                console.log('🔄 Auto-loading analytics...');
+                                loadAnalytics();
+                            }
+                            break;
+                        case 'overview':
+                            if (typeof loadDashboardStats === 'function') {
+                                console.log('🔄 Auto-loading dashboard stats...');
+                                loadDashboardStats();
+                            }
+                            break;
+                        case 'system':
+                            console.log('🔄 Auto-loading system health...');
+                            testSystemHealth();
+                            break;
+                        default:
+                            console.log('No auto-load defined for section:', sectionName);
+                    }
+                }, 100); // Small delay to ensure DOM is ready
+                
+                console.log('✅ Section activated:', sectionName);
             } else {
                 console.warn(`Section ${sectionName} not found`);
                 showGlobalAlert(`Section ${sectionName} is not available yet`, 'warning');
             }
+        }
+
+        // Fallback function to dynamically load supplements script
+        function loadSupplementsScript() {
+            console.log('🔄 Loading supplements script dynamically...');
+            const script = document.createElement('script');
+            script.src = 'admin/js/supplements.js';
+            script.onload = function() {
+                console.log('✅ Supplements script loaded');
+                window.supplementsLoaded = true;
+                if (typeof loadSupplements === 'function') {
+                    loadSupplements();
+                }
+            };
+            script.onerror = function() {
+                console.error('❌ Failed to load supplements script');
+            };
+            document.head.appendChild(script);
         }
 
         // Global alert system
