@@ -89,9 +89,31 @@ function renderBatchCards() {
     }
     
     console.log('🔨 Creating HTML for', printableBatches.length, 'batches');
+    
+    // Create simple test HTML first
+    const testHtml = `
+        <div style="background: red; color: white; padding: 20px; margin: 10px; border: 2px solid black;">
+            <h3>TEST CARD 1</h3>
+            <p>This is a test to see if HTML renders</p>
+        </div>
+        <div style="background: green; color: white; padding: 20px; margin: 10px; border: 2px solid black;">
+            <h3>TEST CARD 2</h3>
+            <p>If you see this, HTML rendering works</p>
+        </div>
+    `;
+    
     const html = printableBatches.map(batch => createBatchCard(batch)).join('');
     console.log('📄 Generated HTML length:', html.length);
-    container.innerHTML = html;
+    
+    // Set test HTML first to verify rendering works
+    container.innerHTML = testHtml;
+    console.log('🧪 Set test HTML first');
+    
+    // Then try the real HTML after a delay
+    setTimeout(() => {
+        container.innerHTML = html;
+        console.log('🔄 Set real HTML after test');
+    }, 2000);
     console.log('✅ HTML set to container');
     
     // Force container visibility and debug styles
