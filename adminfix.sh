@@ -1,74 +1,90 @@
 #!/bin/bash
 
-# Code-Only Endpoint Fix
-# Just add the missing endpoint code to server.js
+# Final Endpoint Fix Script
+# This will definitively add the missing API endpoint
 
-echo "🔧 Code-Only Endpoint Fix"
-echo "========================="
+echo "🔧 Final Endpoint Fix Script"
+echo "============================"
 
-echo "📍 Looking for server.js..."
+echo "📍 Current directory: $(pwd)"
 
-# Find the server file
-if [[ -f "server.js" ]]; then
-    SERVER_FILE="server.js"
-elif [[ -f "backend/server.js" ]]; then
-    SERVER_FILE="backend/server.js"
-elif [[ -f "../server.js" ]]; then
-    SERVER_FILE="../server.js"
-else
-    echo "❌ Cannot find server.js"
-    echo "📋 Please navigate to the directory containing server.js"
-    echo "Current directory: $(pwd)"
+# Find server file
+echo ""
+echo "🔍 Step 1: Finding server.js file..."
+
+SERVER_FILE=""
+SEARCH_DIRS=("." ".." "backend" "../backend" "server" "../server")
+
+for dir in "${SEARCH_DIRS[@]}"; do
+    if [[ -f "$dir/server.js" ]]; then
+        SERVER_FILE="$dir/server.js"
+        echo "✅ Found server file: $SERVER_FILE"
+        break
+    fi
+done
+
+if [[ -z "$SERVER_FILE" ]]; then
+    echo "❌ Could not find server.js file"
     echo ""
-    echo "📋 Try these commands to find server.js:"
-    echo "   find . -name 'server.js' -type f"
-    echo "   ls -la"
+    echo "📋 Manual search results:"
+    find . -name "server.js" -type f 2>/dev/null || echo "No server.js files found"
+    echo ""
+    echo "📋 Please navigate to the directory containing server.js and run this script again"
     exit 1
 fi
 
-echo "✅ Found: $SERVER_FILE"
-
+# Check if endpoint exists
 echo ""
-echo "🔍 Checking current endpoints..."
-echo "📋 Existing endpoints in server file:"
-grep -n "app\.\(get\|post\)" "$SERVER_FILE" | head -5
+echo "🔍 Step 2: Checking if endpoint already exists..."
 
-echo ""
-echo "🔍 Checking if printable-batches endpoint exists..."
 if grep -q "/api/admin/printable-batches" "$SERVER_FILE"; then
     echo "⚠️ Endpoint already exists in server file!"
-    echo "📋 The issue might be that your local server needs to be restarted manually."
     echo ""
-    echo "📋 Endpoint location in file:"
+    echo "📋 Endpoint location:"
     grep -n "/api/admin/printable-batches" "$SERVER_FILE"
     echo ""
-    echo "🔄 Please restart your local development server manually"
+    echo "🔧 The endpoint exists but server may need restart."
+    echo "📋 Please restart your local development server:"
+    echo "   1. Stop current server (Ctrl+C)"
+    echo "   2. Start server: node $SERVER_FILE"
+    echo ""
     exit 0
-else
-    echo "❌ Endpoint missing - adding it now..."
 fi
 
-echo ""
-echo "💾 Creating backup..."
-cp "$SERVER_FILE" "${SERVER_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
-echo "✅ Backup created: ${SERVER_FILE}.backup.*"
+echo "❌ Endpoint missing - will add it now"
 
+# Create backup
 echo ""
-echo "📝 Adding endpoint code..."
+echo "💾 Step 3: Creating backup..."
+BACKUP_FILE="${SERVER_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+cp "$SERVER_FILE" "$BACKUP_FILE"
+echo "✅ Backup created: $BACKUP_FILE"
+
+# Show current server structure
+echo ""
+echo "📋 Step 4: Analyzing current server structure..."
+echo "Current endpoints in server:"
+grep -n "app\.\(get\|post\|put\|delete\)" "$SERVER_FILE" | head -5
 
 # Create the endpoint code
-cat > temp_endpoint.js << 'EOF'
+echo ""
+echo "📝 Step 5: Preparing endpoint code..."
+
+cat > temp_batch_endpoints.js << 'EOF'
 
 // =============================================================================
-// BATCH PRINTING ENDPOINTS - Added for Admin Interface
+// BATCH PRINTING API ENDPOINTS
+// Added for Admin Dashboard Batch Printing functionality
 // =============================================================================
 
-// Get printable batches with print status
+console.log('🖨️ Loading Batch Printing API endpoints...');
+
+// GET /api/admin/printable-batches - Get all batches available for printing
 app.get('/api/admin/printable-batches', async (req, res) => {
     try {
-        console.log('🔄 API: Loading printable batches...');
+        console.log('🔄 API: Fetching printable batches...');
         
-        // Query to get batches with basic print status
+        // Query to get batch information with print status
         const [batches] = await db.execute(`
             SELECT 
                 batch_id,
@@ -99,7 +115,8 @@ app.get('/api/admin/printable-batches', async (req, res) => {
                     [batch.batch_id]
                 );
                 batch.sample_test_ids = sampleTests.map(t => t.test_id);
-            } catch (error) {
+            } catch (sampleError) {
+                console.warn('Could not fetch sample test IDs:', sampleError.message);
                 batch.sample_test_ids = [];
             }
         }
@@ -108,42 +125,43 @@ app.get('/api/admin/printable-batches', async (req, res) => {
         
         res.json({
             success: true,
-            data: batches
+            data: batches,
+            message: `Found ${batches.length} printable batches`
         });
         
     } catch (error) {
-        console.error('❌ API Error loading printable batches:', error);
+        console.error('❌ API Error fetching printable batches:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Failed to load printable batches',
+            message: 'Failed to fetch printable batches',
             error: error.message 
         });
     }
 });
 
-// Print a batch
+// POST /api/admin/print-batch - Mark a batch as printed
 app.post('/api/admin/print-batch', async (req, res) => {
     const { batch_id, print_format, printer_name, notes } = req.body;
     const printed_by = 'local_admin';
     
-    // Validate input
-    if (!batch_id) {
-        return res.status(400).json({
-            success: false,
-            message: 'Batch ID is required'
-        });
-    }
-    
-    const validFormats = ['individual_labels', 'batch_summary', 'shipping_list'];
-    if (!validFormats.includes(print_format)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid print format. Valid formats: ' + validFormats.join(', ')
-        });
-    }
-    
     try {
         console.log(`🖨️ API: Processing print job for batch: ${batch_id}`);
+        
+        // Validate input
+        if (!batch_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Batch ID is required'
+            });
+        }
+        
+        const validFormats = ['individual_labels', 'batch_summary', 'shipping_list'];
+        if (!validFormats.includes(print_format)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid print format. Valid formats: ${validFormats.join(', ')}`
+            });
+        }
         
         // Get all tests in this batch
         const [tests] = await db.execute(
@@ -160,26 +178,27 @@ app.post('/api/admin/print-batch', async (req, res) => {
         
         console.log(`📋 API: Found ${tests.length} tests in batch ${batch_id}`);
         
-        // Mark tests as printed (if column exists)
+        // Mark tests as printed (handle case where is_printed column may not exist)
         try {
-            await db.execute(
+            const [updateResult] = await db.execute(
                 `UPDATE nad_test_ids 
                  SET is_printed = TRUE, printed_date = NOW(), printed_by = ? 
                  WHERE batch_id = ?`,
                 [printed_by, batch_id]
             );
-            console.log(`✅ API: Marked tests as printed`);
+            console.log(`✅ API: Marked ${updateResult.affectedRows} tests as printed`);
         } catch (updateError) {
-            console.warn('⚠️ API: Could not update print status (column may not exist):', updateError.message);
+            console.warn('⚠️ API: Could not update print status (columns may not exist):', updateError.message);
+            console.warn('⚠️ API: Continuing without updating print status...');
         }
         
-        // Generate print job ID
+        // Generate unique print job ID
         const print_job_id = `PJ${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
         
         // Generate print data based on format
-        const printData = generatePrintDataForBatch(tests, print_format, batch_id);
+        const printData = generateBatchPrintData(tests, print_format, batch_id);
         
-        console.log(`✅ API: Print job created with ID: ${print_job_id}`);
+        console.log(`✅ API: Print job completed with ID: ${print_job_id}`);
         
         res.json({
             success: true,
@@ -206,7 +225,7 @@ app.post('/api/admin/print-batch', async (req, res) => {
 });
 
 // Helper function to generate print data
-function generatePrintDataForBatch(tests, format, batch_id) {
+function generateBatchPrintData(tests, format, batch_id) {
     const batch_short_id = batch_id.split('-').pop();
     
     switch (format) {
@@ -252,82 +271,132 @@ function generatePrintDataForBatch(tests, format, batch_id) {
     }
 }
 
-console.log('✅ Batch printing endpoints loaded');
+console.log('✅ Batch printing API endpoints loaded successfully');
 
 EOF
 
-# Find the best place to insert the code
-echo "📋 Finding insertion point..."
+# Find the best insertion point
+echo ""
+echo "📍 Step 6: Finding optimal insertion point..."
 
-if grep -n "app\.listen\|server\.listen" "$SERVER_FILE" > /dev/null; then
-    # Insert before app.listen
-    LISTEN_LINE=$(grep -n "app\.listen\|server\.listen" "$SERVER_FILE" | head -1 | cut -d: -f1)
-    echo "📋 Inserting before server listen at line $LISTEN_LINE"
+INSERTION_POINT=""
+INSERTION_LINE=0
+
+# Look for existing API routes section
+if grep -n "// API" "$SERVER_FILE" > /dev/null; then
+    INSERTION_LINE=$(grep -n "// API" "$SERVER_FILE" | tail -1 | cut -d: -f1)
+    INSERTION_POINT="after existing API routes"
+    echo "📋 Found existing API section at line $INSERTION_LINE"
     
-    # Split file and insert our code
-    head -n $((LISTEN_LINE - 1)) "$SERVER_FILE" > "${SERVER_FILE}.new"
-    cat temp_endpoint.js >> "${SERVER_FILE}.new"
-    echo "" >> "${SERVER_FILE}.new"  # Add blank line
-    tail -n +$LISTEN_LINE "$SERVER_FILE" >> "${SERVER_FILE}.new"
+# Look for app.listen
+elif grep -n "app\.listen" "$SERVER_FILE" > /dev/null; then
+    INSERTION_LINE=$(grep -n "app\.listen" "$SERVER_FILE" | head -1 | cut -d: -f1)
+    INSERTION_POINT="before app.listen"
+    echo "📋 Found app.listen at line $INSERTION_LINE"
     
-    mv "${SERVER_FILE}.new" "$SERVER_FILE"
+# Look for server.listen
+elif grep -n "server\.listen" "$SERVER_FILE" > /dev/null; then
+    INSERTION_LINE=$(grep -n "server\.listen" "$SERVER_FILE" | head -1 | cut -d: -f1)
+    INSERTION_POINT="before server.listen"
+    echo "📋 Found server.listen at line $INSERTION_LINE"
     
-elif grep -n "module\.exports\|exports\." "$SERVER_FILE" > /dev/null; then
-    # Insert before module.exports
-    EXPORTS_LINE=$(grep -n "module\.exports\|exports\." "$SERVER_FILE" | head -1 | cut -d: -f1)
-    echo "📋 Inserting before module.exports at line $EXPORTS_LINE"
+# Look for module.exports
+elif grep -n "module\.exports" "$SERVER_FILE" > /dev/null; then
+    INSERTION_LINE=$(grep -n "module\.exports" "$SERVER_FILE" | head -1 | cut -d: -f1)
+    INSERTION_POINT="before module.exports"
+    echo "📋 Found module.exports at line $INSERTION_LINE"
     
-    head -n $((EXPORTS_LINE - 1)) "$SERVER_FILE" > "${SERVER_FILE}.new"
-    cat temp_endpoint.js >> "${SERVER_FILE}.new"
-    echo "" >> "${SERVER_FILE}.new"
-    tail -n +$EXPORTS_LINE "$SERVER_FILE" >> "${SERVER_FILE}.new"
-    
-    mv "${SERVER_FILE}.new" "$SERVER_FILE"
-    
+# Append to end
 else
-    # Append at the end
-    echo "📋 Appending to end of file"
-    cat temp_endpoint.js >> "$SERVER_FILE"
+    INSERTION_LINE=$(wc -l < "$SERVER_FILE")
+    INSERTION_POINT="at end of file"
+    echo "📋 Will append to end of file (line $INSERTION_LINE)"
+fi
+
+# Insert the code
+echo ""
+echo "📝 Step 7: Inserting endpoint code $INSERTION_POINT..."
+
+if [[ $INSERTION_LINE -gt 0 ]] && [[ "$INSERTION_POINT" != "at end of file" ]]; then
+    # Insert at specific line
+    head -n $((INSERTION_LINE - 1)) "$SERVER_FILE" > "${SERVER_FILE}.new"
+    echo "" >> "${SERVER_FILE}.new"  # Add blank line
+    cat temp_batch_endpoints.js >> "${SERVER_FILE}.new"
+    echo "" >> "${SERVER_FILE}.new"  # Add blank line
+    tail -n +$INSERTION_LINE "$SERVER_FILE" >> "${SERVER_FILE}.new"
+    
+    mv "${SERVER_FILE}.new" "$SERVER_FILE"
+else
+    # Append to end
+    echo "" >> "$SERVER_FILE"  # Add blank line
+    cat temp_batch_endpoints.js >> "$SERVER_FILE"
 fi
 
 # Cleanup
-rm temp_endpoint.js
+rm temp_batch_endpoints.js
 
-echo "✅ Endpoint code added to $SERVER_FILE"
+echo "✅ Endpoint code inserted successfully"
 
+# Verify insertion
 echo ""
-echo "🔍 Verification..."
+echo "🔍 Step 8: Verifying insertion..."
 
-# Verify the endpoint was added
 if grep -q "/api/admin/printable-batches" "$SERVER_FILE"; then
-    echo "✅ printable-batches endpoint added"
+    echo "✅ printable-batches endpoint found"
+    ENDPOINT_LINE=$(grep -n "/api/admin/printable-batches" "$SERVER_FILE" | head -1 | cut -d: -f1)
+    echo "📋 Located at line: $ENDPOINT_LINE"
 else
     echo "❌ Failed to add printable-batches endpoint"
 fi
 
 if grep -q "/api/admin/print-batch" "$SERVER_FILE"; then
-    echo "✅ print-batch endpoint added"
+    echo "✅ print-batch endpoint found"
 else
     echo "❌ Failed to add print-batch endpoint"
 fi
 
+if grep -q "generateBatchPrintData" "$SERVER_FILE"; then
+    echo "✅ Helper function found"
+else
+    echo "❌ Failed to add helper function"
+fi
+
+# Show file stats
 echo ""
-echo "📋 Lines added to server file:"
-wc -l < "$SERVER_FILE"
+echo "📊 Step 9: File statistics..."
+ORIGINAL_LINES=$(wc -l < "$BACKUP_FILE")
+NEW_LINES=$(wc -l < "$SERVER_FILE")
+ADDED_LINES=$((NEW_LINES - ORIGINAL_LINES))
+
+echo "📋 Original file: $ORIGINAL_LINES lines"
+echo "📋 New file: $NEW_LINES lines"
+echo "📋 Added: $ADDED_LINES lines"
 
 echo ""
-echo "🎯 NEXT STEPS"
-echo "============="
-echo "✅ Code has been added to: $SERVER_FILE"
+echo "🎯 COMPLETION SUMMARY"
+echo "===================="
+echo "✅ Server file: $SERVER_FILE"
+echo "✅ Backup created: $BACKUP_FILE"
+echo "✅ API endpoints added: $ADDED_LINES lines"
+echo "✅ Insertion point: $INSERTION_POINT"
 echo ""
-echo "🔄 Now you need to restart your local development server:"
+echo "🔄 NEXT STEPS - MANUAL ACTION REQUIRED:"
+echo "======================================"
+echo "1. 🛑 STOP your current development server (Ctrl+C)"
+echo "2. 🚀 RESTART your server with:"
+echo "   cd $(dirname "$SERVER_FILE")"
+echo "   node $(basename "$SERVER_FILE")"
+echo "3. 🧪 TEST the Batch Printing section in admin interface"
 echo ""
-echo "1. Stop your current server (Ctrl+C if running in terminal)"
-echo "2. Restart with: node $SERVER_FILE"
-echo "3. Test the admin interface again"
+echo "📋 Expected result after restart:"
+echo "   - No more 404 errors for /api/admin/printable-batches"
+echo "   - Batch cards should appear (or 'No Printable Batches')"
+echo "   - Console should show: '✅ API: Found X printable batches'"
 echo ""
-echo "📋 The endpoint should now be available at:"
-echo "   http://localhost:3000/api/admin/printable-batches"
-echo "   (or whatever port your server runs on)"
+echo "🐛 If still not working after restart:"
+echo "   - Check server console for error messages"
+echo "   - Verify server is running on correct port"
+echo "   - Check that you're accessing the same domain/port"
 echo ""
-echo "✅ Code-only fix complete!"
+echo "✅ Final endpoint fix script complete!"
+echo "📋 Ready for manual server restart!"
