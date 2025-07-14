@@ -23,6 +23,16 @@ function initBatchPrinting() {
 async function loadPrintableBatches() {
     console.log('🔄 Loading printable batches...');
     
+    // First check if the batch-printing section is actually visible
+    const batchSection = document.getElementById('batch-printing');
+    if (batchSection) {
+        const isVisible = batchSection.classList.contains('active');
+        const computedStyle = window.getComputedStyle(batchSection);
+        console.log('🔍 Batch section active class:', isVisible);
+        console.log('🔍 Batch section display:', computedStyle.display);
+        console.log('🔍 Batch section visibility:', computedStyle.visibility);
+    }
+    
     const container = document.getElementById('printable-batches');
     if (!container) {
         console.warn('⚠️ Printable batches container not found');
@@ -156,6 +166,27 @@ function renderBatchCards() {
         // Remove any forced display style to let CSS handle it
         batchSection.style.display = '';
         console.log('🎨 Reset batch-printing section display to follow CSS');
+        
+        // Add a simple test element to see if the section is visible
+        const testElement = document.createElement('div');
+        testElement.style.cssText = `
+            background: orange !important;
+            color: black !important;
+            padding: 20px !important;
+            margin: 20px 0 !important;
+            border: 3px solid red !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            position: relative !important;
+            z-index: 99999 !important;
+        `;
+        testElement.innerHTML = `
+            <h3>🧪 BATCH SECTION TEST</h3>
+            <p>If you see this, the batch-printing section is visible!</p>
+            <p>Found ${printableBatches.length} batches in data.</p>
+        `;
+        batchSection.appendChild(testElement);
+        console.log('🧪 Added test element to batch-printing section');
     }
     
     console.log('🎨 Forced container styles applied');
