@@ -1,3 +1,59 @@
+cd /opt/nad-app
+
+# Create the tests section HTML with Create Tests interface
+mkdir -p frontend/admin/sections
+
+cat > frontend/admin/sections/tests.html << 'EOF'
+<div id="tests" class="content-section">
+    <div class="section-header">
+        <h2>🧪 Test Management</h2>
+        <p>Create test blocks and manage test lifecycle</p>
+    </div>
+
+    <div class="bulk-creation-section">
+        <h3>📦 Create Test Block</h3>
+        <p>Generate a batch of test IDs for shipping. Tests will use the new format: <code>yyyy-mm-n-xxxxxx</code></p>
+        
+        <div class="success-message" id="test-success-message" style="display: none;"></div>
+        <div class="error-message" id="test-error-message" style="display: none;"></div>
+        
+        <form id="bulk-creation-form" class="creation-form">
+            <div class="form-group">
+                <label for="test-quantity">Number of Tests</label>
+                <input type="number" id="test-quantity" min="1" max="1000" value="10" required>
+                <small>Min: 1, Max: 1000</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="batch-notes">Notes (Optional)</label>
+                <input type="text" id="batch-notes" placeholder="e.g., Q1 2025 Inventory">
+            </div>
+            
+            <div class="form-group">
+                <label>Preview Format</label>
+                <div class="test-id-preview" id="test-id-preview">
+                    2025-07-123-45678
+                </div>
+            </div>
+            
+            <button type="submit" class="create-btn" id="create-test-btn">
+                📦 Create Tests
+            </button>
+        </form>
+        
+        <div class="loading-spinner" id="test-loading-spinner" style="display: none;">
+            <div class="spinner"></div>
+            <span>Creating tests...</span>
+        </div>
+    </div>
+</div>
+EOF
+
+# Make sure the JavaScript file exists
+mkdir -p frontend/admin/js/sections
+
+# Create a simple working version
+cat > frontend/admin/js/sections/tests.js << 'EOF'
 // Simple Test Management that works
 console.log('🧪 Loading Test Management...');
 
@@ -95,3 +151,6 @@ function initTestManagement() {
 }
 
 window.initTestManagement = initTestManagement;
+EOF
+
+echo "✅ Fixed Test Management files created!"
