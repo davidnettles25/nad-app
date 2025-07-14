@@ -392,7 +392,7 @@
     <script src="shared/js/api-client.js"></script>
     <script src="shared/js/components.js"></script>
     <script src="admin/js/admin-dashboard.js"></script>
-    <script src="admin/js/supplements.js"></script>
+<!--    <script src="admin/js/supplements.js"></script> -->
     <script src="admin/js/analytics-fix.js"></script>
     <script src="admin/js/supplement-delete-fix.js"></script> 
     <script src="admin/js/supplement-search-fix.js"></script>
@@ -1822,115 +1822,60 @@ window.viewBatch = viewBatch;
 window.activateTest = activateTest;
 window.exportTests = exportTests;
 
-// DIRECT SUPPLEMENTS IMPLEMENTATION
-console.log('💊 Loading supplements functionality directly...');
-
-window.loadSupplements = function() {
-    console.log('💊 Loading supplements from API...');
+// CLEAN SUPPLEMENTS IMPLEMENTATION
+if (typeof window.loadSupplements === 'undefined') {
+    console.log('💊 Creating clean loadSupplements function...');
     
-    const tbody = document.getElementById('supplements-table-body');
-    if (!tbody) {
-        console.error('❌ supplements-table-body not found');
-        return;
-    }
-    
-    // Show loading state
-    tbody.innerHTML = '<tr><td colspan="5"><div style="text-align: center; padding: 20px;">Loading supplements...</div></td></tr>';
-    
-    // Make API call
-    fetch('https://mynadtest.info/api/supplements')
-        .then(response => {
-            console.log('📡 API Response status:', response.status);
-            return response.json();
-        })
-        .then(data => {
-            console.log('📦 API Data received:', data);
-            
-            if (data.success && data.supplements && data.supplements.length > 0) {
-                // Render supplements
-                tbody.innerHTML = '';
-                data.supplements.forEach(supplement => {
-                    const row = document.createElement('tr');
-                    const dose = supplement.default_dose ? 
-                        `${supplement.default_dose} ${supplement.unit || 'mg'}` : 'Not set';
-                    
-                    row.innerHTML = `
-                        <td>
-                            <strong>${supplement.name}</strong><br>
-                            <small>${supplement.description || 'No description'}</small>
-                        </td>
-                        <td>${supplement.category || 'Uncategorized'}</td>
-                        <td>${dose}</td>
-                        <td>
-                            <span class="badge ${supplement.is_active ? 'badge-success' : 'badge-secondary'}">
-                                ${supplement.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-primary" onclick="editSupplement(${supplement.id})">Edit</button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
+    window.loadSupplements = function() {
+        console.log('💊 Loading supplements from API...');
+        
+        const tbody = document.getElementById('supplements-table-body');
+        if (!tbody) {
+            console.error('❌ supplements-table-body not found');
+            return;
+        }
+        
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Loading supplements...</td></tr>';
+        
+        fetch('https://mynadtest.info/api/supplements')
+            .then(response => response.json())
+            .then(data => {
+                console.log('📦 Supplements data:', data);
                 
-                console.log(`✅ Loaded ${data.supplements.length} supplements successfully`);
-            } else {
-                // No supplements found
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5">
-                            <div style="text-align: center; padding: 40px;">
-                                <h4>📦 No Supplements Found</h4>
-                                <p>Click "Add Supplement" to create your first supplement.</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                console.log('ℹ️ No supplements found in database');
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error loading supplements:', error);
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5">
-                        <div style="text-align: center; padding: 40px; color: red;">
-                            <h4>⚠️ Error Loading Supplements</h4>
-                            <p>${error.message}</p>
-                            <button class="btn btn-primary" onclick="loadSupplements()">Try Again</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        });
-};
-
-// Placeholder functions
-window.showAddSupplementForm = function() {
-    alert('Add supplement form - Coming soon!');
-};
-
-window.editSupplement = function(id) {
-    alert(`Edit supplement ${id} - Coming soon!`);
-};
-
-// Update the showSection function to call loadSupplements
-const originalShowSection = window.showSection;
-window.showSection = function(sectionName) {
-    if (originalShowSection) {
-        originalShowSection(sectionName);
-    }
+                if (data.success && data.supplements && data.supplements.length > 0) {
+                    tbody.innerHTML = '';
+                    data.supplements.forEach(supplement => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>${supplement.name}</strong></td>
+                            <td>${supplement.category || 'N/A'}</td>
+                            <td>${supplement.default_dose || 'N/A'}</td>
+                            <td>${supplement.is_active ? 'Active' : 'Inactive'}</td>
+                            <td><button class="btn btn-sm">Edit</button></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    console.log(`✅ Loaded ${data.supplements.length} supplements`);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">No supplements found</td></tr>';
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error:', error);
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: red;">Error loading supplements</td></tr>';
+            });
+    };
     
-    // Auto-load supplements when section is shown
-    if (sectionName === 'supplements') {
-        setTimeout(() => {
-            console.log('🔄 Auto-loading supplements for section switch');
-            loadSupplements();
-        }, 200);
-    }
-};
-
-// Set the flag
-window.supplementsLoaded = true;
-console.log('✅ Supplements functionality loaded directly in admin.html');
+    // Auto-load when supplements section is clicked
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('[data-section="supplements"]')) {
+            setTimeout(() => {
+                console.log('🔄 Auto-loading supplements');
+                loadSupplements();
+            }, 300);
+        }
+    });
+    
+    console.log('✅ Clean loadSupplements function created');
+}
 </script>
