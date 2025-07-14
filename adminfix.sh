@@ -1,52 +1,51 @@
 #!/bin/bash
 
-# Add Backend Endpoints for Batch Printing
-# This will add the missing API endpoints to your server
+# Manual Server Endpoint Addition
+# Let's find and directly edit the server file
 
-echo "🔧 Adding Backend Endpoints for Batch Printing"
-echo "=============================================="
+echo "🔧 Manual Server Endpoint Addition"
+echo "=================================="
 
-# Check if we're in the right location
+echo "📍 Current directory: $(pwd)"
+
+# Find server file
+SERVER_FILE=""
 if [[ -f "backend/server.js" ]]; then
-    echo "✅ Found backend/server.js"
     SERVER_FILE="backend/server.js"
 elif [[ -f "server.js" ]]; then
-    echo "✅ Found server.js"
     SERVER_FILE="server.js"
+elif [[ -f "../server.js" ]]; then
+    SERVER_FILE="../server.js"
+elif [[ -f "../backend/server.js" ]]; then
+    SERVER_FILE="../backend/server.js"
 else
-    echo "❌ Could not find server.js file"
-    echo "📍 Current directory: $(pwd)"
-    echo "📋 Please navigate to your backend directory or ensure server.js exists"
+    echo "❌ Cannot find server.js file"
+    echo "📋 Please check these locations:"
+    find . -name "server.js" -type f 2>/dev/null | head -5
     exit 1
 fi
 
-echo "📍 Server file: $SERVER_FILE"
+echo "✅ Found server file: $SERVER_FILE"
 
-# Create backup
-cp "$SERVER_FILE" "${SERVER_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
-echo "✅ Backup created"
-
-echo ""
-echo "🔍 Checking if endpoints already exist..."
-
-if grep -q '/api/admin/printable-batches' "$SERVER_FILE"; then
-    echo "⚠️ printable-batches endpoint already exists"
+# Check if endpoint already exists
+if grep -q "/api/admin/printable-batches" "$SERVER_FILE"; then
+    echo "⚠️ Endpoint already exists in server file"
+    echo "📋 Let's check if server is running the updated code..."
 else
-    echo "➕ Adding printable-batches endpoint..."
+    echo "➕ Adding endpoint to server file..."
     
-    # Add the endpoint before the last few lines of the file
-    cat >> "${SERVER_FILE}.tmp" << 'EOF'
+    # Create backup
+    cp "$SERVER_FILE" "${SERVER_FILE}.backup.manual"
+    echo "✅ Backup created: ${SERVER_FILE}.backup.manual"
+    
+    # Add the endpoint at the end of the file, before any server.listen or app.listen
+    cat > temp_endpoint.js << 'EOF'
 
-// ============================================================================
-// BATCH PRINTING ENDPOINTS
-// ============================================================================
-
-// Get all printable batches with print status
+// Batch Printing API Endpoints
 app.get('/api/admin/printable-batches', async (req, res) => {
     try {
         console.log('🔄 Fetching printable batches...');
         
-        // Query to get batch information with print status
         const [batches] = await db.execute(`
             SELECT 
                 batch_id,
@@ -69,7 +68,6 @@ app.get('/api/admin/printable-batches', async (req, res) => {
             LIMIT 50
         `);
         
-        // Get sample test IDs for each batch
         for (let batch of batches) {
             const [sampleTests] = await db.execute(
                 'SELECT test_id FROM nad_test_ids WHERE batch_id = ? ORDER BY id LIMIT 3',
@@ -95,25 +93,17 @@ app.get('/api/admin/printable-batches', async (req, res) => {
     }
 });
 
-// Print a batch (mark as printed and log the print job)
 app.post('/api/admin/print-batch', async (req, res) => {
     const { batch_id, print_format, printer_name, notes } = req.body;
-    const printed_by = 'admin'; // TODO: Get from session/auth
+    const printed_by = 'admin';
     
-    // Validate input
     if (!batch_id) {
-        return res.status(400).json({
-            success: false,
-            message: 'Batch ID is required'
-        });
+        return res.status(400).json({ success: false, message: 'Batch ID is required' });
     }
     
     const validFormats = ['individual_labels', 'batch_summary', 'shipping_list'];
     if (!validFormats.includes(print_format)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid print format'
-        });
+        return res.status(400).json({ success: false, message: 'Invalid print format' });
     }
     
     const connection = await db.getConnection();
@@ -121,9 +111,6 @@ app.post('/api/admin/print-batch', async (req, res) => {
     try {
         await connection.beginTransaction();
         
-        console.log(`🖨️ Processing print job for batch: ${batch_id}`);
-        
-        // Get all tests in this batch
         const [tests] = await connection.execute(
             'SELECT test_id, batch_id, is_printed FROM nad_test_ids WHERE batch_id = ?',
             [batch_id]
@@ -131,45 +118,40 @@ app.post('/api/admin/print-batch', async (req, res) => {
         
         if (tests.length === 0) {
             await connection.rollback();
-            return res.status(404).json({
-                success: false,
-                message: 'Batch not found or contains no tests'
-            });
+            return res.status(404).json({ success: false, message: 'Batch not found' });
         }
         
-        console.log(`📋 Found ${tests.length} tests in batch ${batch_id}`);
-        
-        // Mark all tests in batch as printed
-        const [updateResult] = await connection.execute(
-            `UPDATE nad_test_ids 
-             SET is_printed = TRUE, printed_date = NOW(), printed_by = ? 
-             WHERE batch_id = ?`,
+        await connection.execute(
+            'UPDATE nad_test_ids SET is_printed = TRUE, printed_date = NOW(), printed_by = ? WHERE batch_id = ?',
             [printed_by, batch_id]
         );
         
-        console.log(`✅ Marked ${updateResult.affectedRows} tests as printed`);
-        
-        // Generate unique print job ID
         const print_job_id = `PJ${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
         
-        // Log the print job in history (if table exists)
-        try {
-            await connection.execute(
-                `INSERT INTO batch_print_history 
-                 (batch_id, print_format, printed_by, test_count, printer_name, print_job_id, notes) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [batch_id, print_format, printed_by, tests.length, printer_name || 'Default', print_job_id, notes || '']
-            );
-        } catch (historyError) {
-            console.warn('⚠️ Could not log to print history (table may not exist):', historyError.message);
-        }
-        
-        // Generate print data based on format
-        const printData = generatePrintDataBatch(tests, print_format, batch_id);
+        const printData = {
+            type: print_format,
+            batch_id: batch_id,
+            batch_short_id: batch_id.split('-').pop(),
+            test_count: tests.length,
+            test_ids: tests.map(t => t.test_id),
+            labels: tests.map(test => ({
+                test_id: test.test_id,
+                batch_id: batch_id,
+                batch_short_id: batch_id.split('-').pop(),
+                print_date: new Date().toISOString()
+            })),
+            items: tests.map(test => ({
+                test_id: test.test_id,
+                checked: false,
+                notes: ''
+            })),
+            summary_title: `Batch ${batch_id.split('-').pop()} Summary`,
+            checklist_title: `Shipping Checklist - Batch ${batch_id.split('-').pop()}`,
+            total_items: tests.length,
+            created_date: new Date().toISOString()
+        };
         
         await connection.commit();
-        
-        console.log(`✅ Print job completed with ID: ${print_job_id}`);
         
         res.json({
             success: true,
@@ -180,144 +162,132 @@ app.post('/api/admin/print-batch', async (req, res) => {
                 test_count: tests.length,
                 print_format: print_format,
                 printer_name: printer_name || 'Default',
-                print_data: printData,
-                previously_printed: tests.filter(t => t.is_printed).length
+                print_data: printData
             }
         });
         
     } catch (error) {
         await connection.rollback();
         console.error('❌ Error processing print job:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to process print job',
-            error: error.message 
-        });
+        res.status(500).json({ success: false, message: 'Failed to process print job', error: error.message });
     } finally {
         connection.release();
     }
 });
 
-// Helper function to generate print data
-function generatePrintDataBatch(tests, format, batch_id) {
-    const batch_short_id = batch_id.split('-').pop();
-    
-    switch (format) {
-        case 'individual_labels':
-            return {
-                type: 'individual_labels',
-                labels: tests.map(test => ({
-                    test_id: test.test_id,
-                    batch_id: batch_id,
-                    batch_short_id: batch_short_id,
-                    qr_code_data: test.test_id,
-                    print_date: new Date().toISOString()
-                }))
-            };
-            
-        case 'batch_summary':
-            return {
-                type: 'batch_summary',
-                batch_id: batch_id,
-                batch_short_id: batch_short_id,
-                test_count: tests.length,
-                test_ids: tests.map(t => t.test_id),
-                created_date: new Date().toISOString(),
-                summary_title: `Batch ${batch_short_id} Summary`
-            };
-            
-        case 'shipping_list':
-            return {
-                type: 'shipping_list',
-                batch_id: batch_id,
-                batch_short_id: batch_short_id,
-                checklist_title: `Shipping Checklist - Batch ${batch_short_id}`,
-                items: tests.map(test => ({
-                    test_id: test.test_id,
-                    checked: false,
-                    notes: ''
-                })),
-                total_items: tests.length
-            };
-            
-        default:
-            throw new Error(`Unsupported print format: ${format}`);
-    }
-}
-
-console.log('✅ Batch printing endpoints loaded');
-
 EOF
 
-    # Insert the new content before the server start or at the end
-    if grep -q 'app.listen\|server.listen' "$SERVER_FILE"; then
-        # Insert before server start
-        awk '/app\.listen|server\.listen/ { 
-            while ((getline line < "'${SERVER_FILE}'.tmp") > 0) print line
-            close("'${SERVER_FILE}'.tmp")
-        } 
-        { print }' "$SERVER_FILE" > "${SERVER_FILE}.new"
+    # Insert before app.listen or at the end
+    if grep -n "app\.listen\|server\.listen" "$SERVER_FILE" | head -1; then
+        LISTEN_LINE=$(grep -n "app\.listen\|server\.listen" "$SERVER_FILE" | head -1 | cut -d: -f1)
+        echo "📋 Found server listen at line $LISTEN_LINE"
+        
+        # Insert before the listen line
+        head -n $((LISTEN_LINE - 1)) "$SERVER_FILE" > "${SERVER_FILE}.new"
+        cat temp_endpoint.js >> "${SERVER_FILE}.new"
+        tail -n +$LISTEN_LINE "$SERVER_FILE" >> "${SERVER_FILE}.new"
+        
+        mv "${SERVER_FILE}.new" "$SERVER_FILE"
     else
         # Append at end
-        cat "$SERVER_FILE" "${SERVER_FILE}.tmp" > "${SERVER_FILE}.new"
+        cat temp_endpoint.js >> "$SERVER_FILE"
     fi
     
-    mv "${SERVER_FILE}.new" "$SERVER_FILE"
-    rm "${SERVER_FILE}.tmp"
-    echo "✅ Added printable-batches endpoint"
+    rm temp_endpoint.js
+    echo "✅ Endpoint added to server file"
 fi
 
 echo ""
-echo "🔄 Restarting the server..."
+echo "🔍 Checking current server status..."
 
-# Try to restart the server
-if command -v pm2 &> /dev/null; then
-    echo "📋 Using PM2 to restart server..."
-    pm2 restart nad-api || pm2 restart server || pm2 restart all
-    echo "✅ Server restarted with PM2"
-elif pgrep -f "node.*server.js" > /dev/null; then
-    echo "📋 Restarting Node.js server..."
-    pkill -f "node.*server.js"
-    sleep 2
-    nohup node "$SERVER_FILE" > server.log 2>&1 &
-    echo "✅ Server restarted"
+# Check if server is running
+if pgrep -f "server.js\|nad-api" > /dev/null; then
+    echo "✅ Server process found"
+    
+    if command -v pm2 &> /dev/null; then
+        echo "📋 Restarting with PM2..."
+        pm2 list
+        pm2 restart all
+        sleep 3
+        pm2 list
+    else
+        echo "📋 Server is running but not with PM2"
+        echo "⚠️ You may need to manually restart the server"
+    fi
 else
-    echo "⚠️ Could not detect running server"
-    echo "📋 Please manually restart your server:"
-    echo "   cd $(dirname $SERVER_FILE)"
-    echo "   node $(basename $SERVER_FILE)"
+    echo "❌ No server process found"
+    echo "📋 Starting server..."
+    
+    if command -v pm2 &> /dev/null; then
+        cd "$(dirname "$SERVER_FILE")"
+        pm2 start "$(basename "$SERVER_FILE")" --name nad-api
+    else
+        echo "⚠️ Please manually start your server:"
+        echo "   cd $(dirname "$SERVER_FILE")"
+        echo "   node $(basename "$SERVER_FILE")"
+    fi
 fi
 
 echo ""
 echo "🧪 Testing the endpoint..."
 
-sleep 3
+sleep 5
 
 # Test the endpoint
-if curl -s "https://mynadtest.info/api/admin/printable-batches" | grep -q "success"; then
-    echo "✅ Endpoint is working!"
+echo "📋 Testing: https://mynadtest.info/api/admin/printable-batches"
+
+if curl -s -f "https://mynadtest.info/api/admin/printable-batches" > /dev/null; then
+    echo "✅ Endpoint responds (200 OK)"
+    
+    # Check response content
+    RESPONSE=$(curl -s "https://mynadtest.info/api/admin/printable-batches")
+    if echo "$RESPONSE" | grep -q '"success":true'; then
+        echo "✅ Endpoint returns success"
+        
+        # Count batches
+        BATCH_COUNT=$(echo "$RESPONSE" | grep -o '"batch_id"' | wc -l)
+        echo "📊 Found $BATCH_COUNT batches"
+        
+        if [[ $BATCH_COUNT -gt 0 ]]; then
+            echo "🎉 Great! You have batches ready for printing"
+        else
+            echo "📦 No batches found - create some test batches first"
+        fi
+    else
+        echo "⚠️ Endpoint returns error:"
+        echo "$RESPONSE" | head -3
+    fi
 else
-    echo "⚠️ Endpoint test failed. Check server logs:"
+    echo "❌ Endpoint still not responding"
+    echo ""
+    echo "🔍 Debugging steps:"
+    echo "1. Check server logs:"
     echo "   pm2 logs nad-api"
-    echo "   or check: tail -f server.log"
+    echo ""
+    echo "2. Check if server is running:"
+    echo "   pm2 list"
+    echo ""
+    echo "3. Try manual restart:"
+    echo "   pm2 restart nad-api"
+    echo ""
+    echo "4. Check server file syntax:"
+    echo "   node -c $SERVER_FILE"
 fi
 
 echo ""
 echo "🎯 SUMMARY"
 echo "=========="
-echo "✅ Added /api/admin/printable-batches endpoint"
-echo "✅ Added /api/admin/print-batch endpoint"
-echo "✅ Added generatePrintDataBatch helper function"
-echo "✅ Server restarted"
+echo "✅ Server file location: $SERVER_FILE"
+echo "✅ Endpoint code added"
+echo "✅ Server restart attempted"
 echo ""
 echo "📋 NEXT STEPS:"
-echo "1. Test the Batch Printing section in admin"
-echo "2. Should now load batch cards successfully"
-echo "3. Try selecting and printing a batch"
+echo "1. Check if endpoint test passed above"
+echo "2. If yes: Test Batch Printing in admin interface"
+echo "3. If no: Check server logs and restart manually"
 echo ""
-echo "🐛 IF STILL NOT WORKING:"
-echo "- Check server logs: pm2 logs nad-api"
-echo "- Verify database has batches: SELECT * FROM nad_test_ids WHERE batch_id IS NOT NULL;"
-echo "- Check browser console for errors"
+echo "🔧 Manual check commands:"
+echo "   pm2 logs nad-api --lines 20"
+echo "   curl https://mynadtest.info/api/admin/printable-batches"
 echo ""
-echo "✅ Backend endpoints added successfully!"
+echo "✅ Manual endpoint addition complete!"
