@@ -1637,10 +1637,14 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         // Event listeners and initialization
         document.addEventListener('DOMContentLoaded', () => {
             console.log('📋 NAD Admin Dashboard initializing...');
+            console.log('🔍 DOMContentLoaded fired');
         
             // Setup navigation
-            document.querySelectorAll('.nav-link').forEach(link => {
-                console.log('🔗 Setting up nav link:', link.getAttribute('data-section'));
+            const navLinks = document.querySelectorAll('.nav-link');
+            console.log('🔍 Found nav links:', navLinks.length);
+            
+            navLinks.forEach((link, index) => {
+                console.log(`🔗 Setting up nav link ${index}:`, link.getAttribute('data-section'), link);
                 link.addEventListener('click', function(e) {
                     console.log('🔗 Nav link clicked:', this.getAttribute('data-section'));
                     e.preventDefault();
@@ -1651,6 +1655,14 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                         console.error('❌ No data-section attribute found');
                     }
                 });
+            });
+            
+            // Test if ANY click events work
+            document.body.addEventListener('click', function(e) {
+                console.log('🖱️ Body click detected:', e.target);
+                if (e.target.classList.contains('nav-link')) {
+                    console.log('🎯 Nav link detected in body click:', e.target.getAttribute('data-section'));
+                }
             });
         
             // Load initial data
