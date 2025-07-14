@@ -1878,4 +1878,59 @@ if (typeof window.loadSupplements === 'undefined') {
     
     console.log('✅ Clean loadSupplements function created');
 }
+
+// WORKING SUPPLEMENTS IMPLEMENTATION
+if (typeof window.loadSupplements === 'undefined') {
+    console.log('💊 Creating supplements function...');
+    
+    window.loadSupplements = function() {
+        console.log('💊 Loading supplements from API...');
+        
+        const tbody = document.getElementById('supplements-table-body');
+        if (!tbody) {
+            console.error('❌ supplements-table-body not found');
+            return;
+        }
+        
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Loading supplements...</td></tr>';
+        
+        fetch('https://mynadtest.info/api/supplements')
+            .then(response => response.json())
+            .then(data => {
+                console.log('📦 Supplements data:', data);
+                
+                if (data.success && data.supplements && data.supplements.length > 0) {
+                    tbody.innerHTML = '';
+                    data.supplements.forEach(supplement => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>${supplement.name}</strong></td>
+                            <td>${supplement.category || 'N/A'}</td>
+                            <td>${supplement.default_dose} ${supplement.unit}</td>
+                            <td>${supplement.is_active ? 'Active' : 'Inactive'}</td>
+                            <td><button class="btn btn-sm">Edit</button></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    console.log(`✅ Loaded ${data.supplements.length} supplements`);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error:', error);
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: red;">Error loading supplements</td></tr>';
+            });
+    };
+    
+    // Auto-load when clicking supplements
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('[data-section="supplements"]')) {
+            setTimeout(() => {
+                console.log('🔄 Auto-loading supplements on click');
+                loadSupplements();
+            }, 300);
+        }
+    });
+    
+    console.log('✅ Supplements function created and auto-loading enabled');
+}
 </script>
