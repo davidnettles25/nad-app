@@ -175,8 +175,7 @@ function renderBatchCards() {
     
     // Success! Remove this test code in production
     
-    // Only ensure batch-printing section follows normal content-section behavior
-    const batchSection = document.getElementById('batch-printing');
+    // Reset batch-printing section display to follow CSS (reuse existing batchSection)
     if (batchSection) {
         // Remove any forced display style to let CSS handle it
         batchSection.style.display = '';

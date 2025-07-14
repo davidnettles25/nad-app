@@ -1523,10 +1523,6 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 if (navLink) {
                     navLink.classList.add('active');
                 }
-            } else {
-                console.error('❌ Section not found:', sectionName);
-            }
-        
                 // Auto-load section data
                 setTimeout(() => {
                     switch(sectionName) {
@@ -1560,11 +1556,8 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                         break;
                     }
                 }, 200);
-        
-                console.log('✅ Section activated:', sectionName);
             } else {
-                console.warn(`Section ${sectionName} not found`);
-                showAlert(`Section ${sectionName} is not available yet`, 'warning');
+                console.error('❌ Section not found:', sectionName);
             }
         }
 
