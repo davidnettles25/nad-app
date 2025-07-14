@@ -204,6 +204,38 @@ function renderBatchCards() {
     }
     
     console.log('🎨 Forced container styles applied');
+    
+    // EMERGENCY TEST: Create a simple element that should be visible NO MATTER WHAT
+    const emergencyTest = document.createElement('div');
+    emergencyTest.style.cssText = `
+        position: fixed !important;
+        top: 300px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 400px !important;
+        background: red !important;
+        color: white !important;
+        padding: 30px !important;
+        font-size: 24px !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        z-index: 999999 !important;
+        border: 5px solid yellow !important;
+        border-radius: 10px !important;
+    `;
+    emergencyTest.innerHTML = `
+        🚨 EMERGENCY TEST 🚨<br>
+        Batch Printing Section Active!<br>
+        Found ${printableBatches.length} batches
+    `;
+    document.body.appendChild(emergencyTest);
+    console.log('🚨 Added emergency test element to body');
+    
+    // Remove it after 10 seconds
+    setTimeout(() => {
+        emergencyTest.remove();
+        console.log('🗑️ Removed emergency test element');
+    }, 10000);
 }
 
 // Create batch card HTML
