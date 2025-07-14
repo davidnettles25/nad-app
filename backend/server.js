@@ -1807,29 +1807,28 @@ app.get('/api/admin/printable-batches', async (req, res) => {
     try {
         console.log('🖨️ Fetching printable batches...');
         
-        // Query batches directly from nad_test_ids table
         const [batches] = await db.execute(`
             SELECT 
                 batch_id,
                 COUNT(*) as total_tests,
-                SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) as printed_tests,
+                SUM(CASE WHEN COALESCE(is_printed, 0) = 1 THEN 1 ELSE 0 END) as printed_tests,
                 MAX(printed_date) as last_printed_date,
-                batch_size,
+                MAX(batch_size) as batch_size,
                 MIN(created_date) as created_date,
-                notes as batch_notes,
+                MAX(notes) as batch_notes,
                 CASE 
-                    WHEN SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) = 0 THEN 'not_printed'
-                    WHEN SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) = COUNT(*) THEN 'fully_printed'
+                    WHEN SUM(CASE WHEN COALESCE(is_printed, 0) = 1 THEN 1 ELSE 0 END) = 0 THEN 'not_printed'
+                    WHEN SUM(CASE WHEN COALESCE(is_printed, 0) = 1 THEN 1 ELSE 0 END) = COUNT(*) THEN 'fully_printed'
                     ELSE 'partially_printed'
                 END as print_status,
                 ROUND(
-                    (SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 
+                    (SUM(CASE WHEN COALESCE(is_printed, 0) = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 
                     1
                 ) as print_percentage
             FROM nad_test_ids 
             WHERE batch_id IS NOT NULL 
             AND batch_id != ''
-            GROUP BY batch_id, batch_size, notes
+            GROUP BY batch_id
             ORDER BY MIN(created_date) DESC
             LIMIT 50
         `);
