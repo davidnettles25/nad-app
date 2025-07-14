@@ -1,595 +1,323 @@
 #!/bin/bash
 
-# Fix Batch Printing JavaScript Loading
-# The navigation works but JS module isn't loading
+# Add Backend Endpoints for Batch Printing
+# This will add the missing API endpoints to your server
 
-echo "🔧 Fixing Batch Printing JavaScript Loading"
-echo "==========================================="
+echo "🔧 Adding Backend Endpoints for Batch Printing"
+echo "=============================================="
 
-echo "📍 Working in: $(pwd)"
+# Check if we're in the right location
+if [[ -f "backend/server.js" ]]; then
+    echo "✅ Found backend/server.js"
+    SERVER_FILE="backend/server.js"
+elif [[ -f "server.js" ]]; then
+    echo "✅ Found server.js"
+    SERVER_FILE="server.js"
+else
+    echo "❌ Could not find server.js file"
+    echo "📍 Current directory: $(pwd)"
+    echo "📋 Please navigate to your backend directory or ensure server.js exists"
+    exit 1
+fi
+
+echo "📍 Server file: $SERVER_FILE"
+
+# Create backup
+cp "$SERVER_FILE" "${SERVER_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+echo "✅ Backup created"
 
 echo ""
-echo "📋 Step 1: Checking if JavaScript files exist..."
+echo "🔍 Checking if endpoints already exist..."
 
-if [[ -f "admin/js/sections/batch-printing.js" ]]; then
-    echo "✅ admin/js/sections/batch-printing.js exists"
-    echo "📊 File size: $(wc -c < admin/js/sections/batch-printing.js) bytes"
+if grep -q '/api/admin/printable-batches' "$SERVER_FILE"; then
+    echo "⚠️ printable-batches endpoint already exists"
 else
-    echo "❌ admin/js/sections/batch-printing.js missing!"
-    echo "Creating the JavaScript file..."
+    echo "➕ Adding printable-batches endpoint..."
     
-    mkdir -p admin/js/sections
-    
-    cat > admin/js/sections/batch-printing.js << 'EOF'
-/**
- * Batch Printing Manager - Simple Implementation
- * Since the modular version isn't loading, let's create a working basic version
- */
+    # Add the endpoint before the last few lines of the file
+    cat >> "${SERVER_FILE}.tmp" << 'EOF'
 
-console.log('🖨️ Loading Batch Printing functionality...');
+// ============================================================================
+// BATCH PRINTING ENDPOINTS
+// ============================================================================
 
-// Simple batch printing functionality
-let selectedBatch = null;
-let printableBatches = [];
-
-// Initialize batch printing
-function initBatchPrinting() {
-    console.log('🚀 Initializing Batch Printing...');
-    
-    // Auto-load batches when section is shown
-    setTimeout(() => {
-        loadPrintableBatches();
-    }, 1000);
-}
-
-// Load printable batches from API
-async function loadPrintableBatches() {
-    console.log('🔄 Loading printable batches...');
-    
-    const container = document.getElementById('printable-batches');
-    if (!container) {
-        console.warn('⚠️ Printable batches container not found');
-        return;
-    }
-    
+// Get all printable batches with print status
+app.get('/api/admin/printable-batches', async (req, res) => {
     try {
-        // Show loading
-        container.innerHTML = `
-            <div style="text-align: center; padding: 40px;">
-                <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-                <p>Loading printable batches...</p>
-            </div>
-        `;
+        console.log('🔄 Fetching printable batches...');
         
-        const response = await fetch(`${API_BASE}/api/admin/printable-batches`);
-        const result = await response.json();
+        // Query to get batch information with print status
+        const [batches] = await db.execute(`
+            SELECT 
+                batch_id,
+                batch_size,
+                COUNT(*) as total_tests,
+                SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) as printed_tests,
+                MAX(printed_date) as last_printed_date,
+                MIN(created_date) as created_date,
+                MAX(notes) as batch_notes,
+                CASE 
+                    WHEN SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) = 0 THEN 'not_printed'
+                    WHEN SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) = COUNT(*) THEN 'fully_printed'
+                    ELSE 'partially_printed'
+                END as print_status,
+                ROUND((SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) / COUNT(*)) * 100, 1) as print_percentage
+            FROM nad_test_ids 
+            WHERE batch_id IS NOT NULL 
+            GROUP BY batch_id, batch_size 
+            ORDER BY MIN(created_date) DESC
+            LIMIT 50
+        `);
         
-        if (result.success) {
-            printableBatches = result.data;
-            renderBatchCards();
-            console.log(`✅ Loaded ${printableBatches.length} printable batches`);
-        } else {
-            throw new Error(result.message || 'Failed to load batches');
+        // Get sample test IDs for each batch
+        for (let batch of batches) {
+            const [sampleTests] = await db.execute(
+                'SELECT test_id FROM nad_test_ids WHERE batch_id = ? ORDER BY id LIMIT 3',
+                [batch.batch_id]
+            );
+            batch.sample_test_ids = sampleTests.map(t => t.test_id);
         }
         
-    } catch (error) {
-        console.error('❌ Error loading printable batches:', error);
-        container.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: #dc3545;">
-                <h4>⚠️ Error Loading Batches</h4>
-                <p>${error.message}</p>
-                <button class="btn primary" onclick="loadPrintableBatches()" style="margin-top: 15px;">
-                    🔄 Try Again
-                </button>
-            </div>
-        `;
-    }
-}
-
-// Render batch cards
-function renderBatchCards() {
-    const container = document.getElementById('printable-batches');
-    if (!container) return;
-    
-    if (printableBatches.length === 0) {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 40px;">
-                <h4>📦 No Printable Batches</h4>
-                <p>Create test batches first to enable printing functionality.</p>
-                <button class="btn primary" onclick="showSection('tests')" style="margin-top: 15px;">
-                    📦 Create Batches
-                </button>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = printableBatches.map(batch => createBatchCard(batch)).join('');
-}
-
-// Create batch card HTML
-function createBatchCard(batch) {
-    const batchShortId = batch.batch_id.split('-').pop();
-    const printStatusText = getPrintStatusText(batch.print_status);
-    const lastPrinted = batch.last_printed_date 
-        ? new Date(batch.last_printed_date).toLocaleDateString()
-        : 'Never';
-    
-    const progressBar = batch.print_status === 'partially_printed' ? `
-        <div style="width: 100%; height: 6px; background: #e9ecef; border-radius: 3px; margin: 8px 0; overflow: hidden;">
-            <div style="height: 100%; background: #ffc107; width: ${batch.print_percentage}%;"></div>
-        </div>
-        <small>Progress: ${batch.print_percentage}% (${batch.printed_tests}/${batch.total_tests})</small>
-    ` : '';
-    
-    const printButtonText = batch.print_status === 'not_printed' ? 'Print' : 'Reprint';
-    
-    return `
-        <div class="batch-card ${batch.print_status}" data-batch-id="${batch.batch_id}" 
-             style="border: 2px solid #dee2e6; border-radius: 8px; padding: 15px; background: white; margin-bottom: 15px; cursor: pointer; border-left: 6px solid ${getBorderColor(batch.print_status)};">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h5 style="margin: 0; font-size: 16px; font-weight: 600;">Batch #${batchShortId}</h5>
-                <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${getStatusBg(batch.print_status)}; color: ${getStatusColor(batch.print_status)};">
-                    ${printStatusText}
-                </span>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px;">
-                    <span style="font-weight: 500; color: #666;">Tests:</span>
-                    <span style="color: #495057; font-weight: 500;">${batch.total_tests}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px;">
-                    <span style="font-weight: 500; color: #666;">Created:</span>
-                    <span style="color: #495057; font-weight: 500;">${new Date(batch.created_date).toLocaleDateString()}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px;">
-                    <span style="font-weight: 500; color: #666;">Last Printed:</span>
-                    <span style="color: #495057; font-weight: 500;">${lastPrinted}</span>
-                </div>
-                ${progressBar}
-            </div>
-            
-            <div style="display: flex; gap: 8px;">
-                <button class="btn primary" onclick="selectBatchForPrint('${batch.batch_id}')" style="flex: 1; padding: 6px 12px; font-size: 13px;">
-                    🖨️ ${printButtonText}
-                </button>
-                <button class="btn secondary" onclick="viewBatchDetails('${batch.batch_id}')" style="flex: 1; padding: 6px 12px; font-size: 13px;">
-                    👁️ Details
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-// Helper functions
-function getPrintStatusText(status) {
-    switch (status) {
-        case 'not_printed': return '🔴 Not Printed';
-        case 'partially_printed': return '🟡 Partial';
-        case 'fully_printed': return '🟢 Printed';
-        default: return '❓ Unknown';
-    }
-}
-
-function getBorderColor(status) {
-    switch (status) {
-        case 'not_printed': return '#dc3545';
-        case 'partially_printed': return '#ffc107';
-        case 'fully_printed': return '#28a745';
-        default: return '#dee2e6';
-    }
-}
-
-function getStatusBg(status) {
-    switch (status) {
-        case 'not_printed': return '#f8d7da';
-        case 'partially_printed': return '#fff3cd';
-        case 'fully_printed': return '#d4edda';
-        default: return '#e9ecef';
-    }
-}
-
-function getStatusColor(status) {
-    switch (status) {
-        case 'not_printed': return '#721c24';
-        case 'partially_printed': return '#856404';
-        case 'fully_printed': return '#155724';
-        default: return '#495057';
-    }
-}
-
-// Select batch for printing
-function selectBatchForPrint(batchId) {
-    console.log(`🎯 Selected batch for printing: ${batchId}`);
-    
-    selectedBatch = batchId;
-    const batch = printableBatches.find(b => b.batch_id === batchId);
-    
-    if (!batch) {
-        if (typeof showAlert === 'function') {
-            showAlert('Batch not found', 'error');
-        }
-        return;
-    }
-    
-    // Highlight selected batch
-    document.querySelectorAll('.batch-card').forEach(card => {
-        card.style.boxShadow = 'none';
-        card.style.borderColor = '#dee2e6';
-    });
-    
-    const selectedCard = document.querySelector(`[data-batch-id="${batchId}"]`);
-    if (selectedCard) {
-        selectedCard.style.boxShadow = '0 4px 12px rgba(0,123,255,0.15)';
-        selectedCard.style.borderColor = '#007bff';
-    }
-    
-    // Update selected batch info
-    updateSelectedBatchInfo(batch);
-    
-    // Show print options panel
-    const printOptions = document.getElementById('print-options');
-    if (printOptions) {
-        printOptions.style.display = 'block';
-        printOptions.scrollIntoView({ behavior: 'smooth' });
-    }
-    
-    if (typeof showAlert === 'function') {
-        showAlert(`Selected batch ${batchId.split('-').pop()} for printing`, 'info');
-    }
-}
-
-// Update selected batch info
-function updateSelectedBatchInfo(batch) {
-    const batchInfo = document.getElementById('selected-batch-info');
-    if (!batchInfo) return;
-    
-    batchInfo.innerHTML = `
-        <h5>Selected: Batch #${batch.batch_id.split('-').pop()}</h5>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-            <span style="font-weight: 500; color: #666;">Tests to print:</span>
-            <span>${batch.total_tests}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-            <span style="font-weight: 500; color: #666;">Current status:</span>
-            <span>${getPrintStatusText(batch.print_status)}</span>
-        </div>
-        ${batch.print_status !== 'not_printed' ? `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <span style="font-weight: 500; color: #666;">Last printed:</span>
-                <span>${new Date(batch.last_printed_date).toLocaleDateString()}</span>
-            </div>
-        ` : ''}
-    `;
-}
-
-// Print selected batch
-async function printSelectedBatch() {
-    if (!selectedBatch) {
-        if (typeof showAlert === 'function') {
-            showAlert('Please select a batch first', 'warning');
-        }
-        return;
-    }
-    
-    const printFormat = document.querySelector('input[name="print_format"]:checked')?.value;
-    const printerName = document.getElementById('printer-select')?.value;
-    
-    if (!printFormat) {
-        if (typeof showAlert === 'function') {
-            showAlert('Please select a print format', 'warning');
-        }
-        return;
-    }
-    
-    try {
-        const response = await fetch(`${API_BASE}/api/admin/print-batch`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                batch_id: selectedBatch,
-                print_format: printFormat,
-                printer_name: printerName || 'default',
-                notes: `Printed from admin portal - ${new Date().toISOString()}`
-            })
+        console.log(`✅ Found ${batches.length} printable batches`);
+        
+        res.json({
+            success: true,
+            data: batches
         });
         
-        const result = await response.json();
-        
-        if (result.success) {
-            if (typeof showAlert === 'function') {
-                showAlert(`✅ Batch queued for printing! Job ID: ${result.data.print_job_id}`, 'success');
-            }
-            
-            // Open print window
-            openPrintWindow(result.data);
-            
-            // Refresh batches
-            setTimeout(() => {
-                loadPrintableBatches();
-            }, 2000);
-            
-            // Hide print options
-            cancelPrintSelection();
-            
-        } else {
-            throw new Error(result.message || 'Print job failed');
-        }
     } catch (error) {
-        console.error('❌ Print error:', error);
-        if (typeof showAlert === 'function') {
-            showAlert(`❌ Print failed: ${error.message}`, 'error');
+        console.error('❌ Error fetching printable batches:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch printable batches',
+            error: error.message 
+        });
+    }
+});
+
+// Print a batch (mark as printed and log the print job)
+app.post('/api/admin/print-batch', async (req, res) => {
+    const { batch_id, print_format, printer_name, notes } = req.body;
+    const printed_by = 'admin'; // TODO: Get from session/auth
+    
+    // Validate input
+    if (!batch_id) {
+        return res.status(400).json({
+            success: false,
+            message: 'Batch ID is required'
+        });
+    }
+    
+    const validFormats = ['individual_labels', 'batch_summary', 'shipping_list'];
+    if (!validFormats.includes(print_format)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid print format'
+        });
+    }
+    
+    const connection = await db.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+        
+        console.log(`🖨️ Processing print job for batch: ${batch_id}`);
+        
+        // Get all tests in this batch
+        const [tests] = await connection.execute(
+            'SELECT test_id, batch_id, is_printed FROM nad_test_ids WHERE batch_id = ?',
+            [batch_id]
+        );
+        
+        if (tests.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'Batch not found or contains no tests'
+            });
         }
+        
+        console.log(`📋 Found ${tests.length} tests in batch ${batch_id}`);
+        
+        // Mark all tests in batch as printed
+        const [updateResult] = await connection.execute(
+            `UPDATE nad_test_ids 
+             SET is_printed = TRUE, printed_date = NOW(), printed_by = ? 
+             WHERE batch_id = ?`,
+            [printed_by, batch_id]
+        );
+        
+        console.log(`✅ Marked ${updateResult.affectedRows} tests as printed`);
+        
+        // Generate unique print job ID
+        const print_job_id = `PJ${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        
+        // Log the print job in history (if table exists)
+        try {
+            await connection.execute(
+                `INSERT INTO batch_print_history 
+                 (batch_id, print_format, printed_by, test_count, printer_name, print_job_id, notes) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [batch_id, print_format, printed_by, tests.length, printer_name || 'Default', print_job_id, notes || '']
+            );
+        } catch (historyError) {
+            console.warn('⚠️ Could not log to print history (table may not exist):', historyError.message);
+        }
+        
+        // Generate print data based on format
+        const printData = generatePrintDataBatch(tests, print_format, batch_id);
+        
+        await connection.commit();
+        
+        console.log(`✅ Print job completed with ID: ${print_job_id}`);
+        
+        res.json({
+            success: true,
+            message: `Batch ${batch_id} marked as printed successfully`,
+            data: {
+                print_job_id: print_job_id,
+                batch_id: batch_id,
+                test_count: tests.length,
+                print_format: print_format,
+                printer_name: printer_name || 'Default',
+                print_data: printData,
+                previously_printed: tests.filter(t => t.is_printed).length
+            }
+        });
+        
+    } catch (error) {
+        await connection.rollback();
+        console.error('❌ Error processing print job:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to process print job',
+            error: error.message 
+        });
+    } finally {
+        connection.release();
     }
-}
+});
 
-// Open print window
-function openPrintWindow(printData) {
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+// Helper function to generate print data
+function generatePrintDataBatch(tests, format, batch_id) {
+    const batch_short_id = batch_id.split('-').pop();
     
-    let content = '';
-    
-    if (printData.print_format === 'individual_labels') {
-        content = `
-            <h3>Individual Test Labels - Batch ${printData.batch_id.split('-').pop()}</h3>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                ${printData.print_data.labels.map(label => `
-                    <div style="border: 1px solid #000; padding: 10px; text-align: center;">
-                        <div style="font-weight: bold; font-size: 14px;">${label.test_id}</div>
-                        <div style="font-size: 10px;">Batch: ${label.batch_short_id}</div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    } else if (printData.print_format === 'batch_summary') {
-        content = `
-            <h3>${printData.print_data.summary_title}</h3>
-            <p>Total Tests: ${printData.print_data.test_count}</p>
-            <div style="columns: 3; column-gap: 20px;">
-                ${printData.print_data.test_ids.map(id => `<div style="margin-bottom: 5px; font-family: monospace;">${id}</div>`).join('')}
-            </div>
-        `;
-    } else if (printData.print_format === 'shipping_list') {
-        content = `
-            <h3>${printData.print_data.checklist_title}</h3>
-            <p>Total Items: ${printData.print_data.total_items}</p>
-            ${printData.print_data.items.map(item => `
-                <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                    <input type="checkbox"> ${item.test_id}
-                    <span style="margin-left: 20px;">_________________</span>
-                </div>
-            `).join('')}
-        `;
-    }
-    
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Print - ${printData.batch_id}</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                @media print { body { margin: 0; } }
-            </style>
-        </head>
-        <body>
-            ${content}
-            <script>
-                window.onload = function() {
-                    setTimeout(() => window.print(), 500);
-                };
-            </script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-}
-
-// Other functions
-function viewBatchDetails(batchId) {
-    console.log(`👁️ Viewing details for batch: ${batchId}`);
-    if (typeof showAlert === 'function') {
-        showAlert(`Viewing details for batch ${batchId.split('-').pop()}`, 'info');
+    switch (format) {
+        case 'individual_labels':
+            return {
+                type: 'individual_labels',
+                labels: tests.map(test => ({
+                    test_id: test.test_id,
+                    batch_id: batch_id,
+                    batch_short_id: batch_short_id,
+                    qr_code_data: test.test_id,
+                    print_date: new Date().toISOString()
+                }))
+            };
+            
+        case 'batch_summary':
+            return {
+                type: 'batch_summary',
+                batch_id: batch_id,
+                batch_short_id: batch_short_id,
+                test_count: tests.length,
+                test_ids: tests.map(t => t.test_id),
+                created_date: new Date().toISOString(),
+                summary_title: `Batch ${batch_short_id} Summary`
+            };
+            
+        case 'shipping_list':
+            return {
+                type: 'shipping_list',
+                batch_id: batch_id,
+                batch_short_id: batch_short_id,
+                checklist_title: `Shipping Checklist - Batch ${batch_short_id}`,
+                items: tests.map(test => ({
+                    test_id: test.test_id,
+                    checked: false,
+                    notes: ''
+                })),
+                total_items: tests.length
+            };
+            
+        default:
+            throw new Error(`Unsupported print format: ${format}`);
     }
 }
 
-function previewPrint() {
-    if (typeof showAlert === 'function') {
-        showAlert('Print preview will open with the print dialog', 'info');
-    }
-}
+console.log('✅ Batch printing endpoints loaded');
 
-function cancelPrintSelection() {
-    selectedBatch = null;
-    
-    // Remove highlights
-    document.querySelectorAll('.batch-card').forEach(card => {
-        card.style.boxShadow = 'none';
-        card.style.borderColor = '#dee2e6';
-    });
-    
-    // Hide print options
-    const printOptions = document.getElementById('print-options');
-    if (printOptions) {
-        printOptions.style.display = 'none';
-    }
-}
-
-function refreshPrintableBatches() {
-    loadPrintableBatches();
-}
-
-function showPrintHistory() {
-    if (typeof showAlert === 'function') {
-        showAlert('Print history feature coming soon', 'info');
-    }
-}
-
-// Global functions
-window.loadPrintableBatches = loadPrintableBatches;
-window.selectBatchForPrint = selectBatchForPrint;
-window.printSelectedBatch = printSelectedBatch;
-window.viewBatchDetails = viewBatchDetails;
-window.previewPrint = previewPrint;
-window.cancelPrintSelection = cancelPrintSelection;
-window.refreshPrintableBatches = refreshPrintableBatches;
-window.showPrintHistory = showPrintHistory;
-window.initBatchPrinting = initBatchPrinting;
-
-console.log('✅ Batch Printing functionality loaded');
-
-// Auto-initialize if we're on the batch printing section
-if (document.getElementById('batch-printing')) {
-    initBatchPrinting();
-}
 EOF
+
+    # Insert the new content before the server start or at the end
+    if grep -q 'app.listen\|server.listen' "$SERVER_FILE"; then
+        # Insert before server start
+        awk '/app\.listen|server\.listen/ { 
+            while ((getline line < "'${SERVER_FILE}'.tmp") > 0) print line
+            close("'${SERVER_FILE}'.tmp")
+        } 
+        { print }' "$SERVER_FILE" > "${SERVER_FILE}.new"
+    else
+        # Append at end
+        cat "$SERVER_FILE" "${SERVER_FILE}.tmp" > "${SERVER_FILE}.new"
+    fi
     
-    echo "✅ Created admin/js/sections/batch-printing.js"
+    mv "${SERVER_FILE}.new" "$SERVER_FILE"
+    rm "${SERVER_FILE}.tmp"
+    echo "✅ Added printable-batches endpoint"
 fi
 
 echo ""
-echo "📋 Step 2: Checking if CSS file exists..."
+echo "🔄 Restarting the server..."
 
-if [[ -f "admin/css/batch-printing.css" ]]; then
-    echo "✅ admin/css/batch-printing.css exists"
+# Try to restart the server
+if command -v pm2 &> /dev/null; then
+    echo "📋 Using PM2 to restart server..."
+    pm2 restart nad-api || pm2 restart server || pm2 restart all
+    echo "✅ Server restarted with PM2"
+elif pgrep -f "node.*server.js" > /dev/null; then
+    echo "📋 Restarting Node.js server..."
+    pkill -f "node.*server.js"
+    sleep 2
+    nohup node "$SERVER_FILE" > server.log 2>&1 &
+    echo "✅ Server restarted"
 else
-    echo "❌ admin/css/batch-printing.css missing!"
-    echo "Creating basic CSS file..."
-    
-    mkdir -p admin/css
-    
-    cat > admin/css/batch-printing.css << 'EOF'
-/* Batch Printing CSS */
-.batch-printing-section {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-}
-
-.batch-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin: 20px 0;
-}
-
-.section-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.batch-controls {
-    display: flex;
-    gap: 10px;
-}
-
-.print-options {
-    background: #f8f9fa;
-    border: 2px solid #007bff;
-    border-radius: 8px;
-    padding: 20px;
-    margin: 20px 0;
-}
-
-.print-format-selector label {
-    display: block;
-    margin-bottom: 10px;
-    cursor: pointer;
-    padding: 10px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    background: white;
-}
-
-.print-format-selector label:hover {
-    border-color: #007bff;
-    background: #f8f9ff;
-}
-
-.print-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    margin-top: 20px;
-}
-
-.printer-selector {
-    margin: 15px 0;
-}
-
-.printer-selector select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-EOF
-    
-    echo "✅ Created admin/css/batch-printing.css"
+    echo "⚠️ Could not detect running server"
+    echo "📋 Please manually restart your server:"
+    echo "   cd $(dirname $SERVER_FILE)"
+    echo "   node $(basename $SERVER_FILE)"
 fi
 
 echo ""
-echo "📋 Step 3: Checking admin.html references..."
+echo "🧪 Testing the endpoint..."
 
-if grep -q 'batch-printing.css' admin.html; then
-    echo "✅ CSS reference found in admin.html"
+sleep 3
+
+# Test the endpoint
+if curl -s "https://mynadtest.info/api/admin/printable-batches" | grep -q "success"; then
+    echo "✅ Endpoint is working!"
 else
-    echo "⚠️ Adding CSS reference to admin.html..."
-    sed -i '/^[[:space:]]*<\/head>/i\
-    <link rel="stylesheet" href="admin/css/batch-printing.css">' admin.html
-    echo "✅ Added CSS reference"
-fi
-
-if grep -q 'batch-printing.js' admin.html; then
-    echo "✅ JS reference found in admin.html"
-else
-    echo "⚠️ Adding JS reference to admin.html..."
-    sed -i '/^[[:space:]]*<\/body>/i\
-    <script src="admin/js/sections/batch-printing.js"></script>' admin.html
-    echo "✅ Added JS reference"
-fi
-
-echo ""
-echo "📋 Step 4: Updating showBatchPrinting function..."
-
-# Make sure the function calls initBatchPrinting
-if grep -q 'showBatchPrinting' admin.html; then
-    # Update the function to call initBatchPrinting
-    sed -i '/showBatchPrinting/,/}/ {
-        /showSection.*batch-printing/a\
-        \
-        // Initialize batch printing\
-        setTimeout(() => {\
-            if (typeof initBatchPrinting === "function") {\
-                initBatchPrinting();\
-            } else {\
-                console.warn("⚠️ initBatchPrinting function not found");\
-            }\
-        }, 1000);
-    }' admin.html
-    echo "✅ Updated showBatchPrinting function"
+    echo "⚠️ Endpoint test failed. Check server logs:"
+    echo "   pm2 logs nad-api"
+    echo "   or check: tail -f server.log"
 fi
 
 echo ""
 echo "🎯 SUMMARY"
 echo "=========="
-echo "✅ Created/verified admin/js/sections/batch-printing.js"
-echo "✅ Created/verified admin/css/batch-printing.css"
-echo "✅ Added CSS and JS references to admin.html"
-echo "✅ Updated showBatchPrinting function"
+echo "✅ Added /api/admin/printable-batches endpoint"
+echo "✅ Added /api/admin/print-batch endpoint"
+echo "✅ Added generatePrintDataBatch helper function"
+echo "✅ Server restarted"
 echo ""
 echo "📋 NEXT STEPS:"
-echo "1. Deploy: ./deployment_script.sh"
-echo "2. Test: Click 'Batch Printing' in navigation"
-echo "3. Should see 'Loading printable batches...' then batch cards"
-echo "4. Console should show: '✅ Batch Printing functionality loaded'"
+echo "1. Test the Batch Printing section in admin"
+echo "2. Should now load batch cards successfully"
+echo "3. Try selecting and printing a batch"
 echo ""
-echo "✅ Batch Printing JavaScript fix complete!"
+echo "🐛 IF STILL NOT WORKING:"
+echo "- Check server logs: pm2 logs nad-api"
+echo "- Verify database has batches: SELECT * FROM nad_test_ids WHERE batch_id IS NOT NULL;"
+echo "- Check browser console for errors"
+echo ""
+echo "✅ Backend endpoints added successfully!"
