@@ -149,28 +149,7 @@ function renderBatchCards() {
         parent = parent.parentElement;
     }
     
-    // Add a test card with absolute positioning to ensure visibility
-    const testCard = document.createElement('div');
-    testCard.style.cssText = `
-        position: fixed;
-        top: 200px;
-        right: 20px;
-        width: 300px;
-        background: #28a745;
-        color: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        z-index: 99999;
-        font-size: 14px;
-    `;
-    testCard.innerHTML = `
-        <h4>✅ Batch Cards Working!</h4>
-        <p>Found ${printableBatches.length} batches</p>
-        <p>This proves the cards are being generated correctly.</p>
-    `;
-    document.body.appendChild(testCard);
-    console.log('📌 Added fixed test card to confirm data');
+    // Success! Remove this test code in production
     
     // Also force parent containers to be visible
     const batchSection = document.getElementById('batch-printing');
