@@ -127,22 +127,37 @@ function renderBatchCards() {
     container.innerHTML = html;
     console.log('✅ HTML set to container');
     
-    // Fix the original container instead of creating a new one
-    container.style.cssText = `
+    // Create a completely independent container that bypasses all CSS issues
+    const workingContainer = document.createElement('div');
+    workingContainer.id = 'working-batch-container';
+    workingContainer.style.cssText = `
         display: grid !important;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
         gap: 20px !important;
-        width: 100% !important;
-        min-height: 200px !important;
-        margin: 20px 0 !important;
+        width: calc(100% - 40px) !important;
+        min-height: 300px !important;
+        margin: 20px !important;
         padding: 20px !important;
         background: white !important;
-        border: 2px solid #ccc !important;
+        border: 2px solid #007bff !important;
         border-radius: 8px !important;
-        visibility: visible !important;
-        opacity: 1 !important;
+        position: relative !important;
+        z-index: 1000 !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
     `;
-    console.log('🔄 Fixed original container with stronger CSS');
+    workingContainer.innerHTML = html;
+    
+    // Find the batch-printing section and append our working container
+    const batchSection = document.getElementById('batch-printing');
+    if (batchSection) {
+        // Clear any existing content and add our working container
+        const existingWorking = document.getElementById('working-batch-container');
+        if (existingWorking) {
+            existingWorking.remove();
+        }
+        batchSection.appendChild(workingContainer);
+        console.log('✅ Created working container and added to batch section');
+    }
     
     // Force the parent and all ancestors to be visible (but preserve content-section behavior)
     let parent = container.parentElement;
