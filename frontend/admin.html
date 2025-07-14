@@ -75,9 +75,17 @@
         }
         
         #batch-printing.content-section.active {
-            background: rgba(255,255,255,0.95);
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.95) !important;
+            border-radius: 15px !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important;
+            position: relative !important;
+            z-index: 1 !important;
+            overflow: visible !important;
+        }
+        
+        #batch-printing.content-section.active * {
+            visibility: visible !important;
+            opacity: 1 !important;
         }
 
         .header {
