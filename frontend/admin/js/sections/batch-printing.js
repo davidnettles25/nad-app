@@ -65,10 +65,17 @@ async function loadPrintableBatches() {
 
 // Render batch cards
 function renderBatchCards() {
+    console.log('🎨 renderBatchCards called with', printableBatches.length, 'batches');
     const container = document.getElementById('printable-batches');
-    if (!container) return;
+    if (!container) {
+        console.error('❌ Container printable-batches not found!');
+        return;
+    }
+    
+    console.log('📦 Container found:', container);
     
     if (printableBatches.length === 0) {
+        console.log('📝 No batches to display');
         container.innerHTML = `
             <div style="text-align: center; padding: 40px;">
                 <h4>📦 No Printable Batches</h4>
@@ -81,16 +88,22 @@ function renderBatchCards() {
         return;
     }
     
-    container.innerHTML = printableBatches.map(batch => createBatchCard(batch)).join('');
+    console.log('🔨 Creating HTML for', printableBatches.length, 'batches');
+    const html = printableBatches.map(batch => createBatchCard(batch)).join('');
+    console.log('📄 Generated HTML length:', html.length);
+    container.innerHTML = html;
+    console.log('✅ HTML set to container');
 }
 
 // Create batch card HTML
 function createBatchCard(batch) {
-    const batchShortId = batch.batch_id.split('-').pop();
-    const printStatusText = getPrintStatusText(batch.print_status);
-    const lastPrinted = batch.last_printed_date 
-        ? new Date(batch.last_printed_date).toLocaleDateString()
-        : 'Never';
+    console.log('🏗️ Creating card for batch:', batch.batch_id);
+    try {
+        const batchShortId = batch.batch_id.split('-').pop();
+        const printStatusText = getPrintStatusText(batch.print_status);
+        const lastPrinted = batch.last_printed_date 
+            ? new Date(batch.last_printed_date).toLocaleDateString()
+            : 'Never';
     
     const progressBar = batch.print_status === 'partially_printed' ? `
         <div style="width: 100%; height: 6px; background: #e9ecef; border-radius: 3px; margin: 8px 0; overflow: hidden;">
@@ -137,6 +150,10 @@ function createBatchCard(batch) {
             </div>
         </div>
     `;
+    } catch (error) {
+        console.error('❌ Error creating batch card:', error, batch);
+        return `<div style="color: red; padding: 10px;">Error creating card for batch ${batch.batch_id}</div>`;
+    }
 }
 
 // Helper functions
