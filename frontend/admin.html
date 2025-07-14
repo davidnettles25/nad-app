@@ -1512,8 +1512,10 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         
             // Show selected section
             const targetSection = document.getElementById(sectionName);
+            console.log('🔍 Target section:', sectionName, targetSection);
             if (targetSection) {
                 targetSection.classList.add('active');
+                console.log('🔍 Added active class, computed display:', window.getComputedStyle(targetSection).display);
         
                 // Update navigation
                 document.querySelectorAll('.nav-link').forEach(link => {
