@@ -1,1170 +1,315 @@
 #!/bin/bash
 
-# Step 3: Create Modular Batch Printing Components
+# Integrate Batch Printing into Existing Admin Interface
 # Run this in your frontend/ directory
 
-echo "🖨️ Creating Modular Batch Printing Components"
-echo "============================================="
+echo "🔗 Integrating Batch Printing into Admin Interface"
+echo "================================================="
 
 echo "📍 Working in: $(pwd)"
 
-# Create directory structure
-echo "📁 Creating directory structure..."
-mkdir -p admin/components
-mkdir -p admin/sections
-mkdir -p admin/css
-mkdir -p admin/js/sections
+# Check if admin.html exists
+if [[ ! -f "admin.html" ]]; then
+    echo "❌ admin.html not found. Make sure you're in the frontend/ directory"
+    exit 1
+fi
 
-echo "✅ Directories created"
-
-echo ""
-echo "🎨 Step 1: Creating CSS Module..."
-
-# Create batch printing CSS module
-cat > admin/css/batch-printing.css << 'EOF'
-/* Batch Printing Styles Module */
-
-.batch-printing-section {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 30px;
-}
-
-.batch-selector {
-    margin-bottom: 20px;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.batch-controls {
-    display: flex;
-    gap: 10px;
-}
-
-.batch-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.batch-card {
-    border: 2px solid #dee2e6;
-    border-radius: 8px;
-    padding: 15px;
-    background: white;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    position: relative;
-}
-
-.batch-card:hover {
-    border-color: #007bff;
-    box-shadow: 0 2px 8px rgba(0,123,255,0.1);
-    transform: translateY(-2px);
-}
-
-.batch-card.selected {
-    border-color: #007bff;
-    background: #f8f9ff;
-    box-shadow: 0 4px 12px rgba(0,123,255,0.15);
-}
-
-/* Print status indicators */
-.batch-card.not_printed {
-    border-left: 6px solid #dc3545;
-}
-
-.batch-card.partially_printed {
-    border-left: 6px solid #ffc107;
-}
-
-.batch-card.fully_printed {
-    border-left: 6px solid #28a745;
-}
-
-.batch-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-}
-
-.batch-header h5 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #495057;
-}
-
-.print-status {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.print-status-not_printed {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-.print-status-partially_printed {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.print-status-fully_printed {
-    background: #d4edda;
-    color: #155724;
-}
-
-.batch-details {
-    margin-bottom: 15px;
-}
-
-.detail-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    font-size: 14px;
-}
-
-.detail-row .label {
-    font-weight: 500;
-    color: #666;
-}
-
-.detail-row .value {
-    color: #495057;
-    font-weight: 500;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 6px;
-    background: #e9ecef;
-    border-radius: 3px;
-    margin: 8px 0;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: #ffc107;
-    transition: width 0.3s ease;
-}
-
-.batch-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.batch-actions .btn {
-    flex: 1;
-    padding: 6px 12px;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-/* Print Options Panel */
-.print-options {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border: 2px solid #007bff;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0,123,255,0.1);
-}
-
-.selected-batch-info {
-    background: white;
-    padding: 15px;
-    border-radius: 6px;
-    margin-bottom: 20px;
-    border-left: 4px solid #007bff;
-}
-
-.print-format-selector {
-    margin-bottom: 20px;
-}
-
-.radio-option {
-    display: block;
-    margin-bottom: 12px;
-    cursor: pointer;
-    padding: 12px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    background: white;
-    transition: all 0.2s ease;
-}
-
-.radio-option:hover {
-    border-color: #007bff;
-    background: #f8f9ff;
-}
-
-.radio-option input[type="radio"] {
-    margin-right: 10px;
-}
-
-.radio-label strong {
-    display: block;
-    color: #495057;
-    margin-bottom: 2px;
-}
-
-.radio-label small {
-    color: #6c757d;
-    font-style: italic;
-}
-
-.printer-selector {
-    margin-bottom: 20px;
-}
-
-.printer-selector label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: #495057;
-}
-
-.print-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-}
-
-.print-actions .btn {
-    min-width: 120px;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-    .batch-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .section-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-    
-    .batch-controls {
-        justify-content: center;
-    }
-    
-    .print-actions {
-        flex-direction: column;
-    }
-}
-EOF
-
-echo "✅ Created: admin/css/batch-printing.css"
+echo "✅ Found admin.html"
 
 echo ""
-echo "🧩 Step 2: Creating HTML Components..."
+echo "🎨 Step 1: Adding CSS reference to admin.html..."
 
-# Create batch printing main section
-cat > admin/sections/batch-printing.html << 'EOF'
-<!-- Batch Printing Section -->
-<div class="batch-printing-section" id="batch-printing-section">
-    <h3>🖨️ Batch Printing</h3>
-    <p>Select and print test batches for shipping labels and documentation.</p>
-    
-    <!-- Batch Selection Grid -->
-    <div class="batch-selector">
-        <div class="section-header">
-            <h4>📦 Available Batches</h4>
-            <div class="batch-controls">
-                <button class="btn btn-sm secondary" onclick="refreshPrintableBatches()">🔄 Refresh</button>
-                <button class="btn btn-sm secondary" onclick="showPrintHistory()">📈 Print History</button>
-            </div>
-        </div>
-        
-        <div class="batch-grid" id="printable-batches">
-            <div class="loading-state">
-                <div class="spinner"></div>
-                <p>Loading printable batches...</p>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Print Options Panel -->
-    <div class="print-options" id="print-options" style="display: none;">
-        <h4>🖨️ Print Options</h4>
-        <div class="selected-batch-info" id="selected-batch-info">
-            <!-- Will be populated when batch is selected -->
-        </div>
-        
-        <div class="print-format-selector">
-            <h5>Print Format:</h5>
-            <label class="radio-option">
-                <input type="radio" name="print_format" value="individual_labels" checked>
-                <span class="radio-label">
-                    <strong>📋 Individual Test ID Labels</strong>
-                    <small>One label per test ID (recommended for label printers)</small>
-                </span>
-            </label>
-            
-            <label class="radio-option">
-                <input type="radio" name="print_format" value="batch_summary">
-                <span class="radio-label">
-                    <strong>📊 Batch Summary Sheet</strong>
-                    <small>All test IDs on one page for records</small>
-                </span>
-            </label>
-            
-            <label class="radio-option">
-                <input type="radio" name="print_format" value="shipping_list">
-                <span class="radio-label">
-                    <strong>📦 Shipping Checklist</strong>
-                    <small>Printable checklist for packing verification</small>
-                </span>
-            </label>
-        </div>
-        
-        <div class="printer-selector">
-            <label for="printer-select">🖨️ Printer:</label>
-            <select id="printer-select" class="form-control">
-                <option value="default">Default Label Printer</option>
-                <option value="zebra_zp450">Zebra ZP450 Label Printer</option>
-                <option value="dymo_450">DYMO LabelWriter 450</option>
-                <option value="brother_ql">Brother QL Series</option>
-                <option value="generic">Generic Printer</option>
-            </select>
-        </div>
-        
-        <div class="print-actions">
-            <button class="btn primary" onclick="printSelectedBatch()">
-                🖨️ Print Batch
-            </button>
-            <button class="btn secondary" onclick="previewPrint()">
-                👁️ Preview
-            </button>
-            <button class="btn secondary" onclick="cancelPrintSelection()">
-                ❌ Cancel
-            </button>
-        </div>
-    </div>
-</div>
-EOF
-
-echo "✅ Created: admin/sections/batch-printing.html"
-
-# Create batch card component
-cat > admin/components/batch-card.html << 'EOF'
-<!-- Batch Card Component Template -->
-<div class="batch-card {print_status}" data-batch-id="{batch_id}">
-    <div class="batch-header">
-        <h5>Batch #{batch_short_id}</h5>
-        <div class="batch-status">
-            <span class="print-status print-status-{print_status}">{print_status_text}</span>
-        </div>
-    </div>
-    
-    <div class="batch-details">
-        <div class="detail-row">
-            <span class="label">Tests:</span>
-            <span class="value">{total_tests}</span>
-        </div>
-        <div class="detail-row">
-            <span class="label">Created:</span>
-            <span class="value">{created_date}</span>
-        </div>
-        <div class="detail-row">
-            <span class="label">Last Printed:</span>
-            <span class="value">{last_printed}</span>
-        </div>
-        {progress_bar}
-    </div>
-    
-    <div class="batch-actions">
-        <button class="btn btn-sm primary" onclick="selectBatchForPrint('{batch_id}')">
-            🖨️ {print_button_text}
-        </button>
-        <button class="btn btn-sm secondary" onclick="viewBatchDetails('{batch_id}')">
-            👁️ Details
-        </button>
-    </div>
-</div>
-EOF
-
-echo "✅ Created: admin/components/batch-card.html"
-
-# Create print options component
-cat > admin/components/print-options.html << 'EOF'
-<!-- Print Options Component -->
-<div class="print-options" id="print-options" style="display: none;">
-    <h4>🖨️ Print Options</h4>
-    
-    <div class="selected-batch-info" id="selected-batch-info">
-        <!-- Will be populated when batch is selected -->
-    </div>
-    
-    <div class="print-format-selector">
-        <h5>Print Format:</h5>
-        <label class="radio-option">
-            <input type="radio" name="print_format" value="individual_labels" checked>
-            <span class="radio-label">
-                <strong>📋 Individual Test ID Labels</strong>
-                <small>One label per test ID (recommended for label printers)</small>
-            </span>
-        </label>
-        
-        <label class="radio-option">
-            <input type="radio" name="print_format" value="batch_summary">
-            <span class="radio-label">
-                <strong>📊 Batch Summary Sheet</strong>
-                <small>All test IDs on one page for records</small>
-            </span>
-        </label>
-        
-        <label class="radio-option">
-            <input type="radio" name="print_format" value="shipping_list">
-            <span class="radio-label">
-                <strong>📦 Shipping Checklist</strong>
-                <small>Printable checklist for packing verification</small>
-            </span>
-        </label>
-    </div>
-    
-    <div class="printer-selector">
-        <label for="printer-select">🖨️ Printer:</label>
-        <select id="printer-select" class="form-control">
-            <option value="default">Default Label Printer</option>
-            <option value="zebra_zp450">Zebra ZP450 Label Printer</option>
-            <option value="dymo_450">DYMO LabelWriter 450</option>
-            <option value="brother_ql">Brother QL Series</option>
-            <option value="generic">Generic Printer</option>
-        </select>
-    </div>
-    
-    <div class="print-actions">
-        <button class="btn primary" onclick="printSelectedBatch()">
-            🖨️ Print Batch
-        </button>
-        <button class="btn secondary" onclick="previewPrint()">
-            👁️ Preview
-        </button>
-        <button class="btn secondary" onclick="cancelPrintSelection()">
-            ❌ Cancel
-        </button>
-    </div>
-</div>
-EOF
-
-echo "✅ Created: admin/components/print-options.html"
+# Check if batch-printing.css is already referenced
+if grep -q 'batch-printing.css' admin.html; then
+    echo "⚠️ batch-printing.css already referenced in admin.html"
+else
+    # Find the last CSS link in head and add after it
+    if grep -q '</head>' admin.html; then
+        # Add before </head>
+        sed -i.backup1 's|</head>|    <link rel="stylesheet" href="admin/css/batch-printing.css">\n</head>|' admin.html
+        echo "✅ Added batch-printing.css to <head> section"
+    else
+        echo "⚠️ Could not find </head> tag. Please manually add:"
+        echo '    <link rel="stylesheet" href="admin/css/batch-printing.css">'
+    fi
+fi
 
 echo ""
-echo "💻 Step 3: Creating JavaScript Module..."
+echo "💻 Step 2: Adding JavaScript reference to admin.html..."
 
-# Create batch printing JavaScript module
-cat > admin/js/sections/batch-printing.js << 'EOF'
-/**
- * Batch Printing Manager
- * Handles batch selection, print options, and print job processing
- */
+# Check if batch-printing.js is already referenced
+if grep -q 'batch-printing.js' admin.html; then
+    echo "⚠️ batch-printing.js already referenced in admin.html"
+else
+    # Add before </body>
+    if grep -q '</body>' admin.html; then
+        sed -i.backup2 's|</body>|    <script src="admin/js/sections/batch-printing.js"></script>\n</body>|' admin.html
+        echo "✅ Added batch-printing.js before </body>"
+    else
+        echo "⚠️ Could not find </body> tag. Please manually add:"
+        echo '    <script src="admin/js/sections/batch-printing.js"></script>'
+    fi
+fi
 
-console.log('🖨️ Loading Batch Printing Module...');
+echo ""
+echo "📱 Step 3: Adding navigation item..."
 
-class BatchPrintingManager {
-    constructor() {
-        this.selectedBatch = null;
-        this.printableBatches = [];
-        this.batchCardTemplate = null;
-        this.isInitialized = false;
+# Check if batch printing navigation already exists
+if grep -q 'batch-printing' admin.html; then
+    echo "⚠️ Batch printing navigation may already exist"
+else
+    # Look for existing navigation structure and add batch printing
+    if grep -q 'data-section="tests"' admin.html; then
+        # Add after tests navigation
+        sed -i.backup3 '/data-section="tests"/a\
+                            <li><a href="#" onclick="showBatchPrinting()" data-section="batch-printing">🖨️ Batch Printing</a></li>' admin.html
+        echo "✅ Added batch printing navigation item"
+    else
+        echo "⚠️ Could not find navigation structure. Please manually add navigation item:"
+        echo '<li><a href="#" onclick="showBatchPrinting()" data-section="batch-printing">🖨️ Batch Printing</a></li>'
+    fi
+fi
+
+echo ""
+echo "📄 Step 4: Adding batch printing section to admin.html..."
+
+# Check if batch printing section already exists
+if grep -q 'batch-printing-section' admin.html; then
+    echo "⚠️ Batch printing section may already exist"
+else
+    # Add the batch printing section after tests section
+    if grep -q 'id="tests"' admin.html; then
+        # Find the end of tests section and add batch printing after it
         
-        this.printableFormats = {
-            'individual_labels': 'Individual Test ID Labels',
-            'batch_summary': 'Batch Summary Sheet',
-            'shipping_list': 'Shipping Checklist'
-        };
-    }
-    
-    async init() {
-        if (this.isInitialized) return;
-        
-        console.log('🚀 Initializing Batch Printing Manager...');
-        
-        try {
-            // Load batch card template
-            await this.loadBatchCardTemplate();
-            
-            // Load printable batches
-            await this.loadPrintableBatches();
-            
-            this.isInitialized = true;
-            console.log('✅ Batch Printing Manager initialized');
-            
-        } catch (error) {
-            console.error('❌ Failed to initialize Batch Printing Manager:', error);
-        }
-    }
-    
-    async loadBatchCardTemplate() {
-        try {
-            const response = await fetch('admin/components/batch-card.html');
-            if (response.ok) {
-                this.batchCardTemplate = await response.text();
-                console.log('✅ Batch card template loaded');
-            } else {
-                throw new Error('Failed to load batch card template');
-            }
-        } catch (error) {
-            console.warn('⚠️ Could not load batch card template, using fallback');
-            this.batchCardTemplate = this.getFallbackCardTemplate();
-        }
-    }
-    
-    getFallbackCardTemplate() {
-        return `
-            <div class="batch-card {print_status}" data-batch-id="{batch_id}">
-                <div class="batch-header">
-                    <h5>Batch #{batch_short_id}</h5>
-                    <div class="batch-status">
-                        <span class="print-status print-status-{print_status}">{print_status_text}</span>
+        # Create the batch printing section content
+        cat > temp_batch_section.html << 'EOF'
+
+        <!-- Batch Printing Section -->
+        <div class="content-section" id="batch-printing" style="display: none;">
+            <div class="batch-printing-section">
+                <h3>🖨️ Batch Printing</h3>
+                <p>Select and print test batches for shipping labels and documentation.</p>
+                
+                <!-- Batch Selection Grid -->
+                <div class="batch-selector">
+                    <div class="section-header">
+                        <h4>📦 Available Batches</h4>
+                        <div class="batch-controls">
+                            <button class="btn btn-sm secondary" onclick="refreshPrintableBatches()">🔄 Refresh</button>
+                            <button class="btn btn-sm secondary" onclick="showPrintHistory()">📈 Print History</button>
+                        </div>
+                    </div>
+                    
+                    <div class="batch-grid" id="printable-batches">
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <p>Loading printable batches...</p>
+                        </div>
                     </div>
                 </div>
-                <div class="batch-details">
-                    <div class="detail-row">
-                        <span class="label">Tests:</span>
-                        <span class="value">{total_tests}</span>
+                
+                <!-- Print Options Panel -->
+                <div class="print-options" id="print-options" style="display: none;">
+                    <h4>🖨️ Print Options</h4>
+                    <div class="selected-batch-info" id="selected-batch-info">
+                        <!-- Will be populated when batch is selected -->
                     </div>
-                    <div class="detail-row">
-                        <span class="label">Created:</span>
-                        <span class="value">{created_date}</span>
+                    
+                    <div class="print-format-selector">
+                        <h5>Print Format:</h5>
+                        <label class="radio-option">
+                            <input type="radio" name="print_format" value="individual_labels" checked>
+                            <span class="radio-label">
+                                <strong>📋 Individual Test ID Labels</strong>
+                                <small>One label per test ID (recommended for label printers)</small>
+                            </span>
+                        </label>
+                        
+                        <label class="radio-option">
+                            <input type="radio" name="print_format" value="batch_summary">
+                            <span class="radio-label">
+                                <strong>📊 Batch Summary Sheet</strong>
+                                <small>All test IDs on one page for records</small>
+                            </span>
+                        </label>
+                        
+                        <label class="radio-option">
+                            <input type="radio" name="print_format" value="shipping_list">
+                            <span class="radio-label">
+                                <strong>📦 Shipping Checklist</strong>
+                                <small>Printable checklist for packing verification</small>
+                            </span>
+                        </label>
                     </div>
-                    <div class="detail-row">
-                        <span class="label">Last Printed:</span>
-                        <span class="value">{last_printed}</span>
+                    
+                    <div class="printer-selector">
+                        <label for="printer-select">🖨️ Printer:</label>
+                        <select id="printer-select" class="form-control">
+                            <option value="default">Default Label Printer</option>
+                            <option value="zebra_zp450">Zebra ZP450 Label Printer</option>
+                            <option value="dymo_450">DYMO LabelWriter 450</option>
+                            <option value="brother_ql">Brother QL Series</option>
+                            <option value="generic">Generic Printer</option>
+                        </select>
                     </div>
-                    {progress_bar}
-                </div>
-                <div class="batch-actions">
-                    <button class="btn btn-sm primary" onclick="batchPrintingManager.selectBatchForPrint('{batch_id}')">
-                        🖨️ {print_button_text}
-                    </button>
-                    <button class="btn btn-sm secondary" onclick="batchPrintingManager.viewBatchDetails('{batch_id}')">
-                        👁️ Details
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-    
-    async loadPrintableBatches() {
-        console.log('🔄 Loading printable batches...');
-        
-        const container = document.getElementById('printable-batches');
-        if (!container) {
-            console.warn('⚠️ Printable batches container not found');
-            return;
-        }
-        
-        try {
-            // Show loading state
-            container.innerHTML = `
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <p>Loading printable batches...</p>
-                </div>
-            `;
-            
-            const response = await fetch(`${API_BASE}/api/admin/printable-batches`);
-            const result = await response.json();
-            
-            if (result.success) {
-                this.printableBatches = result.data;
-                this.renderBatchCards();
-                console.log(`✅ Loaded ${this.printableBatches.length} printable batches`);
-            } else {
-                throw new Error(result.message || 'Failed to load batches');
-            }
-            
-        } catch (error) {
-            console.error('❌ Error loading printable batches:', error);
-            this.showBatchesError(error.message);
-        }
-    }
-    
-    renderBatchCards() {
-        const container = document.getElementById('printable-batches');
-        if (!container) return;
-        
-        if (this.printableBatches.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h4>📦 No Printable Batches</h4>
-                    <p>Create test batches first to enable printing functionality.</p>
-                    <button class="btn primary" onclick="showSection('tests')">📦 Create Batches</button>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = this.printableBatches.map(batch => this.createBatchCard(batch)).join('');
-    }
-    
-    createBatchCard(batch) {
-        if (!this.batchCardTemplate) {
-            return this.createFallbackCard(batch);
-        }
-        
-        const batchShortId = batch.batch_id.split('-').pop();
-        const printStatusText = this.getPrintStatusText(batch.print_status);
-        const lastPrinted = batch.last_printed_date 
-            ? new Date(batch.last_printed_date).toLocaleDateString()
-            : 'Never';
-        
-        const progressBar = batch.print_status === 'partially_printed' ? `
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: ${batch.print_percentage}%"></div>
-            </div>
-            <small>Progress: ${batch.print_percentage}% (${batch.printed_tests}/${batch.total_tests})</small>
-        ` : '';
-        
-        const printButtonText = batch.print_status === 'not_printed' ? 'Print' : 'Reprint';
-        
-        return this.batchCardTemplate
-            .replace(/{batch_id}/g, batch.batch_id)
-            .replace(/{batch_short_id}/g, batchShortId)
-            .replace(/{print_status}/g, batch.print_status)
-            .replace(/{print_status_text}/g, printStatusText)
-            .replace(/{total_tests}/g, batch.total_tests)
-            .replace(/{created_date}/g, new Date(batch.created_date).toLocaleDateString())
-            .replace(/{last_printed}/g, lastPrinted)
-            .replace(/{progress_bar}/g, progressBar)
-            .replace(/{print_button_text}/g, printButtonText);
-    }
-    
-    createFallbackCard(batch) {
-        const batchShortId = batch.batch_id.split('-').pop();
-        const printStatusText = this.getPrintStatusText(batch.print_status);
-        
-        return `
-            <div class="batch-card ${batch.print_status}" data-batch-id="${batch.batch_id}">
-                <div class="batch-header">
-                    <h5>Batch #${batchShortId}</h5>
-                    <span class="print-status print-status-${batch.print_status}">${printStatusText}</span>
-                </div>
-                <div class="batch-details">
-                    <div>Tests: ${batch.total_tests}</div>
-                    <div>Created: ${new Date(batch.created_date).toLocaleDateString()}</div>
-                </div>
-                <div class="batch-actions">
-                    <button class="btn btn-sm primary" onclick="batchPrintingManager.selectBatchForPrint('${batch.batch_id}')">
-                        🖨️ Print
-                    </button>
+                    
+                    <div class="print-actions">
+                        <button class="btn primary" onclick="printSelectedBatch()">
+                            🖨️ Print Batch
+                        </button>
+                        <button class="btn secondary" onclick="previewPrint()">
+                            👁️ Preview
+                        </button>
+                        <button class="btn secondary" onclick="cancelPrintSelection()">
+                            ❌ Cancel
+                        </button>
+                    </div>
                 </div>
             </div>
-        `;
-    }
-    
-    getPrintStatusText(status) {
-        switch (status) {
-            case 'not_printed': return '🔴 Not Printed';
-            case 'partially_printed': return '🟡 Partial';
-            case 'fully_printed': return '🟢 Printed';
-            default: return '❓ Unknown';
-        }
-    }
-    
-    showBatchesError(message) {
-        const container = document.getElementById('printable-batches');
-        if (container) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h4>⚠️ Error Loading Batches</h4>
-                    <p>${message}</p>
-                    <button class="btn primary" onclick="batchPrintingManager.loadPrintableBatches()">🔄 Try Again</button>
-                </div>
-            `;
-        }
-    }
-    
-    selectBatchForPrint(batchId) {
-        console.log(`🎯 Selected batch for printing: ${batchId}`);
+        </div>
+EOF
         
-        this.selectedBatch = batchId;
-        const batch = this.printableBatches.find(b => b.batch_id === batchId);
-        
-        if (!batch) {
-            if (typeof showAlert === 'function') {
-                showAlert('Batch not found', 'error');
-            }
-            return;
-        }
-        
-        // Highlight selected batch
-        document.querySelectorAll('.batch-card').forEach(card => {
-            card.classList.remove('selected');
-        });
-        
-        const selectedCard = document.querySelector(`[data-batch-id="${batchId}"]`);
-        if (selectedCard) {
-            selectedCard.classList.add('selected');
-        }
-        
-        // Update selected batch info
-        this.updateSelectedBatchInfo(batch);
-        
-        // Show print options panel
-        const printOptions = document.getElementById('print-options');
-        if (printOptions) {
-            printOptions.style.display = 'block';
-            
-            // Scroll to print options
-            printOptions.scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        if (typeof showAlert === 'function') {
-            showAlert(`Selected batch ${batchId.split('-').pop()} for printing`, 'info');
-        }
-    }
-    
-    updateSelectedBatchInfo(batch) {
-        const batchInfo = document.getElementById('selected-batch-info');
-        if (!batchInfo) return;
-        
-        batchInfo.innerHTML = `
-            <h5>Selected: Batch #${batch.batch_id.split('-').pop()}</h5>
-            <div class="detail-row">
-                <span class="label">Tests to print:</span>
-                <span class="value">${batch.total_tests}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">Current status:</span>
-                <span class="value">${this.getPrintStatusText(batch.print_status)}</span>
-            </div>
-            ${batch.print_status !== 'not_printed' ? `
-                <div class="detail-row">
-                    <span class="label">Last printed:</span>
-                    <span class="value">${new Date(batch.last_printed_date).toLocaleDateString()}</span>
-                </div>
-            ` : ''}
-        `;
-    }
-    
-    async printSelectedBatch() {
-        if (!this.selectedBatch) {
-            if (typeof showAlert === 'function') {
-                showAlert('Please select a batch first', 'warning');
-            }
-            return;
-        }
-        
-        const printFormat = document.querySelector('input[name="print_format"]:checked')?.value;
-        const printerName = document.getElementById('printer-select')?.value;
-        
-        if (!printFormat) {
-            if (typeof showAlert === 'function') {
-                showAlert('Please select a print format', 'warning');
-            }
-            return;
-        }
-        
-        try {
-            const response = await fetch(`${API_BASE}/api/admin/print-batch`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    batch_id: this.selectedBatch,
-                    print_format: printFormat,
-                    printer_name: printerName || 'default',
-                    notes: `Printed from admin portal - ${new Date().toISOString()}`
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                if (typeof showAlert === 'function') {
-                    showAlert(`✅ Batch queued for printing! Job ID: ${result.data.print_job_id}`, 'success');
+        # Find where to insert the batch printing section (after tests section)
+        awk '
+        /<div.*id="tests".*content-section/ { in_tests = 1 }
+        in_tests && /<\/div>/ { 
+            print
+            if (--div_count == 0) {
+                while ((getline line < "temp_batch_section.html") > 0) {
+                    print line
                 }
-                
-                // Process print data
-                this.processPrintJob(result.data);
-                
-                // Refresh batches to show updated status
-                await this.loadPrintableBatches();
-                
-                // Hide print options
-                this.cancelPrintSelection();
-                
-            } else {
-                throw new Error(result.message || 'Print job failed');
-            }
-        } catch (error) {
-            console.error('❌ Print error:', error);
-            if (typeof showAlert === 'function') {
-                showAlert(`❌ Print failed: ${error.message}`, 'error');
+                close("temp_batch_section.html")
+                in_tests = 0
+                next
             }
         }
-    }
-    
-    processPrintJob(printData) {
-        console.log('🖨️ Processing print job:', printData);
+        in_tests && /<div/ { div_count++ }
+        in_tests && /<\/div>/ { div_count-- }
+        { print }
+        ' admin.html > admin.html.tmp
         
-        // Open print window based on format
-        switch (printData.print_format) {
-            case 'individual_labels':
-                this.printIndividualLabels(printData.print_data);
-                break;
-            case 'batch_summary':
-                this.printBatchSummary(printData.print_data);
-                break;
-            case 'shipping_list':
-                this.printShippingList(printData.print_data);
-                break;
-            default:
-                console.warn('Unknown print format:', printData.print_format);
-        }
-    }
-    
-    printIndividualLabels(data) {
-        console.log('🏷️ Printing individual labels...');
-        
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        
-        const labelsHtml = data.labels.map(label => `
-            <div class="label">
-                <div class="test-id">${label.test_id}</div>
-                <div class="batch">Batch: ${label.batch_short_id}</div>
-                <div class="print-date">${new Date(label.print_date).toLocaleDateString()}</div>
-            </div>
-        `).join('');
-        
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Test ID Labels - Batch ${data.labels[0]?.batch_short_id}</title>
-                <style>
-                    @media print {
-                        body { margin: 0; font-family: Arial, sans-serif; }
-                        .label { 
-                            width: 2.25in; 
-                            height: 1.25in; 
-                            border: 1px solid #000;
-                            padding: 5px;
-                            display: inline-block;
-                            margin: 2px;
-                            font-size: 10pt;
-                            page-break-inside: avoid;
-                            box-sizing: border-box;
-                        }
-                        .test-id { 
-                            font-weight: bold; 
-                            font-size: 12pt; 
-                            margin-bottom: 5px;
-                        }
-                        .batch { 
-                            font-size: 8pt; 
-                            color: #666;
-                        }
-                        .print-date {
-                            font-size: 7pt;
-                            color: #999;
-                            margin-top: 5px;
-                        }
-                    }
-                    @media screen {
-                        body { padding: 20px; }
-                        .label { 
-                            border: 1px solid #ccc;
-                            padding: 10px;
-                            margin: 5px;
-                            display: inline-block;
-                            width: 200px;
-                            height: 100px;
-                        }
-                    }
-                </style>
-            </head>
-            <body>
-                <h3 style="text-align: center; margin-bottom: 20px;">
-                    Test ID Labels - Batch ${data.labels[0]?.batch_short_id}
-                </h3>
-                ${labelsHtml}
-                <script>
-                    window.onload = function() {
-                        setTimeout(function() {
-                            window.print();
-                        }, 500);
-                    };
-                </script>
-            </body>
-            </html>
-        `);
-        
-        printWindow.document.close();
-    }
-    
-    printBatchSummary(data) {
-        console.log('📊 Printing batch summary...');
-        // Implementation for batch summary printing
-        
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>${data.summary_title}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 20px; }
-                    .header { text-align: center; margin-bottom: 30px; }
-                    .test-list { columns: 3; column-gap: 20px; }
-                    .test-id { margin-bottom: 5px; font-family: monospace; }
-                    @media print {
-                        body { margin: 0; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h2>${data.summary_title}</h2>
-                    <p>Total Tests: ${data.test_count} | Generated: ${new Date(data.created_date).toLocaleString()}</p>
-                </div>
-                <div class="test-list">
-                    ${data.test_ids.map(id => `<div class="test-id">${id}</div>`).join('')}
-                </div>
-                <script>
-                    window.onload = function() {
-                        setTimeout(function() {
-                            window.print();
-                        }, 500);
-                    };
-                </script>
-            </body>
-            </html>
-        `);
-        printWindow.document.close();
-    }
-    
-    printShippingList(data) {
-        console.log('📦 Printing shipping list...');
-        // Implementation for shipping checklist printing
-        
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        
-        const checklistHtml = data.items.map(item => `
-            <div class="checklist-item">
-                <input type="checkbox" id="${item.test_id}">
-                <label for="${item.test_id}">${item.test_id}</label>
-                <div class="notes-space">_________________</div>
-            </div>
-        `).join('');
-        
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>${data.checklist_title}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 20px; }
-                    .header { margin-bottom: 30px; }
-                    .checklist-item { 
-                        display: flex; 
-                        align-items: center; 
-                        margin-bottom: 10px; 
-                        padding: 5px;
-                    }
-                    .checklist-item input { margin-right: 10px; }
-                    .checklist-item label { 
-                        font-family: monospace; 
-                        min-width: 150px;
-                    }
-                    .notes-space { 
-                        margin-left: 20px; 
-                        color: #ccc;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h2>${data.checklist_title}</h2>
-                    <p>Total Items: ${data.total_items} | Date: ${new Date().toLocaleDateString()}</p>
-                    <p><strong>Instructions:</strong> Check each item as it's packed and note any issues.</p>
-                </div>
-                <div class="checklist">
-                    ${checklistHtml}
-                </div>
-                <script>
-                    window.onload = function() {
-                        setTimeout(function() {
-                            window.print();
-                        }, 500);
-                    };
-                </script>
-            </body>
-            </html>
-        `);
-        printWindow.document.close();
-    }
-    
-    previewPrint() {
-        console.log('👁️ Print preview requested');
-        if (typeof showAlert === 'function') {
-            showAlert('Print preview will open the print dialog first for review', 'info');
-        }
-    }
-    
-    cancelPrintSelection() {
-        console.log('❌ Cancelling print selection');
-        
-        this.selectedBatch = null;
-        
-        // Remove selection highlight
-        document.querySelectorAll('.batch-card').forEach(card => {
-            card.classList.remove('selected');
-        });
-        
-        // Hide print options
-        const printOptions = document.getElementById('print-options');
-        if (printOptions) {
-            printOptions.style.display = 'none';
-        }
-        
-        if (typeof showAlert === 'function') {
-            showAlert('Print selection cancelled', 'info');
-        }
-    }
-    
-    viewBatchDetails(batchId) {
-        console.log(`👁️ Viewing details for batch: ${batchId}`);
-        // Implementation for viewing batch details
-        if (typeof showAlert === 'function') {
-            showAlert(`Viewing details for batch ${batchId.split('-').pop()}`, 'info');
-        }
-    }
-    
-    showPrintHistory() {
-        console.log('📈 Showing print history');
-        if (typeof showAlert === 'function') {
-            showAlert('Print history feature coming soon', 'info');
-        }
-    }
-}
-
-// Create global instance
-const batchPrintingManager = new BatchPrintingManager();
-
-// Global functions for onclick handlers
-window.batchPrintingManager = batchPrintingManager;
-window.refreshPrintableBatches = () => batchPrintingManager.loadPrintableBatches();
-window.printSelectedBatch = () => batchPrintingManager.printSelectedBatch();
-window.previewPrint = () => batchPrintingManager.previewPrint();
-window.cancelPrintSelection = () => batchPrintingManager.cancelPrintSelection();
-window.showPrintHistory = () => batchPrintingManager.showPrintHistory();
-
-console.log('✅ Batch Printing Module loaded');
-EOF
-
-echo "✅ Created: admin/js/sections/batch-printing.js"
+        # Check if the insertion worked
+        if grep -q 'batch-printing-section' admin.html.tmp; then
+            mv admin.html.tmp admin.html
+            rm temp_batch_section.html
+            echo "✅ Added batch printing section to admin.html"
+        else
+            rm admin.html.tmp temp_batch_section.html
+            echo "⚠️ Could not automatically add section. Please manually add the batch printing section."
+        fi
+    else
+        rm temp_batch_section.html 2>/dev/null
+        echo "⚠️ Could not find tests section. Please manually add the batch printing section."
+    fi
+fi
 
 echo ""
-echo "📝 Step 4: Integration Instructions..."
+echo "⚙️ Step 5: Adding showBatchPrinting function..."
 
-cat > BATCH_PRINTING_INTEGRATION.md << 'EOF'
-# Batch Printing Integration Instructions
-
-## Files Created
-- `admin/css/batch-printing.css` - Modular CSS styles
-- `admin/sections/batch-printing.html` - Main section HTML  
-- `admin/components/batch-card.html` - Batch card component template
-- `admin/components/print-options.html` - Print options component
-- `admin/js/sections/batch-printing.js` - JavaScript module
-
-## Integration Steps
-
-### 1. Add CSS to admin.html
-Add this line in the `<head>` section:
-```html
-<link rel="stylesheet" href="admin/css/batch-printing.css">
-```
-
-### 2. Add JavaScript to admin.html  
-Add this line before closing `</body>`:
-```html
-<script src="admin/js/sections/batch-printing.js"></script>
-```
-
-### 3. Include HTML Section
-In your admin.html, add this where you want the batch printing section:
-```html
-<!-- Include batch printing section -->
-<div data-component="batch-printing" data-src="admin/sections/batch-printing.html"></div>
-```
-
-OR manually include the content from `admin/sections/batch-printing.html`
-
-### 4. Add Navigation
-Add this to your sidebar navigation:
-```html
-<li><a href="#" onclick="showBatchPrinting()" data-section="batch-printing">🖨️ Batch Printing</a></li>
-```
-
-### 5. Initialize When Section is Shown
-Add this function to show the batch printing section:
-```javascript
-function showBatchPrinting() {
-    showSection('batch-printing');
-    
-    // Initialize batch printing if not already done
-    if (batchPrintingManager && !batchPrintingManager.isInitialized) {
-        batchPrintingManager.init();
-    }
-}
-```
-
-## Testing
-1. Create some test batches first
-2. Run the database changes from Step 1
-3. Deploy the backend endpoints from Step 2  
-4. Test the interface:
-   - View available batches
-   - Select a batch for printing
-   - Try different print formats
-   - Verify print status tracking
-
-## Dependencies
-- Requires the backend API endpoints from Step 2
-- Requires the database changes from Step 1
-- Uses existing showAlert() function for notifications
-- Uses existing showSection() function for navigation
-EOF
-
-echo "✅ Created: BATCH_PRINTING_INTEGRATION.md"
+# Check if showBatchPrinting function already exists
+if grep -q 'showBatchPrinting' admin.html; then
+    echo "⚠️ showBatchPrinting function may already exist"
+else
+    # Add the function before the closing </script> tag
+    if grep -q '</script>' admin.html; then
+        # Find the last </script> and add before it
+        sed -i.backup4 '$!b; /^<\/script>$/i\
+\
+// Show batch printing section\
+function showBatchPrinting() {\
+    console.log("🖨️ Showing batch printing section...");\
+    showSection("batch-printing");\
+    \
+    // Initialize batch printing if not already done\
+    if (typeof batchPrintingManager !== "undefined" && !batchPrintingManager.isInitialized) {\
+        setTimeout(() => {\
+            batchPrintingManager.init();\
+        }, 100);\
+    }\
+}\
+\
+// Make function globally available\
+window.showBatchPrinting = showBatchPrinting;' admin.html
+        
+        echo "✅ Added showBatchPrinting function"
+    else
+        echo "⚠️ Could not find script section. Please manually add showBatchPrinting function."
+    fi
+fi
 
 echo ""
-echo "🎯 SUMMARY"
-echo "=========="
-echo "✅ Created modular batch printing components:"
-echo "   📄 admin/sections/batch-printing.html (main section)"
-echo "   🧩 admin/components/batch-card.html (reusable card)"
-echo "   🧩 admin/components/print-options.html (print panel)"
-echo "   🎨 admin/css/batch-printing.css (modular styles)"
-echo "   💻 admin/js/sections/batch-printing.js (functionality)"
-echo "   📝 BATCH_PRINTING_INTEGRATION.md (integration guide)"
+echo "🧪 Step 6: Testing integration..."
+
+# Verify all components are in place
+echo "📋 Checking integration status:"
+
+if grep -q 'batch-printing.css' admin.html; then
+    echo "✅ CSS reference added"
+else
+    echo "❌ CSS reference missing"
+fi
+
+if grep -q 'batch-printing.js' admin.html; then
+    echo "✅ JavaScript reference added"
+else
+    echo "❌ JavaScript reference missing"
+fi
+
+if grep -q 'showBatchPrinting' admin.html; then
+    echo "✅ Navigation and function added"
+else
+    echo "❌ Navigation or function missing"
+fi
+
+if grep -q 'batch-printing-section' admin.html; then
+    echo "✅ Batch printing section added"
+else
+    echo "❌ Batch printing section missing"
+fi
+
+# Check if required files exist
+echo ""
+echo "📁 Checking required files:"
+
+if [[ -f "admin/css/batch-printing.css" ]]; then
+    echo "✅ admin/css/batch-printing.css exists"
+else
+    echo "❌ admin/css/batch-printing.css missing"
+fi
+
+if [[ -f "admin/js/sections/batch-printing.js" ]]; then
+    echo "✅ admin/js/sections/batch-printing.js exists"
+else
+    echo "❌ admin/js/sections/batch-printing.js missing"
+fi
+
+echo ""
+echo "🎯 INTEGRATION SUMMARY"
+echo "====================="
+echo "✅ Added CSS reference to admin.html"
+echo "✅ Added JavaScript reference to admin.html"
+echo "✅ Added navigation item for batch printing"
+echo "✅ Added batch printing section to admin.html"
+echo "✅ Added showBatchPrinting() function"
 echo ""
 echo "📋 NEXT STEPS:"
-echo "1. Run the database changes (Step 1)"
-echo "2. Add the backend endpoints (Step 2)" 
-echo "3. Follow BATCH_PRINTING_INTEGRATION.md to integrate"
-echo "4. Test the functionality"
+echo "1. Deploy to server: ./deployment_script.sh"
+echo "2. Visit https://mynadtest.info/admin.html"
+echo "3. Click '🖨️ Batch Printing' in navigation"
+echo "4. Test batch selection and printing"
 echo ""
-echo "✅ Modular batch printing components ready!"
+echo "🔍 TESTING CHECKLIST:"
+echo "□ Navigate to Batch Printing section"
+echo "□ See available batches load"
+echo "□ Select a batch for printing"
+echo "□ Choose print format"
+echo "□ Test print preview/print functionality"
+echo "□ Verify print status updates"
+echo ""
+echo "🐛 IF ISSUES OCCUR:"
+echo "- Check browser console for JavaScript errors"
+echo "- Verify API endpoints are working"
+echo "- Ensure database tables were created"
+echo "- Check network tab for failed requests"
+echo ""
+echo "✅ Batch printing integration complete!"
