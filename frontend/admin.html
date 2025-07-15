@@ -577,9 +577,61 @@
                     </div>
                 </div>
 
-        <!-- Batch Printing Section -->
-        <div class="content-section" id="batch-printing" style="display: none;">
-            <!-- Dynamic content will be injected here -->
+                <!-- Tests Management Controls -->
+                <div class="tests-controls-section">
+                    <h3>📋 Test Management</h3>
+                    <div class="section-controls">
+                        <div class="search-filters">
+                            <input type="text" id="test-search" placeholder="🔍 Search tests..." class="search-input">
+                            <select id="status-filter" class="filter-select">
+                                <option value="">All Statuses</option>
+                                <option value="activated">Activated</option>
+                                <option value="pending">Pending</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="loadTestsFromAPI()">🔄 Refresh Tests</button>
+                            <button class="btn btn-secondary" onclick="clearFilters()">🗑️ Clear Filters</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Test ID</th>
+                                    <th>Status</th>
+                                    <th>Customer</th>
+                                    <th>Order</th>
+                                    <th>Batch</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tests-table-body">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 40px;">
+                                        <div>Loading tests...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Batches Section -->
+                <div class="batch-history-section">
+                    <h3>📋 Recent Test Batches</h3>
+                    <div id="batch-list">
+                        <div style="text-align: center; padding: 20px;">
+                            <div>Loading batches...</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Batch Printing Section -->
+            <div class="content-section" id="batch-printing">
+                <!-- Dynamic content will be injected here -->
                 
                 <!-- Print Options Panel -->
                 <div class="print-options" id="print-options" style="display: none;">
@@ -638,59 +690,6 @@
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-                <!-- Tests Management Controls -->
-                <div class="tests-controls-section">
-                    <h3>📋 Test Management</h3>
-                    <div class="section-controls">
-                        <div class="search-filters">
-                            <input type="text" id="test-search" placeholder="🔍 Search tests..." class="search-input">
-                            <select id="status-filter" class="filter-select">
-                                <option value="">All Statuses</option>
-                                <option value="activated">Activated</option>
-                                <option value="pending">Pending</option>
-                            </select>
-                            <button class="btn btn-secondary" onclick="loadTestsFromAPI()">🔄 Refresh Tests</button>
-                            <button class="btn btn-secondary" onclick="clearFilters()">🗑️ Clear Filters</button>
-                        </div>
-                    </div>
-
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Test ID</th>
-                                    <th>Status</th>
-                                    <th>Customer</th>
-                                    <th>Order</th>
-                                    <th>Batch</th>
-                                    <th>Created</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tests-table-body">
-                                <tr>
-                                    <td colspan="7" style="text-align: center; padding: 40px;">
-                                        <div>Loading tests...</div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Recent Batches Section -->
-                <div class="batch-history-section">
-                    <h3>📋 Recent Test Batches</h3>
-                    <div id="batch-list">
-                        <div style="text-align: center; padding: 20px;">
-                            <div>Loading batches...</div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
 
             <!-- Supplements Section -->
@@ -1492,6 +1491,8 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             // Hide all sections and cleanup
             document.querySelectorAll('.content-section').forEach(section => {
                 section.classList.remove('active');
+                // Also ensure sections are properly hidden
+                section.style.display = 'none';
             });
             
             // Clean up any dynamic batch content when switching sections
@@ -1504,6 +1505,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             console.log('🔍 Target section:', sectionName, targetSection);
             if (targetSection) {
                 targetSection.classList.add('active');
+                targetSection.style.display = 'block';
                 console.log('🔍 Added active class, computed display:', window.getComputedStyle(targetSection).display);
         
                 // Update navigation
