@@ -1576,11 +1576,8 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 
                 // Function to create batch printing content directly in main-content
                 function createBatchPrintingContent() {
-                    // Remove any existing batch content
-                    const existingBatchContent = document.getElementById('dynamic-batch-content');
-                    if (existingBatchContent) {
-                        existingBatchContent.remove();
-                    }
+                    // Always clean up first
+                    cleanupBatchContent();
                     
                     // Only add content if we're on batch-printing section
                     const batchSection = document.getElementById('batch-printing');
@@ -1629,6 +1626,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                     const existingBatchContent = document.getElementById('dynamic-batch-content');
                     if (existingBatchContent) {
                         existingBatchContent.remove();
+                        console.log('🧹 Cleaned up batch content');
                     }
                 };
             } else {
@@ -1717,7 +1715,11 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 });
             });
         
-            // Load initial data
+            // Clean up any leftover content and load initial data
+            if (typeof cleanupBatchContent === 'function') {
+                cleanupBatchContent();
+            }
+            
             setTimeout(() => {
                 loadDashboardStats();
             }, 500);
