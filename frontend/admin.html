@@ -579,31 +579,7 @@
 
         <!-- Batch Printing Section -->
         <div class="content-section" id="batch-printing" style="display: none;">
-            <div style="background: red; color: white; padding: 20px; margin: 20px; font-size: 20px; font-weight: bold;">
-                🧪 BATCH SECTION TEST - You should see this when Batch Printing is active!
-            </div>
-            <div class="batch-printing-section">
-                <h3>🖨️ Batch Printing</h3>
-                <p>Select and print test batches for shipping labels and documentation.</p>
-                
-                
-                <!-- Batch Selection Grid -->
-                <div class="batch-selector">
-                    <div class="section-header">
-                        <h4>📦 Available Batches</h4>
-                        <div class="batch-controls">
-                            <button class="btn btn-sm secondary" onclick="refreshPrintableBatches()">🔄 Refresh</button>
-                            <button class="btn btn-sm secondary" onclick="showPrintHistory()">📈 Print History</button>
-                        </div>
-                    </div>
-                    
-                    <div class="batch-grid" id="printable-batches">
-                        <div class="loading-state">
-                            <div class="spinner"></div>
-                            <p>Loading printable batches...</p>
-                        </div>
-                    </div>
-                </div>
+            <!-- Dynamic content will be injected here -->
                 
                 <!-- Print Options Panel -->
                 <div class="print-options" id="print-options" style="display: none;">
@@ -1574,7 +1550,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                     }
                 }, 200);
                 
-                // Function to create batch printing content directly in main-content
+                // Function to create batch printing content directly in batch-printing section
                 function createBatchPrintingContent() {
                     // Always clean up first
                     cleanupBatchContent();
@@ -1582,42 +1558,38 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                     // Only add content if we're on batch-printing section
                     const batchSection = document.getElementById('batch-printing');
                     if (batchSection && batchSection.classList.contains('active')) {
-                        const mainContent = document.querySelector('.main-content');
-                        if (mainContent) {
-                            const batchContent = document.createElement('div');
-                            batchContent.id = 'dynamic-batch-content';
-                            batchContent.style.cssText = `
-                                background: white;
-                                padding: 30px;
-                                border-radius: 15px;
-                                box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-                                margin: 20px 0;
-                                position: relative;
-                                z-index: 10;
-                            `;
+                        const batchContent = document.createElement('div');
+                        batchContent.id = 'dynamic-batch-content';
+                        batchContent.style.cssText = `
+                            background: white;
+                            padding: 30px;
+                            border-radius: 15px;
+                            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+                            position: relative;
+                            z-index: 10;
+                        `;
+                        
+                        batchContent.innerHTML = `
+                            <h3 style="margin-bottom: 20px; color: #333;">🖨️ Batch Printing</h3>
+                            <p style="margin-bottom: 30px; color: #666;">Select and print test batches for shipping labels and documentation.</p>
                             
-                            batchContent.innerHTML = `
-                                <h3 style="margin-bottom: 20px; color: #333;">🖨️ Batch Printing</h3>
-                                <p style="margin-bottom: 30px; color: #666;">Select and print test batches for shipping labels and documentation.</p>
-                                
+                            <div style="margin-bottom: 20px;">
+                                <h4 style="margin-bottom: 15px; color: #333;">📦 Available Batches</h4>
                                 <div style="margin-bottom: 20px;">
-                                    <h4 style="margin-bottom: 15px; color: #333;">📦 Available Batches</h4>
-                                    <div style="margin-bottom: 20px;">
-                                        <button class="btn btn-sm secondary" onclick="refreshPrintableBatches()" style="margin-right: 10px;">🔄 Refresh</button>
-                                        <button class="btn btn-sm secondary" onclick="showPrintHistory()">📈 Print History</button>
-                                    </div>
+                                    <button class="btn btn-sm secondary" onclick="refreshPrintableBatches()" style="margin-right: 10px;">🔄 Refresh</button>
+                                    <button class="btn btn-sm secondary" onclick="showPrintHistory()">📈 Print History</button>
                                 </div>
-                                
-                                <div id="printable-batches" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; min-height: 200px;">
-                                    <div style="text-align: center; padding: 40px; grid-column: 1 / -1; color: #666;">
-                                        <p>Loading batch data...</p>
-                                    </div>
-                                </div>
-                            `;
+                            </div>
                             
-                            mainContent.appendChild(batchContent);
-                            console.log('✅ Created batch printing content in main-content area');
-                        }
+                            <div id="printable-batches" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; min-height: 200px;">
+                                <div style="text-align: center; padding: 40px; grid-column: 1 / -1; color: #666;">
+                                    <p>Loading batch data...</p>
+                                </div>
+                            </div>
+                        `;
+                        
+                        batchSection.appendChild(batchContent);
+                        console.log('✅ Created batch printing content in batch-printing section');
                     }
                 }
                 

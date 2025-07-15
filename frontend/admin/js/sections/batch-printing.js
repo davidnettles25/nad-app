@@ -67,11 +67,8 @@ async function loadPrintableBatches() {
 function renderBatchCards() {
     console.log('🎨 renderBatchCards called with', printableBatches.length, 'batches');
     
-    // Try to find the container in the dynamic content first, then fallback to original
-    let container = document.querySelector('#dynamic-batch-content #printable-batches');
-    if (!container) {
-        container = document.getElementById('printable-batches');
-    }
+    // Find the container in the batch-printing section
+    const container = document.getElementById('printable-batches');
     
     if (!container) {
         console.error('❌ Container printable-batches not found!');
