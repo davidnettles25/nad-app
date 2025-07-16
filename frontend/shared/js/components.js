@@ -60,11 +60,14 @@ window.NADComponents = {
 
 // Auto-load sections when DOM is ready
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🔄 Auto-loading admin sections...');
-    await window.NADComponents.loadAllSections();
-    
-    // Initialize admin dashboard after sections are loaded
-    if (typeof window.initializeAdminDashboard === 'function') {
-        window.initializeAdminDashboard();
+    // Only run on admin pages
+    if (document.querySelector('.main-content')) {
+        console.log('🔄 Auto-loading admin sections...');
+        await window.NADComponents.loadAllSections();
+        
+        // Initialize admin dashboard after sections are loaded
+        if (typeof window.initializeAdminDashboard === 'function') {
+            window.initializeAdminDashboard();
+        }
     }
 });
