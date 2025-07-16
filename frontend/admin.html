@@ -88,6 +88,43 @@
             opacity: 1 !important;
         }
 
+        /* Hide test management elements outside tests section */
+        .tests-controls-section,
+        .bulk-creation-section,
+        .test-stats-section,
+        .batch-history-section,
+        #bulk-creation-form,
+        #tests-table-body,
+        #test-search,
+        #status-filter {
+            display: none !important;
+        }
+
+        /* Only show test management elements in tests section */
+        #tests .tests-controls-section,
+        #tests .bulk-creation-section, 
+        #tests .test-stats-section,
+        #tests .batch-history-section,
+        #tests #bulk-creation-form,
+        #tests #tests-table-body,
+        #tests #test-search,
+        #tests #status-filter {
+            display: block !important;
+        }
+
+        /* Table elements need special handling */
+        #tests .table-container {
+            display: block !important;
+        }
+
+        #tests .data-table {
+            display: table !important;
+        }
+
+        #tests #tests-table-body {
+            display: table-row-group !important;
+        }
+
         .header {
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(10px);
