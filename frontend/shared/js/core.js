@@ -46,7 +46,7 @@ NAD.utils = {
     
     // Validate test ID
     isValidTestId(testId) {
-        const testIdRegex = /^NAD-\d{8}-\d{4}$/;
+        const testIdRegex = /^\d{4}-\d{2}-\d{2}-\d{5}$/;
         return testIdRegex.test(testId);
     }
 };
