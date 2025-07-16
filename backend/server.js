@@ -2027,17 +2027,34 @@ app.post('/api/admin/print-batch', async (req, res) => {
             [batch_id, print_format, printed_by, tests.length, printer_name || 'Default', print_job_id, notes || '']
         );
         
-        // Generate simple print data
-        const printData = {
-            batch_id: batch_id,
-            print_format: print_format,
-            test_ids: tests.map(t => t.test_id),
-            labels: tests.map(t => ({
-                test_id: t.test_id,
-                batch_short_id: batch_id.split('-').pop(),
-                print_date: new Date().toISOString()
-            }))
-        };
+        // Generate print data based on format
+        let printData;
+        const batchShortId = batch_id.split('-').pop();
+        
+        if (print_format === 'individual_labels') {
+            printData = {
+                labels: tests.map(t => ({
+                    test_id: t.test_id,
+                    batch_short_id: batchShortId,
+                    print_date: new Date().toISOString()
+                }))
+            };
+        } else if (print_format === 'batch_summary') {
+            printData = {
+                summary_title: `Batch Summary - Batch #${batchShortId}`,
+                test_count: tests.length,
+                test_ids: tests.map(t => t.test_id),
+                created_date: new Date().toISOString()
+            };
+        } else if (print_format === 'shipping_list') {
+            printData = {
+                checklist_title: `Shipping Checklist - Batch #${batchShortId}`,
+                total_items: tests.length,
+                items: tests.map(t => ({
+                    test_id: t.test_id
+                }))
+            };
+        }
         
         console.log('Print job logged with ID:', print_job_id);
         
