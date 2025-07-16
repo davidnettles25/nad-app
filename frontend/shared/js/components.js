@@ -34,7 +34,9 @@ window.NADComponents = {
     },
 
     async loadAllSections() {
-        const sections = ['overview', 'tests', 'users', 'supplements', 'analytics'];
+        // IMPORTANT: Removed 'tests' from auto-loading to prevent duplicate content
+        // Test section is already defined in admin.html
+        const sections = ['overview', 'users', 'supplements', 'analytics'];
         
         for (const section of sections) {
             await this.loadSection(section);
