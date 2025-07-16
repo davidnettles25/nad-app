@@ -1893,59 +1893,12 @@ app.get('/api/admin/print-history', async (req, res) => {
     }
 });
 
-// ============================================================================
-// ERROR HANDLING MIDDLEWARE
-// ============================================================================
-
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        error: 'Endpoint not found',
-        path: req.path,
-        method: req.method,
-        available_endpoints: [
-            'GET /health',
-            'GET /api/dashboard/stats',
-            'GET /api/users',
-            'GET /api/users/stats',
-            'GET /api/users/debug-all',
-            'GET /api/users/simple',
-            'GET /api/supplements',
-            'GET /api/tests/scores',
-            'GET /api/analytics/overview',
-            'GET /api/admin/printable-batches',
-            'GET /api/admin/batch-details/:batchId',
-            'POST /api/admin/print-batch'
-        ]
-    });
-});
-
-app.use((error, req, res, next) => {
-    console.error('❌ Unhandled error:', error);
-    
-    if (error instanceof multer.MulterError) {
-        if (error.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({
-                success: false,
-                error: 'File too large. Maximum size is 10MB.'
-            });
-        }
-    }
-    
-    res.status(500).json({
-        success: false,
-        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
-        timestamp: new Date().toISOString()
-    });
-});
-
-
-// Get detailed information for a specific batch
+// Batch details endpoint
 app.get('/api/admin/batch-details/:batchId', async (req, res) => {
     const { batchId } = req.params;
     
     try {
-        console.log(`🔍 Fetching details for batch: ${batchId}`);
+        console.log('Fetching details for batch:', batchId);
         
         // Get batch summary from nad_test_ids
         const [batchInfo] = await db.execute(`
@@ -2004,13 +1957,13 @@ app.get('/api/admin/batch-details/:batchId', async (req, res) => {
             success: true,
             data: {
                 batch_info: batchInfo[0],
-                tests: tests,
+                test_ids: tests,
                 print_history: printHistory
             }
         });
         
     } catch (error) {
-        console.error('❌ Error fetching batch details:', error);
+        console.error('Error fetching batch details:', error);
         res.status(500).json({ 
             success: false, 
             error: error.message 
@@ -2018,6 +1971,54 @@ app.get('/api/admin/batch-details/:batchId', async (req, res) => {
     }
 });
 
+// ============================================================================
+// ERROR HANDLING MIDDLEWARE
+// ============================================================================
+
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        error: 'Endpoint not found',
+        path: req.path,
+        method: req.method,
+        available_endpoints: [
+            'GET /health',
+            'GET /api/dashboard/stats',
+            'GET /api/users',
+            'GET /api/users/stats',
+            'GET /api/users/debug-all',
+            'GET /api/users/simple',
+            'GET /api/supplements',
+            'GET /api/tests/scores',
+            'GET /api/analytics/overview',
+            'GET /api/admin/printable-batches',
+            'GET /api/admin/batch-details/:batchId',
+            'POST /api/admin/print-batch'
+        ]
+    });
+});
+
+app.use((error, req, res, next) => {
+    console.error('❌ Unhandled error:', error);
+    
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+                success: false,
+                error: 'File too large. Maximum size is 10MB.'
+            });
+        }
+    }
+    
+    res.status(500).json({
+        success: false,
+        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
+        timestamp: new Date().toISOString()
+    });
+});
+
+
+// Get detailed information for a specific batch
 // Print a batch (mark as printed and log the print job)
 app.post('/api/admin/print-batch', async (req, res) => {
     const { batch_id, print_format, printer_name, notes } = req.body;
