@@ -88,40 +88,46 @@
             opacity: 1 !important;
         }
 
-        /* Hide test management elements outside tests section */
-        .tests-controls-section,
-        .bulk-creation-section,
-        .test-stats-section,
-        .batch-history-section,
-        #bulk-creation-form,
-        #tests-table-body,
-        #test-search,
-        #status-filter {
+        /* CRITICAL: Hide ALL test-related elements by default with maximum specificity */
+        html body .tests-controls-section,
+        html body .bulk-creation-section,
+        html body .test-stats-section,
+        html body .batch-history-section,
+        html body div.tests-controls-section,
+        html body div.bulk-creation-section,
+        html body div.test-stats-section,
+        html body div.batch-history-section {
             display: none !important;
+            visibility: hidden !important;
+            position: absolute !important;
+            left: -9999px !important;
         }
 
-        /* Only show test management elements in tests section */
-        #tests .tests-controls-section,
-        #tests .bulk-creation-section, 
-        #tests .test-stats-section,
-        #tests .batch-history-section,
-        #tests #bulk-creation-form,
-        #tests #tests-table-body,
-        #tests #test-search,
-        #tests #status-filter {
+        /* Only show test elements when they are inside the ACTIVE tests section */
+        html body #tests.content-section.active .tests-controls-section,
+        html body #tests.content-section.active .bulk-creation-section, 
+        html body #tests.content-section.active .test-stats-section,
+        html body #tests.content-section.active .batch-history-section {
+            display: block !important;
+            visibility: visible !important;
+            position: static !important;
+            left: auto !important;
+        }
+
+        /* Forms and tables inside active test section */
+        #tests.content-section.active #bulk-creation-form {
+            display: block !important;
+        }
+        
+        #tests.content-section.active .table-container {
             display: block !important;
         }
 
-        /* Table elements need special handling */
-        #tests .table-container {
-            display: block !important;
-        }
-
-        #tests .data-table {
+        #tests.content-section.active .data-table {
             display: table !important;
         }
 
-        #tests #tests-table-body {
+        #tests.content-section.active tbody {
             display: table-row-group !important;
         }
 
@@ -1824,5 +1830,79 @@ setTimeout(() => {
         console.log('✅ INLINE fix applied');
     }
 }, 3000);
+</script>
+
+<!-- FINAL CSS OVERRIDE - Maximum specificity to hide test management -->
+<style>
+    /* ABSOLUTE FINAL OVERRIDE - Hide test management sections everywhere */
+    .tests-controls-section,
+    .bulk-creation-section,
+    .test-stats-section,
+    .batch-history-section {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+    
+    /* Only show in active tests section with ultra-high specificity */
+    #tests.content-section.active .tests-controls-section,
+    #tests.content-section.active .bulk-creation-section,
+    #tests.content-section.active .test-stats-section,
+    #tests.content-section.active .batch-history-section {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        height: auto !important;
+        overflow: visible !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Ensure tables and forms are properly handled */
+    #tests.content-section.active .table-container {
+        display: block !important;
+    }
+    
+    #tests.content-section.active #bulk-creation-form {
+        display: block !important;
+    }
+</style>
+
+<script>
+// FINAL JavaScript fix to ensure test management is hidden
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔒 Applying final test management visibility fix...');
+    
+    // Function to hide test management elements
+    function hideTestManagement() {
+        const testElements = document.querySelectorAll('.tests-controls-section, .bulk-creation-section, .test-stats-section, .batch-history-section');
+        testElements.forEach(el => {
+            if (!el.closest('#tests.content-section.active')) {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+                el.style.height = '0';
+                el.style.overflow = 'hidden';
+            }
+        });
+    }
+    
+    // Run immediately
+    hideTestManagement();
+    
+    // Run on any section change
+    const observer = new MutationObserver(hideTestManagement);
+    observer.observe(document.body, { 
+        attributes: true, 
+        attributeFilter: ['class'],
+        subtree: true 
+    });
+    
+    // Also run periodically to catch any dynamic content
+    setInterval(hideTestManagement, 1000);
+    
+    console.log('✅ Test management visibility fix applied');
+});
 </script>
 
