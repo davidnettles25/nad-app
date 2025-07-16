@@ -1421,6 +1421,36 @@ app.post('/api/tests/:testId/activate', async (req, res) => {
     }
 });
 
+// Test deactivation endpoint
+app.post('/api/tests/:testId/deactivate', async (req, res) => {
+    const { testId } = req.params;
+    
+    try {
+        const [result] = await db.execute(
+            'UPDATE nad_test_ids SET is_activated = 0, activated_date = NULL WHERE test_id = ?',
+            [testId]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Test not found'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: `Test ${testId} has been deactivated`
+        });
+    } catch (error) {
+        console.error('Error deactivating test:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to deactivate test'
+        });
+    }
+});
+
 // Enhanced /api/tests endpoint that includes batch information
 app.get('/api/tests', async (req, res) => {
     try {
