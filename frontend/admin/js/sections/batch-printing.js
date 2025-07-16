@@ -108,6 +108,7 @@ function renderBatchCards() {
             <p style="margin: 5px 0;"><strong>Tests:</strong> ${batch.total_tests}</p>
             <p style="margin: 5px 0;"><strong>Status:</strong> ${batch.print_status}</p>
             <p style="margin: 5px 0;"><strong>Created:</strong> ${new Date(batch.created_date).toLocaleDateString()}</p>
+            ${batch.batch_notes ? `<p style="margin: 5px 0; color: #666; font-style: italic;"><strong>Note:</strong> ${batch.batch_notes}</p>` : ''}
             <div style="margin-top: 15px;">
                 <button onclick="selectBatchForPrint('${batch.batch_id}')" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                     🖨️ Print
@@ -165,6 +166,12 @@ function createBatchCard(batch) {
                     <span style="font-weight: 500; color: #666;">Last Printed:</span>
                     <span style="color: #495057; font-weight: 500;">${lastPrinted}</span>
                 </div>
+                ${batch.batch_notes ? `
+                <div style="margin-bottom: 6px; font-size: 14px;">
+                    <div style="font-weight: 500; color: #666; margin-bottom: 2px;">Note:</div>
+                    <div style="color: #495057; font-style: italic; font-size: 13px; padding: 4px 8px; background: #f8f9fa; border-radius: 3px;">${batch.batch_notes}</div>
+                </div>
+                ` : ''}
                 ${progressBar}
             </div>
             
@@ -281,6 +288,12 @@ function updateSelectedBatchInfo(batch) {
             <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                 <span style="font-weight: 500; color: #666;">Last printed:</span>
                 <span>${new Date(batch.last_printed_date).toLocaleDateString()}</span>
+            </div>
+        ` : ''}
+        ${batch.batch_notes ? `
+            <div style="margin-bottom: 6px;">
+                <div style="font-weight: 500; color: #666; margin-bottom: 2px;">Note:</div>
+                <div style="color: #495057; font-style: italic; font-size: 13px; padding: 4px 8px; background: #f8f9fa; border-radius: 3px;">${batch.batch_notes}</div>
             </div>
         ` : ''}
     `;
