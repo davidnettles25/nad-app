@@ -1846,6 +1846,11 @@ app.get('/api/admin/printable-batches', async (req, res) => {
     }
 });
 
+// Test endpoint to debug print-history issue
+app.get('/api/admin/test-endpoint', (req, res) => {
+    res.json({ success: true, message: 'Test endpoint working' });
+});
+
 // ============================================================================
 // ERROR HANDLING MIDDLEWARE
 // ============================================================================
