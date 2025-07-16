@@ -2102,8 +2102,8 @@ app.get('/api/admin/print-history', async (req, res) => {
         
         res.json({ 
             success: true, 
-            data: {
-                history: history,
+            data: history,
+            pagination: {
                 total: countResult[0].total,
                 limit: limit,
                 offset: offset
