@@ -803,32 +803,8 @@
     <!-- Load JavaScript Dependencies -->
     <script src="shared/js/core.js"></script>
     <script src="shared/js/api-client.js"></script>
-    <script>
-        // OVERRIDE: Disable auto-loading completely
-        window.NADComponents = {
-            config: { debugMode: true },
-            loadSection: function() { return Promise.resolve(true); },
-            loadAllSections: function() { 
-                console.log('🚫 Auto-loading disabled - test management isolation active');
-                return Promise.resolve(); 
-            },
-            log: function(message) { console.log(`[NADComponents] ${message}`); }
-        };
-        
-        // Force cache refresh with timestamp
-        const script = document.createElement('script');
-        script.src = `shared/js/components.js?v=${Date.now()}`;
-        script.onload = function() {
-            // Override the auto-loading after components.js loads
-            if (window.NADComponents && window.NADComponents.loadAllSections) {
-                window.NADComponents.loadAllSections = function() {
-                    console.log('🚫 Auto-loading overridden - test management isolation active');
-                    return Promise.resolve();
-                };
-            }
-        };
-        document.head.appendChild(script);
-    </script>
+    <!-- DISABLED: components.js auto-loading causing test management duplication -->
+    <!-- <script src="shared/js/components.js"></script> -->
 
     <script>
         // Configuration
