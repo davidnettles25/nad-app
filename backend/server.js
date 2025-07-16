@@ -1971,6 +1971,100 @@ app.get('/api/admin/batch-details/:batchId', async (req, res) => {
     }
 });
 
+// Print batch endpoint
+app.post('/api/admin/print-batch', async (req, res) => {
+    const { batch_id, print_format, printer_name, notes } = req.body;
+    const printed_by = 'admin';
+    
+    // Validate input
+    if (!batch_id) {
+        return res.status(400).json({
+            success: false,
+            message: 'Batch ID is required'
+        });
+    }
+    
+    const validFormats = ['individual_labels', 'batch_summary', 'shipping_list'];
+    if (!validFormats.includes(print_format)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid print format'
+        });
+    }
+    
+    try {
+        console.log('Processing print job for batch:', batch_id);
+        
+        // Get all tests in this batch
+        const [tests] = await db.execute(
+            'SELECT test_id, batch_id, is_printed FROM nad_test_ids WHERE batch_id = ?',
+            [batch_id]
+        );
+        
+        if (tests.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Batch not found or contains no tests'
+            });
+        }
+        
+        console.log('Found tests in batch:', tests.length);
+        
+        // Mark all tests in batch as printed
+        const [updateResult] = await db.execute(
+            'UPDATE nad_test_ids SET is_printed = TRUE, printed_date = NOW(), printed_by = ? WHERE batch_id = ?',
+            [printed_by, batch_id]
+        );
+        
+        console.log('Marked tests as printed:', updateResult.affectedRows);
+        
+        // Generate unique print job ID
+        const print_job_id = `PJ${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        
+        // Log the print job in history
+        await db.execute(
+            'INSERT INTO batch_print_history (batch_id, print_format, printed_by, test_count, printer_name, print_job_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [batch_id, print_format, printed_by, tests.length, printer_name || 'Default', print_job_id, notes || '']
+        );
+        
+        // Generate simple print data
+        const printData = {
+            batch_id: batch_id,
+            print_format: print_format,
+            test_ids: tests.map(t => t.test_id),
+            labels: tests.map(t => ({
+                test_id: t.test_id,
+                batch_short_id: batch_id.split('-').pop(),
+                print_date: new Date().toISOString()
+            }))
+        };
+        
+        console.log('Print job logged with ID:', print_job_id);
+        
+        res.json({
+            success: true,
+            message: `Batch ${batch_id} marked as printed successfully`,
+            data: {
+                print_job_id: print_job_id,
+                batch_id: batch_id,
+                test_count: tests.length,
+                print_format: print_format,
+                printer_name: printer_name || 'Default',
+                print_data: printData,
+                previously_printed: tests.filter(t => t.is_printed).length
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error processing print job:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to process print job',
+            error: error.message 
+        });
+    }
+});
+
 // ============================================================================
 // ERROR HANDLING MIDDLEWARE
 // ============================================================================
@@ -2019,105 +2113,6 @@ app.use((error, req, res, next) => {
 
 
 // Get detailed information for a specific batch
-// Print a batch (mark as printed and log the print job)
-app.post('/api/admin/print-batch', async (req, res) => {
-    const { batch_id, print_format, printer_name, notes } = req.body;
-    const printed_by = 'admin'; // TODO: Get from session/auth
-    
-    // Validate input
-    if (!batch_id) {
-        return res.status(400).json({
-            success: false,
-            message: 'Batch ID is required'
-        });
-    }
-    
-    const validFormats = ['individual_labels', 'batch_summary', 'shipping_list'];
-    if (!validFormats.includes(print_format)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid print format'
-        });
-    }
-    
-    const connection = await db.getConnection();
-    
-    try {
-        await connection.beginTransaction();
-        
-        console.log(`🖨️ Processing print job for batch: ${batch_id}`);
-        
-        // Get all tests in this batch
-        const [tests] = await connection.execute(
-            'SELECT test_id, batch_id, is_printed FROM nad_test_ids WHERE batch_id = ?',
-            [batch_id]
-        );
-        
-        if (tests.length === 0) {
-            await connection.rollback();
-            return res.status(404).json({
-                success: false,
-                message: 'Batch not found or contains no tests'
-            });
-        }
-        
-        console.log(`📋 Found ${tests.length} tests in batch ${batch_id}`);
-        
-        // Mark all tests in batch as printed
-        const [updateResult] = await connection.execute(
-            `UPDATE nad_test_ids 
-             SET is_printed = TRUE, printed_date = NOW(), printed_by = ? 
-             WHERE batch_id = ?`,
-            [printed_by, batch_id]
-        );
-        
-        console.log(`✅ Marked ${updateResult.affectedRows} tests as printed`);
-        
-        // Generate unique print job ID
-        const print_job_id = `PJ${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-        
-        // Log the print job in history
-        const [historyResult] = await connection.execute(
-            `INSERT INTO batch_print_history 
-             (batch_id, print_format, printed_by, test_count, printer_name, print_job_id, notes) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [batch_id, print_format, printed_by, tests.length, printer_name || 'Default', print_job_id, notes || '']
-        );
-        
-        // Generate print data based on format
-        const printData = generatePrintData(tests, print_format, batch_id);
-        
-        await connection.commit();
-        
-        console.log(`✅ Print job logged with ID: ${print_job_id}`);
-        
-        res.json({
-            success: true,
-            message: `Batch ${batch_id} marked as printed successfully`,
-            data: {
-                print_job_id: print_job_id,
-                batch_id: batch_id,
-                test_count: tests.length,
-                print_format: print_format,
-                printer_name: printer_name || 'Default',
-                print_data: printData,
-                previously_printed: tests.filter(t => t.is_printed).length
-            }
-        });
-        
-    } catch (error) {
-        await connection.rollback();
-        console.error('❌ Error processing print job:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to process print job',
-            error: error.message 
-        });
-    } finally {
-        connection.release();
-    }
-});
-
 // Reset print status for a batch (for reprinting)
 app.post('/api/admin/reset-print-status', async (req, res) => {
     const { batch_id, reason } = req.body;
