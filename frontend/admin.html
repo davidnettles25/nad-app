@@ -1169,7 +1169,10 @@
                     <td>${createdDate}</td>
                     <td>
                         <button class="btn btn-sm" onclick="viewTest('${test.test_id}')" style="margin-right: 5px;">👁️ View</button>
-                        ${!test.is_activated ? `<button class="btn btn-sm btn-success" onclick="activateTest('${test.test_id}')">⚡ Activate</button>` : ''}
+                        ${!test.is_activated ? 
+                            `<button class="btn btn-sm btn-success" onclick="activateTest('${test.test_id}')">⚡ Activate</button>` : 
+                            `<button class="btn btn-sm btn-warning" onclick="deactivateTest('${test.test_id}')">❌ Deactivate</button>`
+                        }
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -1317,6 +1320,28 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                     loadTestsFromAPI(); // Refresh the table
                 } else {
                     showAlert('❌ Failed to activate test: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('❌ Network error: ' + error.message, 'error');
+            }
+        }
+
+        // Deactivate test
+        async function deactivateTest(testId) {
+            if (!confirm(`Deactivate test ${testId}? This will return it to pending status.`)) {return;}
+        
+            try {
+                const response = await fetch(`${API_BASE}/api/tests/${testId}/deactivate`, {
+                    method: 'POST'
+                });
+        
+                const result = await response.json();
+        
+                if (result.success) {
+                    showAlert(`✅ Test ${testId} deactivated successfully`, 'success');
+                    loadTestsFromAPI(); // Refresh the table
+                } else {
+                    showAlert('❌ Failed to deactivate test: ' + result.message, 'error');
                 }
             } catch (error) {
                 showAlert('❌ Network error: ' + error.message, 'error');
@@ -1761,6 +1786,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         window.viewBatch = viewBatch;
         window.loadAnalytics = loadAnalytics;
         window.activateTest = activateTest;
+        window.deactivateTest = deactivateTest;
         window.exportAnalytics = exportAnalytics;
         window.showAddSupplementForm = showAddSupplementForm;
         window.editSupplement = editSupplement;
