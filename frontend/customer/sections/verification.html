@@ -1,1 +1,169 @@
 <!-- Test ID Verification Step -->
+<div class="verification-section">
+    <div class="section-header">
+        <h2>Enter Your Test ID</h2>
+        <p>Please enter the unique Test ID provided with your NAD+ test kit</p>
+    </div>
+    
+    <form id="verification-form" class="nad-form">
+        <div class="form-group">
+            <label for="test-id">Test ID</label>
+            <input 
+                type="text" 
+                id="test-id" 
+                name="testId" 
+                placeholder="NAD-XXXXXXXX-XXXX" 
+                pattern="NAD-[0-9]{8}-[0-9]{4}"
+                required
+                autocomplete="off"
+                class="form-control"
+            >
+            <div class="form-hint">Format: NAD-XXXXXXXX-XXXX</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                placeholder="your@email.com" 
+                required
+                class="form-control"
+            >
+            <div class="form-hint">Enter the email address associated with your test</div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" data-action="verify-test">
+                Verify Test ID
+            </button>
+        </div>
+    </form>
+    
+    <div class="help-section">
+        <h3>Where to find your Test ID?</h3>
+        <p>Your Test ID is printed on the label of your test kit and in your confirmation email.</p>
+        <p>If you can't find your Test ID, please <a href="#" data-action="show-help">contact support</a>.</p>
+    </div>
+</div>
+
+<style>
+.verification-section {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.section-header h2 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.nad-form {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.form-hint {
+    margin-top: 5px;
+    font-size: 14px;
+    color: #666;
+}
+
+.form-actions {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.help-section {
+    margin-top: 40px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.help-section h3 {
+    color: #555;
+    margin-bottom: 10px;
+}
+
+.message {
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.message-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.message-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+</style>
