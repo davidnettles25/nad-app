@@ -803,7 +803,7 @@
     <!-- Load JavaScript Dependencies -->
     <script src="shared/js/core.js"></script>
     <script src="shared/js/api-client.js"></script>
-    <script src="shared/js/components.js"></script>
+    <script src="shared/js/components.js?v=2"></script>
 
     <script>
         // Configuration
@@ -1875,11 +1875,23 @@ setTimeout(() => {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔒 Applying final test management visibility fix...');
     
-    // Function to hide test management elements
-    function hideTestManagement() {
+    // Function to completely remove duplicate test elements outside #tests section
+    function removeDuplicateTestManagement() {
+        // Find ALL test management elements
         const testElements = document.querySelectorAll('.tests-controls-section, .bulk-creation-section, .test-stats-section, .batch-history-section');
+        
         testElements.forEach(el => {
-            if (!el.closest('#tests.content-section.active')) {
+            // If this element is NOT inside the main #tests section, remove it completely
+            if (!el.closest('#tests')) {
+                console.log('🗑️ Removing duplicate test element:', el.className);
+                el.remove();
+            }
+        });
+        
+        // Also hide any test elements that exist but shouldn't be visible
+        const testsInSection = document.querySelectorAll('#tests .tests-controls-section, #tests .bulk-creation-section, #tests .test-stats-section, #tests .batch-history-section');
+        testsInSection.forEach(el => {
+            if (!document.querySelector('#tests.content-section.active')) {
                 el.style.display = 'none';
                 el.style.visibility = 'hidden';
                 el.style.height = '0';
@@ -1888,21 +1900,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Run immediately
-    hideTestManagement();
+    // Clear browser cache for components.js
+    if ('caches' in window) {
+        caches.keys().then(names => {
+            names.forEach(name => {
+                caches.delete(name);
+            });
+        });
+    }
     
-    // Run on any section change
-    const observer = new MutationObserver(hideTestManagement);
+    // Run immediately
+    removeDuplicateTestManagement();
+    
+    // Run after a delay to catch late-loading content
+    setTimeout(removeDuplicateTestManagement, 500);
+    setTimeout(removeDuplicateTestManagement, 1000);
+    setTimeout(removeDuplicateTestManagement, 2000);
+    setTimeout(removeDuplicateTestManagement, 5000);
+    
+    // Run on any DOM changes
+    const observer = new MutationObserver(removeDuplicateTestManagement);
     observer.observe(document.body, { 
-        attributes: true, 
-        attributeFilter: ['class'],
+        childList: true,
         subtree: true 
     });
     
-    // Also run periodically to catch any dynamic content
-    setInterval(hideTestManagement, 1000);
+    // Also run periodically
+    setInterval(removeDuplicateTestManagement, 1000);
     
-    console.log('✅ Test management visibility fix applied');
+    console.log('✅ Test management removal fix applied');
 });
 </script>
 
