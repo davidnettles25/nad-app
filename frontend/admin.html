@@ -642,8 +642,6 @@
                                 <tr>
                                     <th>Test ID</th>
                                     <th>Status</th>
-                                    <th>Customer</th>
-                                    <th>Order</th>
                                     <th>Batch</th>
                                     <th>Created</th>
                                     <th>Actions</th>
@@ -651,7 +649,7 @@
                             </thead>
                             <tbody id="tests-table-body">
                                 <tr>
-                                    <td colspan="7" style="text-align: center; padding: 40px;">
+                                    <td colspan="5" style="text-align: center; padding: 40px;">
                                         <div>Loading tests...</div>
                                     </td>
                                 </tr>
@@ -993,7 +991,7 @@
             const tbody = document.getElementById('tests-table-body');
             if (!tbody) {return;}
         
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Loading tests...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Loading tests...</td></tr>';
         
             try {
                 const response = await fetch(`${API_BASE}/api/tests`);
@@ -1007,11 +1005,11 @@
                     setupSearchAndFilter(); // Set up search/filter after loading
                     showAlert(`✅ Loaded ${result.data.length} tests`, 'success');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">No tests found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">No tests found</td></tr>';
                 }
             } catch (error) {
                 console.error('❌ Error loading tests:', error);
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: red;">Error loading tests</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: red;">Error loading tests</td></tr>';
             }
         }
 
@@ -1146,7 +1144,7 @@
             if (tests.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 40px;">
+                        <td colspan="5" style="text-align: center; padding: 40px;">
                             <div>
                                 <h4>🧪 No Tests Found</h4>
                                 <p>No tests match your search criteria.</p>
@@ -1167,8 +1165,6 @@
                 row.innerHTML = `
                     <td><strong>${test.test_id}</strong></td>
                     <td><span class="badge" style="padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ${test.is_activated ? '#d4edda' : '#fff3cd'}; color: ${test.is_activated ? '#155724' : '#856404'};">${statusLabel}</span></td>
-                    <td>${test.customer_id || 'N/A'}</td>
-                    <td>${test.order_id ? `#${test.order_id}` : 'Manual'}</td>
                     <td>${batchDisplay}</td>
                     <td>${createdDate}</td>
                     <td>
