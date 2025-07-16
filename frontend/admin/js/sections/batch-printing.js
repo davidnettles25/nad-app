@@ -422,10 +422,216 @@ function openPrintWindow(printData) {
 }
 
 // Other functions
-function viewBatchDetails(batchId) {
+async function viewBatchDetails(batchId) {
     console.log(`👁️ Viewing details for batch: ${batchId}`);
-    if (typeof showAlert === 'function') {
-        showAlert(`Viewing details for batch ${batchId.split('-').pop()}`, 'info');
+    
+    try {
+        // Create and show modal
+        const modal = createBatchDetailsModal();
+        document.body.appendChild(modal);
+        
+        // Show loading state
+        const detailsContainer = modal.querySelector('#batch-details-container');
+        detailsContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                <p>Loading batch details...</p>
+            </div>
+        `;
+        
+        // Fetch batch details from API
+        const response = await fetch(`${API_BASE}/api/admin/batch-details/${batchId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            renderBatchDetails(result.data, detailsContainer);
+        } else {
+            detailsContainer.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #dc3545;">
+                    <h4>⚠️ Error Loading Details</h4>
+                    <p>${result.message || 'Failed to load batch details'}</p>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading batch details:', error);
+        if (typeof showAlert === 'function') {
+            showAlert('Failed to load batch details', 'error');
+        }
+    }
+}
+
+function createBatchDetailsModal() {
+    const modal = document.createElement('div');
+    modal.id = 'batch-details-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+        <style>
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+        <div style="background: white; border-radius: 12px; padding: 0; width: 95%; max-width: 900px; max-height: 85vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 18px;">👁️ Batch Details</h3>
+                <button onclick="closeBatchDetailsModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+            </div>
+            <div id="batch-details-container" style="max-height: calc(85vh - 80px); overflow-y: auto; padding: 20px;">
+                <!-- Details content will be loaded here -->
+            </div>
+        </div>
+    `;
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeBatchDetailsModal();
+        }
+    });
+    
+    return modal;
+}
+
+function renderBatchDetails(data, container) {
+    const batchShortId = data.batch_info.batch_id.split('-').pop();
+    const printStatus = getPrintStatusText(data.batch_info.print_status);
+    
+    const detailsHTML = `
+        <div style="margin-bottom: 20px;">
+            <h4 style="margin: 0 0 15px 0; color: #333; display: flex; align-items: center; gap: 10px;">
+                <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 12px; border-radius: 6px; font-size: 16px;">
+                    Batch #${batchShortId}
+                </span>
+                <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; background: ${getStatusBg(data.batch_info.print_status)}; color: ${getStatusColor(data.batch_info.print_status)};">
+                    ${printStatus}
+                </span>
+            </h4>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <h5 style="margin: 0 0 10px 0; color: #495057;">📊 Batch Summary</h5>
+                <div style="display: grid; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500; color: #666;">Total Tests:</span>
+                        <span style="font-weight: 600; color: #007bff;">${data.batch_info.total_tests}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500; color: #666;">Printed Tests:</span>
+                        <span style="font-weight: 600; color: #28a745;">${data.batch_info.printed_tests}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500; color: #666;">Remaining:</span>
+                        <span style="font-weight: 600; color: #ffc107;">${data.batch_info.total_tests - data.batch_info.printed_tests}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500; color: #666;">Progress:</span>
+                        <span style="font-weight: 600;">${data.batch_info.print_percentage}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <h5 style="margin: 0 0 10px 0; color: #495057;">📅 Dates & Info</h5>
+                <div style="display: grid; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500; color: #666;">Created:</span>
+                        <span>${new Date(data.batch_info.created_date).toLocaleString()}</span>
+                    </div>
+                    ${data.batch_info.last_printed_date ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500; color: #666;">Last Printed:</span>
+                        <span>${new Date(data.batch_info.last_printed_date).toLocaleString()}</span>
+                    </div>
+                    ` : ''}
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500; color: #666;">Batch Size:</span>
+                        <span>${data.batch_info.batch_size}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        ${data.batch_info.batch_notes ? `
+        <div style="background: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin-bottom: 20px; border-radius: 0 8px 8px 0;">
+            <h6 style="margin: 0 0 8px 0; color: #007bff;">📝 Notes</h6>
+            <p style="margin: 0; color: #495057; font-style: italic;">${data.batch_info.batch_notes}</p>
+        </div>
+        ` : ''}
+
+        ${data.batch_info.print_status === 'partially_printed' ? `
+        <div style="margin-bottom: 20px;">
+            <h6 style="margin: 0 0 10px 0; color: #495057;">📈 Print Progress</h6>
+            <div style="width: 100%; height: 12px; background: #e9ecef; border-radius: 6px; overflow: hidden;">
+                <div style="height: 100%; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); width: ${data.batch_info.print_percentage}%; transition: width 0.3s ease;"></div>
+            </div>
+            <div style="text-align: center; margin-top: 5px; font-size: 12px; color: #666;">
+                ${data.batch_info.printed_tests} of ${data.batch_info.total_tests} tests printed (${data.batch_info.print_percentage}%)
+            </div>
+        </div>
+        ` : ''}
+
+        ${data.print_history && data.print_history.length > 0 ? `
+        <div style="margin-bottom: 20px;">
+            <h6 style="margin: 0 0 15px 0; color: #495057;">🖨️ Print History</h6>
+            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+                ${data.print_history.map(entry => `
+                    <div style="padding: 12px; border-bottom: 1px solid #f8f9fa; last-child:border-bottom: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span style="font-weight: 500; color: #007bff;">${entry.print_format.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                            <span style="font-size: 12px; color: #666;">${new Date(entry.printed_date).toLocaleString()}</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">
+                            ${entry.test_count} tests • ${entry.printer_name || 'Default printer'} • Job: ${entry.print_job_id}
+                        </div>
+                        ${entry.notes ? `<div style="font-size: 12px; color: #999; margin-top: 3px; font-style: italic;">${entry.notes}</div>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+
+        <div>
+            <h6 style="margin: 0 0 15px 0; color: #495057;">🔢 Test IDs (showing first 20)</h6>
+            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; max-height: 200px; overflow-y: auto;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; font-family: monospace; font-size: 11px;">
+                    ${data.test_ids.slice(0, 20).map(test => `
+                        <div style="padding: 4px 6px; background: white; border: 1px solid #dee2e6; border-radius: 4px; ${test.is_printed ? 'border-left: 3px solid #28a745; background: #f8fff8;' : 'border-left: 3px solid #ffc107; background: #fffdf8;'}">
+                            <div style="font-weight: 500;">${test.test_id}</div>
+                            <div style="font-size: 9px; color: #666;">${test.is_printed ? 'Printed' : 'Pending'}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                ${data.test_ids.length > 20 ? `
+                    <div style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;">
+                        ... and ${data.test_ids.length - 20} more test IDs
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = detailsHTML;
+}
+
+function closeBatchDetailsModal() {
+    const modal = document.getElementById('batch-details-modal');
+    if (modal) {
+        modal.remove();
     }
 }
 
@@ -586,6 +792,7 @@ window.cancelPrintSelection = cancelPrintSelection;
 window.refreshPrintableBatches = refreshPrintableBatches;
 window.showPrintHistory = showPrintHistory;
 window.closePrintHistoryModal = closePrintHistoryModal;
+window.closeBatchDetailsModal = closeBatchDetailsModal;
 window.initBatchPrinting = initBatchPrinting;
 
 console.log('✅ Batch Printing functionality loaded');
