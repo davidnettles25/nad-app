@@ -2071,7 +2071,9 @@ app.post('/api/admin/print-batch', async (req, res) => {
 });
 
 // Get print history
+// Get print history for admin dashboard
 app.get('/api/admin/print-history', async (req, res) => {
+    console.log('📈 Print history endpoint called');
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
     
