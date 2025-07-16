@@ -576,10 +576,124 @@ class BatchPrintingManager {
         }
     }
     
-    showPrintHistory() {
-        console.log('📈 Showing print history');
-        if (typeof showAlert === 'function') {
-            showAlert('Print history feature coming soon', 'info');
+    async showPrintHistory() {
+        console.log('📈 Loading print history...');
+        
+        try {
+            // Create and show modal
+            const modal = this.createPrintHistoryModal();
+            document.body.appendChild(modal);
+            
+            // Show loading state
+            const historyContainer = modal.querySelector('#print-history-container');
+            historyContainer.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                    <p>Loading print history...</p>
+                </div>
+            `;
+            
+            // Fetch print history from API
+            const response = await fetch(`${API_BASE}/api/admin/print-history?limit=100`);
+            const result = await response.json();
+            
+            if (result.success && result.data.length > 0) {
+                this.renderPrintHistory(result.data, historyContainer);
+            } else {
+                historyContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <h4>📋 No Print History</h4>
+                        <p>No batches have been printed yet.</p>
+                    </div>
+                `;
+            }
+            
+        } catch (error) {
+            console.error('❌ Error loading print history:', error);
+            if (typeof showAlert === 'function') {
+                showAlert('Failed to load print history', 'error');
+            }
+        }
+    }
+
+    createPrintHistoryModal() {
+        const modal = document.createElement('div');
+        modal.id = 'print-history-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        `;
+        
+        modal.innerHTML = `
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+            <div style="background: white; border-radius: 12px; padding: 0; width: 90%; max-width: 800px; max-height: 80vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; font-size: 18px;">📈 Print History</h3>
+                    <button onclick="batchPrintingManager.closePrintHistoryModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+                </div>
+                <div id="print-history-container" style="max-height: calc(80vh - 80px); overflow-y: auto; padding: 20px;">
+                    <!-- History content will be loaded here -->
+                </div>
+            </div>
+        `;
+        
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closePrintHistoryModal();
+            }
+        });
+        
+        return modal;
+    }
+
+    renderPrintHistory(history, container) {
+        const historyHTML = history.map(entry => `
+            <div style="border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h5 style="margin: 0; color: #007bff;">Batch #${entry.batch_short_id}</h5>
+                    <span style="font-size: 12px; color: #666;">${new Date(entry.printed_date).toLocaleString()}</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; font-size: 14px;">
+                    <div><strong>Format:</strong> ${entry.print_format.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                    <div><strong>Tests:</strong> ${entry.test_count}</div>
+                    <div><strong>Printer:</strong> ${entry.printer_name || 'Default'}</div>
+                    <div><strong>Job ID:</strong> ${entry.print_job_id}</div>
+                    ${entry.printed_by ? `<div><strong>Printed by:</strong> ${entry.printed_by}</div>` : ''}
+                </div>
+                ${entry.notes ? `
+                    <div style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 13px; color: #666;">
+                        <strong>Notes:</strong> ${entry.notes}
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+        
+        container.innerHTML = `
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 0; color: #333;">Recent Print Jobs (${history.length})</h4>
+            </div>
+            ${historyHTML}
+        `;
+    }
+
+    closePrintHistoryModal() {
+        const modal = document.getElementById('print-history-modal');
+        if (modal) {
+            modal.remove();
         }
     }
 }
