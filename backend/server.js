@@ -1851,6 +1851,16 @@ app.get('/api/admin/test-endpoint', (req, res) => {
     res.json({ success: true, message: 'Test endpoint working' });
 });
 
+// Simple print history endpoint (new location)
+app.get('/api/admin/print-history-new', async (req, res) => {
+    try {
+        const [history] = await db.execute('SELECT * FROM batch_print_history ORDER BY printed_date DESC LIMIT 10');
+        res.json({ success: true, data: history });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // ============================================================================
 // ERROR HANDLING MIDDLEWARE
 // ============================================================================
