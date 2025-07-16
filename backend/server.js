@@ -1846,18 +1846,50 @@ app.get('/api/admin/printable-batches', async (req, res) => {
     }
 });
 
-// Test endpoint to debug print-history issue
-app.get('/api/admin/test-endpoint', (req, res) => {
-    res.json({ success: true, message: 'Test endpoint working' });
-});
-
-// Simple print history endpoint (new location)
-app.get('/api/admin/print-history-new', async (req, res) => {
+// Print history endpoint
+app.get('/api/admin/print-history', async (req, res) => {
+    console.log('Print history endpoint called');
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+    
     try {
-        const [history] = await db.execute('SELECT * FROM batch_print_history ORDER BY printed_date DESC LIMIT 10');
-        res.json({ success: true, data: history });
+        const [history] = await db.execute(`
+            SELECT 
+                bph.id,
+                bph.batch_id,
+                bph.print_format,
+                bph.printed_by,
+                bph.printed_date,
+                bph.test_count,
+                bph.printer_name,
+                bph.print_job_id,
+                bph.notes,
+                SUBSTRING_INDEX(bph.batch_id, '-', -1) as batch_short_id
+            FROM batch_print_history bph
+            ORDER BY bph.printed_date DESC
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+        
+        const [countResult] = await db.execute(
+            'SELECT COUNT(*) as total FROM batch_print_history'
+        );
+        
+        res.json({ 
+            success: true, 
+            data: history,
+            pagination: {
+                total: countResult[0].total,
+                limit: limit,
+                offset: offset
+            }
+        });
+        
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Error fetching print history:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
 });
 
@@ -2082,55 +2114,6 @@ app.post('/api/admin/print-batch', async (req, res) => {
         });
     } finally {
         connection.release();
-    }
-});
-
-// Get print history
-// Get print history for admin dashboard
-app.get('/api/admin/print-history', async (req, res) => {
-    console.log('Print history endpoint called');
-    const limit = parseInt(req.query.limit) || 50;
-    const offset = parseInt(req.query.offset) || 0;
-    
-    try {
-        const [history] = await db.execute(`
-            SELECT 
-                bph.id,
-                bph.batch_id,
-                bph.print_format,
-                bph.printed_by,
-                bph.printed_date,
-                bph.test_count,
-                bph.printer_name,
-                bph.print_job_id,
-                bph.notes,
-                SUBSTRING_INDEX(bph.batch_id, '-', -1) as batch_short_id
-            FROM batch_print_history bph
-            ORDER BY bph.printed_date DESC
-            LIMIT ? OFFSET ?
-        `, [limit, offset]);
-        
-        // Get total count for pagination
-        const [countResult] = await db.execute(
-            'SELECT COUNT(*) as total FROM batch_print_history'
-        );
-        
-        res.json({ 
-            success: true, 
-            data: history,
-            pagination: {
-                total: countResult[0].total,
-                limit: limit,
-                offset: offset
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error fetching print history:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
     }
 });
 
