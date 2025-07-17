@@ -29,6 +29,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -50,7 +51,6 @@ const dbConfig = {
     queueLimit: 0,
     acquireTimeout: 60000,
     timeout: 60000,
-    reconnect: true,
     charset: 'utf8mb4'
 };
 
@@ -74,7 +74,9 @@ async function initializeDatabase() {
 // ============================================================================
 
 const uploadDir = path.join(__dirname, 'uploads');
-fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
+fs.mkdir(uploadDir, { recursive: true }).catch(err => {
+    console.error('Error creating upload directory:', err);
+});
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
