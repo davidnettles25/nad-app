@@ -42,9 +42,9 @@ app.use((req, res, next) => {
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER || 'mynadtes_mynadtest_nad_user',
-    password: process.env.DB_PASSWORD || 'mynadtest_nad_user#2025',
-    database: process.env.DB_NAME || 'mynadtes_mynadtest_nad_cycle',
+    user: process.env.DB_USER || 'nad_user',
+    password: process.env.DB_PASSWORD || 'SecureNADPassword2025!',
+    database: process.env.DB_NAME || 'nad_cycle',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
