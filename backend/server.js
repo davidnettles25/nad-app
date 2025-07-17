@@ -18,6 +18,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
     origin: [
         'https://mynadtest.com',
+        'https://mynadtest.info',
         'https://mynadtest.dev',
         'http://localhost:3000',
         'http://localhost:3001'
