@@ -897,6 +897,104 @@ console.log('✅ Supplements API endpoints loaded');
 console.log('✅ Supplement CRUD endpoints loaded (GET, POST, PUT, DELETE)');
 
 // ============================================================================
+// CUSTOMER PORTAL ENDPOINTS
+// ============================================================================
+
+app.post('/api/customer/activate-test', async (req, res) => {
+    try {
+        const { testId, email, firstName, lastName } = req.body;
+        
+        // Check if test ID exists and is not activated
+        const [existing] = await db.execute(
+            'SELECT * FROM nad_test_ids WHERE test_id = ?',
+            [testId]
+        );
+        
+        if (existing.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Test ID not found' 
+            });
+        }
+        
+        const test = existing[0];
+        
+        if (test.is_activated) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'This Test ID has already been activated' 
+            });
+        }
+        
+        // Activate the test
+        await db.execute(
+            `UPDATE nad_test_ids 
+             SET is_activated = 1, 
+                 activated_date = NOW()
+             WHERE test_id = ?`,
+            [testId]
+        );
+        
+        // TODO: Store user info when columns are added to database
+        // user_email = ?, user_first_name = ?, user_last_name = ?
+        
+        res.json({ 
+            success: true, 
+            message: 'Test activated successfully',
+            data: {
+                testId,
+                activatedAt: new Date().toISOString()
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error activating test:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to activate test' 
+        });
+    }
+});
+
+app.post('/api/customer/verify-test', async (req, res) => {
+    try {
+        const { testId, email } = req.body;
+        
+        // Check if test ID exists
+        const [existing] = await db.execute(
+            'SELECT * FROM nad_test_ids WHERE test_id = ?',
+            [testId]
+        );
+        
+        if (existing.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Test ID not found or email does not match' 
+            });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Test verified successfully',
+            data: {
+                testId,
+                isActivated: existing[0].is_activated,
+                activatedDate: existing[0].activated_date
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error verifying test:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to verify test' 
+        });
+    }
+});
+
+console.log('✅ Customer portal endpoints loaded');
+
+// ============================================================================
 // LAB INTERFACE ENDPOINTS
 // ============================================================================
 
