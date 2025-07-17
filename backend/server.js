@@ -1,4 +1,4 @@
-// users final (hopefully)
+// users final
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -73,9 +73,7 @@ async function initializeDatabase() {
 // ============================================================================
 
 const uploadDir = path.join(__dirname, 'uploads');
-fs.mkdir(uploadDir, { recursive: true }).catch(err => {
-    console.error('Error creating upload directory:', err);
-});
+fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -114,25 +112,6 @@ function generateTestId() {
     return `NAD-${year}${month}${day}-${random}`;
 }
 
-// =====================================================
-// BULK TEST CREATION FUNCTIONS
-// =====================================================
-
-// Generate random 5-digit number between 10000-99999
-function generateRandomSuffix() {
-    return Math.floor(Math.random() * (99999 - 10000 + 1)) + 10000;
-}
-
-// Generate new test ID format: yyyy-mm-n-xxxxxx
-function generateTestIdWithAutoIncrement(autoIncrementId) {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const randomSuffix = generateRandomSuffix();
-    
-    return `${year}-${month}-${autoIncrementId}-${randomSuffix}`;
-}
-
 function verifyShopifyWebhook(data, hmacHeader) {
     if (!process.env.SHOPIFY_WEBHOOK_SECRET) {
         console.warn('⚠️ SHOPIFY_WEBHOOK_SECRET not set, skipping verification');
@@ -154,6 +133,37 @@ function isNADProduct(product) {
     return nadKeywords.some(keyword => 
         title.includes(keyword) || sku.includes(keyword) || vendor.includes(keyword)
     );
+}
+
+// ============================================================================
+// SHOPIFY AUTHENTICATION MIDDLEWARE
+// ============================================================================
+
+function validateShopifyAuth(req, res, next) {
+    // TODO: Implement Shopify Multipass validation
+    // Check for valid Shopify authentication token
+    // Verify user role from Shopify
+    // Set req.user with role information
+    
+    const shopifyToken = req.headers['x-shopify-token'] || req.query.token;
+    const userRole = req.headers['x-shopify-role'] || req.query.role;
+    
+    if (!shopifyToken) {
+        return res.status(401).json({ 
+            success: false, 
+            error: 'Authentication required',
+            redirect: 'https://mynadtest.myshopify.com/account/login'
+        });
+    }
+    
+    // Set user context for role-based access
+    req.user = {
+        role: userRole,
+        shopifyToken: shopifyToken,
+        authenticated: true
+    };
+    
+    next();
 }
 
 // ============================================================================
@@ -187,22 +197,33 @@ app.get('/health', async (req, res) => {
 
 app.get('/api/dashboard/stats', async (req, res) => {
     try {
-        const [totalTests] = await db.execute(`SELECT COUNT(*) as total_tests FROM nad_test_ids`);
-        const [activatedTests] = await db.execute(`SELECT COUNT(*) as activated_tests FROM nad_test_ids WHERE is_activated = 1`);
-        const [completedTests] = await db.execute(`SELECT COUNT(*) as completed_tests FROM nad_test_scores`);
+        const [testStats] = await db.execute(`
+            SELECT 
+                COUNT(*) as total_tests,
+                COUNT(CASE WHEN is_activated = 1 THEN 1 END) as activated_tests,
+                COUNT(CASE WHEN is_activated = 0 THEN 1 END) as pending_tests
+            FROM nad_test_ids
+        `);
         
-        const total = totalTests[0].total_tests;
-        const activated = activatedTests[0].activated_tests;
-        const completed = completedTests[0].completed_tests;
-        const pending = total - activated;
+        const [completedTests] = await db.execute(`
+            SELECT COUNT(DISTINCT test_id) as completed_tests
+            FROM nad_test_scores 
+            WHERE score IS NOT NULL AND score != ''
+        `);
+        
+        // REMOVED: User statistics
+        // const [userStats] = await db.execute(`
+        //     SELECT COUNT(*) as active_users FROM nad_user_roles
+        // `);
         
         res.json({
             success: true,
             stats: {
-                total_tests: total,
-                activated_tests: activated,
-                completed_tests: completed,
-                pending_tests: pending
+                total_tests: testStats[0].total_tests,
+                activated_tests: testStats[0].activated_tests,
+                pending_tests: testStats[0].pending_tests,
+                completed_tests: completedTests[0].completed_tests
+                // REMOVED: active_users: userStats[0].active_users
             }
         });
     } catch (error) {
@@ -508,27 +529,6 @@ app.post('/api/tests/score', upload.single('image'), async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
-
-// ============================================================================
-// USER MANAGEMENT ENDPOINTS - COMPLETELY FIXED TO SHOW ALL 4 USERS
-// ============================================================================
-app.use('/api', (req, res, next) => {
-    res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-    });
-    next();
-});
-
-
-
-
-
-
-
-
-
 
 
 // ============================================================================
@@ -899,6 +899,14 @@ console.log('✅ Supplements API endpoints loaded');
 console.log('✅ Supplement CRUD endpoints loaded (GET, POST, PUT, DELETE)');
 
 // ============================================================================
+// APPLY AUTHENTICATION TO PROTECTED ROUTES
+// ============================================================================
+
+// Apply authentication to protected routes
+app.use('/api/admin/*', validateShopifyAuth);
+app.use('/api/lab/*', validateShopifyAuth);
+
+// ============================================================================
 // CUSTOMER PORTAL ENDPOINTS
 // ============================================================================
 
@@ -937,9 +945,6 @@ app.post('/api/customer/activate-test', async (req, res) => {
             [testId]
         );
         
-        // TODO: Store user info when columns are added to database
-        // user_email = ?, user_first_name = ?, user_last_name = ?
-        
         res.json({ 
             success: true, 
             message: 'Test activated successfully',
@@ -954,42 +959,6 @@ app.post('/api/customer/activate-test', async (req, res) => {
         res.status(500).json({ 
             success: false, 
             message: 'Failed to activate test' 
-        });
-    }
-});
-
-app.post('/api/customer/verify-test', async (req, res) => {
-    try {
-        const { testId, email } = req.body;
-        
-        // Check if test ID exists
-        const [existing] = await db.execute(
-            'SELECT * FROM nad_test_ids WHERE test_id = ?',
-            [testId]
-        );
-        
-        if (existing.length === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Test ID not found or email does not match' 
-            });
-        }
-        
-        res.json({ 
-            success: true, 
-            message: 'Test verified successfully',
-            data: {
-                testId,
-                isActivated: existing[0].is_activated,
-                activatedDate: existing[0].activated_date
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error verifying test:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to verify test' 
         });
     }
 });
@@ -1350,289 +1319,49 @@ app.post('/api/admin/tests/bulk-deactivate', async (req, res) => {
     }
 });
 
-// =====================================================
-// BULK TEST CREATION ENDPOINTS
-// =====================================================
-
-// Bulk test creation endpoint
-app.post('/api/admin/create-test-batch', async (req, res) => {
-    const { quantity, notes } = req.body;
-    
-    // Validation
-    if (!quantity || quantity < 1 || quantity > 1000) {
-        return res.status(400).json({
-            success: false,
-            message: 'Quantity must be between 1 and 1000'
-        });
-    }
-
-    const connection = await db.getConnection();
-    
-    try {
-        await connection.beginTransaction();
-        
-        // Generate batch ID for tracking
-        const batchId = `BATCH-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-        const createdTests = [];
-        
-        console.log(`Creating batch of ${quantity} tests with batch ID: ${batchId}`);
-        
-        // Create tests in bulk
-        for (let i = 0; i < quantity; i++) {
-            // Insert placeholder record to get auto-increment ID
-            const [insertResult] = await connection.execute(
-                `INSERT INTO nad_test_ids (
-                    test_id, batch_id, batch_size, notes, generated_by, order_id, customer_id, created_date
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-                ['TEMP', batchId, quantity, notes, null, null, null]
-            );
-            
-            const autoIncrementId = insertResult.insertId;
-            const testId = generateTestIdWithAutoIncrement(autoIncrementId);
-            
-            // Update with the actual test_id
-            await connection.execute(
-                'UPDATE nad_test_ids SET test_id = ? WHERE id = ?',
-                [testId, autoIncrementId]
-            );
-            
-            createdTests.push({
-                id: autoIncrementId,
-                test_id: testId,
-                batch_id: batchId
-            });
-        }
-        
-        await connection.commit();
-        
-        console.log(`Successfully created ${createdTests.length} tests`);
-        
-        res.json({
-            success: true,
-            message: `Successfully created ${quantity} tests`,
-            data: {
-                batch_id: batchId,
-                quantity: quantity,
-                tests_created: createdTests.length,
-                sample_test_ids: createdTests.slice(0, 5).map(t => t.test_id),
-                notes: notes || ''
-            }
-        });
-        
-    } catch (error) {
-        await connection.rollback();
-        console.error('Error creating test batch:', error);
-        
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create test batch',
-            error: error.message
-        });
-    } finally {
-        connection.release();
-    }
-});
-
-// Get batch information
-app.get('/api/admin/test-batches', async (req, res) => {
-    try {
-        const [batches] = await db.execute(`
-            SELECT 
-                batch_id,
-                batch_size,
-                COUNT(*) as tests_created,
-                MIN(created_date) as created_date,
-                MAX(notes) as notes,
-                GROUP_CONCAT(test_id ORDER BY id LIMIT 3) as sample_test_ids
-            FROM nad_test_ids 
-            WHERE batch_id IS NOT NULL 
-            GROUP BY batch_id, batch_size 
-            ORDER BY MIN(created_date) DESC
-            LIMIT 20
-        `);
-        
-        res.json({
-            success: true,
-            data: batches
-        });
-    } catch (error) {
-        console.error('Error fetching test batches:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch test batches'
-        });
-    }
-});
-
-// Get tests by batch ID
-app.get('/api/admin/test-batch/:batchId', async (req, res) => {
-    const { batchId } = req.params;
-    
-    try {
-        const [tests] = await db.execute(
-            `SELECT id, test_id, batch_id, batch_size, notes, is_activated, 
-                    activated_date, order_id, customer_id, created_date 
-             FROM nad_test_ids 
-             WHERE batch_id = ? 
-             ORDER BY id`,
-            [batchId]
-        );
-        
-        res.json({
-            success: true,
-            data: tests
-        });
-    } catch (error) {
-        console.error('Error fetching batch tests:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch batch tests'
-        });
-    }
-});
-
-// Test activation endpoint if it doesn't exist
-app.post('/api/tests/:testId/activate', async (req, res) => {
-    const { testId } = req.params;
-    
-    try {
-        const [result] = await db.execute(
-            'UPDATE nad_test_ids SET is_activated = 1, activated_date = NOW() WHERE test_id = ?',
-            [testId]
-        );
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Test not found'
-            });
-        }
-        
-        res.json({
-            success: true,
-            message: `Test ${testId} has been activated`
-        });
-    } catch (error) {
-        console.error('Error activating test:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to activate test'
-        });
-    }
-});
-
-// Test deactivation endpoint
-app.post('/api/tests/:testId/deactivate', async (req, res) => {
-    const { testId } = req.params;
-    
-    try {
-        const [result] = await db.execute(
-            'UPDATE nad_test_ids SET is_activated = 0, activated_date = NULL WHERE test_id = ?',
-            [testId]
-        );
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Test not found'
-            });
-        }
-        
-        res.json({
-            success: true,
-            message: `Test ${testId} has been deactivated`
-        });
-    } catch (error) {
-        console.error('Error deactivating test:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to deactivate test'
-        });
-    }
-});
-
-// Enhanced /api/tests endpoint that includes batch information
-app.get('/api/tests', async (req, res) => {
-    try {
-        const [tests] = await db.execute(`
-            SELECT 
-                id,
-                test_id,
-                batch_id,
-                batch_size,
-                generated_by,
-                order_id,
-                customer_id,
-                created_date,
-                is_activated,
-                activated_date,
-                shipping_status,
-                shipped_date
-            FROM nad_test_ids 
-            ORDER BY created_date DESC
-        `);
-        
-        res.json({
-            success: true,
-            data: tests
-        });
-    } catch (error) {
-        console.error('Error fetching tests:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch tests'
-        });
-    }
-});
-
 app.get('/api/admin/export/:type', async (req, res) => {
     try {
-        const exportType = req.params.type;
+        const { type } = req.params;
         let data = [];
-        let filename = 'export.json';
+        let filename = '';
         
-        switch (exportType) {
+        switch(type) {
             case 'tests':
-                const [tests] = await db.execute(`
-                    SELECT 
-                        ti.*, ts.score, ts.technician_id, ts.score_submission_date,
-                        us.supplements_with_dose, us.habits_notes
+                [data] = await db.execute(`
+                    SELECT ti.*, ts.score, ts.score_submission_date, ts.technician_id
                     FROM nad_test_ids ti
                     LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-                    LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id
                     ORDER BY ti.created_date DESC
                 `);
-                data = tests;
                 filename = `nad_tests_export_${new Date().toISOString().split('T')[0]}.json`;
                 break;
                 
-            case 'users':
-                const [users] = await db.execute(`
-                    SELECT * FROM nad_user_roles WHERE customer_id != 0 ORDER BY created_at DESC
-                `);
-                data = users;
-                filename = `nad_users_export_${new Date().toISOString().split('T')[0]}.json`;
-                break;
-                
             case 'supplements':
-                const [supplements] = await db.execute(`
-                    SELECT * FROM nad_supplements ORDER BY name ASC
+                [data] = await db.execute(`
+                    SELECT * FROM nad_user_supplements ORDER BY created_at DESC
                 `);
-                data = supplements;
                 filename = `nad_supplements_export_${new Date().toISOString().split('T')[0]}.json`;
                 break;
                 
+            // REMOVED: users export case
+            // case 'users':
+            //     [data] = await db.execute(`
+            //         SELECT * FROM nad_user_roles ORDER BY customer_id
+            //     `);
+            //     filename = `nad_users_export_${new Date().toISOString().split('T')[0]}.json`;
+            //     break;
+                
             default:
-                return res.status(400).json({
-                    success: false,
-                    error: 'Invalid export type. Use: tests, users, or supplements'
+                return res.status(400).json({ 
+                    success: false, 
+                    error: 'Invalid export type. Use: tests or supplements'
                 });
         }
         
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.json({
-            export_type: exportType,
+            export_type: type,
             export_date: new Date().toISOString(),
             total_records: data.length,
             data: data
@@ -1683,20 +1412,21 @@ app.get('/api/analytics/overview', async (req, res) => {
             ORDER BY date ASC
         `);
         
-        const [roleStats] = await db.execute(`
-            SELECT role, COUNT(*) as count
-            FROM nad_user_roles 
-            WHERE customer_id != 0
-            GROUP BY role
-        `);
+        // REMOVED: User role statistics
+        // const [roleStats] = await db.execute(`
+        //     SELECT role, COUNT(*) as count
+        //     FROM nad_user_roles 
+        //     WHERE customer_id != 0
+        //     GROUP BY role
+        // `);
         
         res.json({
             success: true,
             analytics: {
                 basic_stats: basicStats[0],
                 score_distribution: scoreDistribution,
-                daily_completions: dailyStats,
-                user_roles: roleStats
+                daily_completions: dailyStats
+                // REMOVED: user_roles: roleStats
             }
         });
     } catch (error) {
@@ -1886,303 +1616,6 @@ app.get('/api/notifications', async (req, res) => {
 });
 
 // ============================================================================
-// BATCH PRINTING ENDPOINTS
-// ============================================================================
-
-// Get all printable batches with print status
-app.get('/api/admin/printable-batches', async (req, res) => {
-    try {
-        console.log('🖨️ Fetching printable batches...');
-        
-        const [batches] = await db.execute(`
-            SELECT 
-                batch_id,
-                COUNT(*) as total_tests,
-                SUM(CASE WHEN COALESCE(is_printed, 0) = 1 THEN 1 ELSE 0 END) as printed_tests,
-                MAX(printed_date) as last_printed_date,
-                MAX(batch_size) as batch_size,
-                MIN(created_date) as created_date,
-                MAX(notes) as batch_notes,
-                CASE 
-                    WHEN SUM(CASE WHEN COALESCE(is_printed, 0) = 1 THEN 1 ELSE 0 END) = 0 THEN 'not_printed'
-                    WHEN SUM(CASE WHEN COALESCE(is_printed, 0) = 1 THEN 1 ELSE 0 END) = COUNT(*) THEN 'fully_printed'
-                    ELSE 'partially_printed'
-                END as print_status,
-                ROUND(
-                    (SUM(CASE WHEN COALESCE(is_printed, 0) = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 
-                    1
-                ) as print_percentage
-            FROM nad_test_ids 
-            WHERE batch_id IS NOT NULL 
-            AND batch_id != ''
-            GROUP BY batch_id
-            ORDER BY MIN(created_date) DESC
-            LIMIT 50
-        `);
-        
-        // Get sample test IDs for each batch
-        for (let batch of batches) {
-            const [sampleTests] = await db.execute(
-                'SELECT test_id FROM nad_test_ids WHERE batch_id = ? ORDER BY id LIMIT 3',
-                [batch.batch_id]
-            );
-            batch.sample_test_ids = sampleTests.map(t => t.test_id);
-        }
-        
-        console.log(`✅ Found ${batches.length} printable batches`);
-        
-        res.json({
-            success: true,
-            data: batches
-        });
-        
-    } catch (error) {
-        console.error('❌ Error fetching printable batches:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to fetch printable batches',
-            error: error.message 
-        });
-    }
-});
-
-// Print history endpoint
-app.get('/api/admin/print-history', async (req, res) => {
-    console.log('Print history endpoint called');
-    const limit = parseInt(req.query.limit) || 50;
-    const offset = parseInt(req.query.offset) || 0;
-    
-    try {
-        const [history] = await db.execute(`
-            SELECT 
-                bph.id,
-                bph.batch_id,
-                bph.print_format,
-                bph.printed_by,
-                bph.printed_date,
-                bph.test_count,
-                bph.printer_name,
-                bph.print_job_id,
-                bph.notes,
-                SUBSTRING_INDEX(bph.batch_id, '-', -1) as batch_short_id
-            FROM batch_print_history bph
-            ORDER BY bph.printed_date DESC
-            LIMIT ? OFFSET ?
-        `, [limit, offset]);
-        
-        const [countResult] = await db.execute(
-            'SELECT COUNT(*) as total FROM batch_print_history'
-        );
-        
-        res.json({ 
-            success: true, 
-            data: history,
-            pagination: {
-                total: countResult[0].total,
-                limit: limit,
-                offset: offset
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error fetching print history:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
-    }
-});
-
-// Batch details endpoint
-app.get('/api/admin/batch-details/:batchId', async (req, res) => {
-    const { batchId } = req.params;
-    
-    try {
-        console.log('Fetching details for batch:', batchId);
-        
-        // Get batch summary from nad_test_ids
-        const [batchInfo] = await db.execute(`
-            SELECT 
-                batch_id,
-                COUNT(*) as total_tests,
-                SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) as printed_tests,
-                MAX(printed_date) as last_printed_date,
-                batch_size,
-                MIN(created_date) as created_date,
-                notes as batch_notes,
-                CASE 
-                    WHEN SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) = 0 THEN 'not_printed'
-                    WHEN SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) = COUNT(*) THEN 'fully_printed'
-                    ELSE 'partially_printed'
-                END as print_status,
-                ROUND(
-                    (SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 
-                    1
-                ) as print_percentage
-            FROM nad_test_ids 
-            WHERE batch_id = ?
-            GROUP BY batch_id, batch_size, notes
-        `, [batchId]);
-        
-        if (batchInfo.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Batch not found'
-            });
-        }
-        
-        // Get all tests in this batch
-        const [tests] = await db.execute(`
-            SELECT 
-                test_id, 
-                is_activated, 
-                is_printed, 
-                printed_date, 
-                printed_by,
-                customer_id,
-                order_id,
-                created_date
-            FROM nad_test_ids 
-            WHERE batch_id = ?
-            ORDER BY id
-        `, [batchId]);
-        
-        // Get print history for this batch
-        const [printHistory] = await db.execute(
-            'SELECT * FROM batch_print_history WHERE batch_id = ? ORDER BY printed_date DESC',
-            [batchId]
-        );
-        
-        res.json({
-            success: true,
-            data: {
-                batch_info: batchInfo[0],
-                test_ids: tests,
-                print_history: printHistory
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error fetching batch details:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
-    }
-});
-
-// Print batch endpoint
-app.post('/api/admin/print-batch', async (req, res) => {
-    const { batch_id, print_format, printer_name, notes } = req.body;
-    const printed_by = 'admin';
-    
-    // Validate input
-    if (!batch_id) {
-        return res.status(400).json({
-            success: false,
-            message: 'Batch ID is required'
-        });
-    }
-    
-    const validFormats = ['individual_labels', 'batch_summary', 'shipping_list'];
-    if (!validFormats.includes(print_format)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid print format'
-        });
-    }
-    
-    try {
-        console.log('Processing print job for batch:', batch_id);
-        
-        // Get all tests in this batch
-        const [tests] = await db.execute(
-            'SELECT test_id, batch_id, is_printed FROM nad_test_ids WHERE batch_id = ?',
-            [batch_id]
-        );
-        
-        if (tests.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Batch not found or contains no tests'
-            });
-        }
-        
-        console.log('Found tests in batch:', tests.length);
-        
-        // Mark all tests in batch as printed
-        const [updateResult] = await db.execute(
-            'UPDATE nad_test_ids SET is_printed = TRUE, printed_date = NOW(), printed_by = ? WHERE batch_id = ?',
-            [printed_by, batch_id]
-        );
-        
-        console.log('Marked tests as printed:', updateResult.affectedRows);
-        
-        // Generate unique print job ID
-        const print_job_id = `PJ${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-        
-        // Log the print job in history
-        await db.execute(
-            'INSERT INTO batch_print_history (batch_id, print_format, printed_by, test_count, printer_name, print_job_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [batch_id, print_format, printed_by, tests.length, printer_name || 'Default', print_job_id, notes || '']
-        );
-        
-        // Generate print data based on format
-        let printData;
-        const batchShortId = batch_id.split('-').pop();
-        
-        if (print_format === 'individual_labels') {
-            printData = {
-                labels: tests.map(t => ({
-                    test_id: t.test_id,
-                    batch_short_id: batchShortId,
-                    print_date: new Date().toISOString()
-                }))
-            };
-        } else if (print_format === 'batch_summary') {
-            printData = {
-                summary_title: `Batch Summary - Batch #${batchShortId}`,
-                test_count: tests.length,
-                test_ids: tests.map(t => t.test_id),
-                created_date: new Date().toISOString()
-            };
-        } else if (print_format === 'shipping_list') {
-            printData = {
-                checklist_title: `Shipping Checklist - Batch #${batchShortId}`,
-                total_items: tests.length,
-                items: tests.map(t => ({
-                    test_id: t.test_id
-                }))
-            };
-        }
-        
-        console.log('Print job logged with ID:', print_job_id);
-        
-        res.json({
-            success: true,
-            message: `Batch ${batch_id} marked as printed successfully`,
-            data: {
-                print_job_id: print_job_id,
-                batch_id: batch_id,
-                test_count: tests.length,
-                print_format: print_format,
-                printer_name: printer_name || 'Default',
-                print_data: printData,
-                previously_printed: tests.filter(t => t.is_printed).length
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error processing print job:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to process print job',
-            error: error.message 
-        });
-    }
-});
-
-// ============================================================================
 // ERROR HANDLING MIDDLEWARE
 // ============================================================================
 
@@ -2195,16 +1628,9 @@ app.use((req, res) => {
         available_endpoints: [
             'GET /health',
             'GET /api/dashboard/stats',
-            'GET /api/users',
-            'GET /api/users/stats',
-            'GET /api/users/debug-all',
-            'GET /api/users/simple',
             'GET /api/supplements',
             'GET /api/tests/scores',
-            'GET /api/analytics/overview',
-            'GET /api/admin/printable-batches',
-            'GET /api/admin/batch-details/:batchId',
-            'POST /api/admin/print-batch'
+            'GET /api/analytics/overview'
         ]
     });
 });
@@ -2228,114 +1654,6 @@ app.use((error, req, res, next) => {
     });
 });
 
-
-// Get detailed information for a specific batch
-// Reset print status for a batch (for reprinting)
-app.post('/api/admin/reset-print-status', async (req, res) => {
-    const { batch_id, reason } = req.body;
-    
-    if (!batch_id) {
-        return res.status(400).json({
-            success: false,
-            message: 'Batch ID is required'
-        });
-    }
-    
-    try {
-        const [result] = await db.execute(
-            `UPDATE nad_test_ids 
-             SET is_printed = FALSE, printed_date = NULL, printed_by = NULL 
-             WHERE batch_id = ?`,
-            [batch_id]
-        );
-        
-        // Log the reset action
-        const reset_reason = reason || 'Print status reset via admin';
-        await db.execute(
-            `INSERT INTO batch_print_history 
-             (batch_id, print_format, printed_by, test_count, notes) 
-             VALUES (?, 'status_reset', 'admin', ?, ?)`,
-            [batch_id, result.affectedRows, `RESET: ${reset_reason}`]
-        );
-        
-        console.log(`🔄 Reset print status for ${result.affectedRows} tests in batch ${batch_id}`);
-        
-        res.json({
-            success: true,
-            message: `Print status reset for batch ${batch_id}`,
-            data: {
-                tests_reset: result.affectedRows,
-                reason: reset_reason
-            }
-        });
-        
-    } catch (error) {
-        console.error('❌ Error resetting print status:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
-    }
-});
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-function generatePrintData(tests, format, batch_id) {
-    const batch_short_id = batch_id.split('-').pop();
-    
-    switch (format) {
-        case 'individual_labels':
-            return {
-                type: 'individual_labels',
-                labels: tests.map(test => ({
-                    test_id: test.test_id,
-                    batch_id: batch_id,
-                    batch_short_id: batch_short_id,
-                    qr_code_data: test.test_id, // This could be used for QR code generation
-                    print_date: new Date().toISOString()
-                }))
-            };
-            
-        case 'batch_summary':
-            return {
-                type: 'batch_summary',
-                batch_id: batch_id,
-                batch_short_id: batch_short_id,
-                test_count: tests.length,
-                test_ids: tests.map(t => t.test_id),
-                created_date: new Date().toISOString(),
-                summary_title: `Batch ${batch_short_id} Summary`
-            };
-            
-        case 'shipping_list':
-            return {
-                type: 'shipping_list',
-                batch_id: batch_id,
-                batch_short_id: batch_short_id,
-                checklist_title: `Shipping Checklist - Batch ${batch_short_id}`,
-                items: tests.map(test => ({
-                    test_id: test.test_id,
-                    checked: false,
-                    notes: ''
-                })),
-                total_items: tests.length
-            };
-            
-        default:
-            throw new Error(`Unsupported print format: ${format}`);
-    }
-}
-
-// Generate QR code data (placeholder - you can integrate with QR library)
-function generateQRCode(data) {
-    // This is a placeholder - integrate with actual QR code library
-    return `QR:${data}`;
-}
-
-console.log('✅ Batch printing endpoints loaded');
-
 // ============================================================================
 // SERVER STARTUP AND SHUTDOWN
 // ============================================================================
@@ -2349,18 +1667,18 @@ async function startServer() {
         }
         
         app.listen(PORT, () => {
-            console.log('🚀 NAD Test Cycle API Server Started - USERS COMPLETELY FIXED');
+            console.log('🚀 NAD Test Cycle API Server Started - USER MANAGEMENT REMOVED');
             console.log(`📡 Server running on port ${PORT}`);
             console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
             console.log(`🔗 Health: http://localhost:${PORT}/health`);
             console.log(`📊 Stats: http://localhost:${PORT}/api/dashboard/stats`);
-            console.log(`👥 Users: http://localhost:${PORT}/api/users`);
-            console.log(`👥 User Stats: http://localhost:${PORT}/api/users/stats`);
-            console.log(`🔍 Debug Users: http://localhost:${PORT}/api/users/debug-all`);
             console.log(`🧪 Tests: http://localhost:${PORT}/api/tests/scores`);
             console.log(`💊 Supplements: http://localhost:${PORT}/api/supplements`);
             console.log(`📈 Analytics: http://localhost:${PORT}/api/analytics/overview`);
-            console.log('✅ All 4 users will now appear in the admin dashboard!');
+            console.log('✅ User Management removed from backend');
+            console.log('🔐 Shopify authentication middleware added');
+            console.log('📊 Analytics updated to remove user statistics');
+            console.log('📤 Export functionality updated to remove users');
         });
         
     } catch (error) {
@@ -2398,3 +1716,25 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 startServer();
+
+// PUT endpoint for updating supplements
+app.put('/api/supplements/:id', (req, res) => {
+    console.log('✏️ Updating supplement:', req.params.id, req.body);
+    
+    const updatedSupplement = {
+        id: parseInt(req.params.id),
+        name: req.body.name,
+        category: req.body.category,
+        description: req.body.description,
+        default_dose: req.body.default_dose,
+        unit: req.body.unit || 'mg',
+        is_active: req.body.is_active !== false,
+        updated_at: new Date().toISOString()
+    };
+    
+    res.json({
+        success: true,
+        message: 'Supplement updated successfully',
+        data: updatedSupplement
+    });
+});
