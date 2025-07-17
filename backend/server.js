@@ -42,14 +42,15 @@ app.use((req, res, next) => {
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER || 'nad_user',
-    password: process.env.DB_PASSWORD || 'SecureNADPassword2025!',
-    database: process.env.DB_NAME || 'nad_cycle',
+    user: process.env.DB_USER || 'mynadtes_mynadtest_nad_user',
+    password: process.env.DB_PASSWORD || 'mynadtest_nad_user#2025',
+    database: process.env.DB_NAME || 'mynadtes_mynadtest_nad_cycle',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
     acquireTimeout: 60000,
     timeout: 60000,
+    reconnect: true,
     charset: 'utf8mb4'
 };
 
@@ -905,65 +906,6 @@ console.log('✅ Supplement CRUD endpoints loaded (GET, POST, PUT, DELETE)');
 // Apply authentication to protected routes
 app.use('/api/admin/*', validateShopifyAuth);
 app.use('/api/lab/*', validateShopifyAuth);
-
-// ============================================================================
-// CUSTOMER PORTAL ENDPOINTS
-// ============================================================================
-
-app.post('/api/customer/activate-test', async (req, res) => {
-    try {
-        const { testId, email, firstName, lastName } = req.body;
-        
-        // Check if test ID exists and is not activated
-        const [existing] = await db.execute(
-            'SELECT * FROM nad_test_ids WHERE test_id = ?',
-            [testId]
-        );
-        
-        if (existing.length === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Test ID not found' 
-            });
-        }
-        
-        const test = existing[0];
-        
-        if (test.is_activated) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'This Test ID has already been activated' 
-            });
-        }
-        
-        // Activate the test
-        await db.execute(
-            `UPDATE nad_test_ids 
-             SET is_activated = 1, 
-                 activated_date = NOW()
-             WHERE test_id = ?`,
-            [testId]
-        );
-        
-        res.json({ 
-            success: true, 
-            message: 'Test activated successfully',
-            data: {
-                testId,
-                activatedAt: new Date().toISOString()
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error activating test:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to activate test' 
-        });
-    }
-});
-
-console.log('✅ Customer portal endpoints loaded');
 
 // ============================================================================
 // LAB INTERFACE ENDPOINTS
