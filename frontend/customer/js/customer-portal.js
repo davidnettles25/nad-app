@@ -2,6 +2,12 @@
 window.NADCustomer = {
     currentStep: 1,
     testData: {},
+    userData: {
+        // Mock data - will be replaced by Shopify multipass data
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com'
+    },
     
     init() {
         console.log('Initializing NAD Customer Portal');
@@ -67,6 +73,16 @@ window.NADCustomer = {
     },
     
     initVerificationHandlers() {
+        // Update user greeting
+        const nameElement = document.getElementById('user-name');
+        const emailElement = document.getElementById('user-email');
+        if (nameElement) {
+            nameElement.textContent = `${this.userData.firstName} ${this.userData.lastName}`;
+        }
+        if (emailElement) {
+            emailElement.textContent = this.userData.email;
+        }
+        
         const form = document.getElementById('verification-form');
         if (form) {
             form.addEventListener('submit', (e) => {
@@ -86,7 +102,6 @@ window.NADCustomer = {
     
     async handleVerification() {
         const testId = document.getElementById('test-id').value;
-        const email = document.getElementById('email').value;
         
         // Validate format
         if (!NAD.utils.isValidTestId(testId)) {
@@ -94,49 +109,55 @@ window.NADCustomer = {
             return;
         }
         
-        if (!NAD.utils.isValidEmail(email)) {
-            this.showMessage('Invalid email format. Please check and try again.', 'error');
-            return;
-        }
-        
         try {
             // Show loading state
             const button = document.querySelector('[data-action="verify-test"]');
             const originalText = button.textContent;
-            button.textContent = 'Verifying...';
+            button.textContent = 'Activating...';
             button.disabled = true;
             
-            // Make API call to verify test
-            const response = await NAD.api.verifyTest({
+            // Make API call to check and activate test ID
+            const response = await NAD.api.activateTest({
                 testId: testId,
-                email: email
+                email: this.userData.email,
+                firstName: this.userData.firstName,
+                lastName: this.userData.lastName
             });
             
             if (response.success) {
                 // Store test data
                 this.testData = {
                     testId: testId,
-                    email: email,
-                    verified: true,
+                    email: this.userData.email,
+                    activated: true,
+                    activatedAt: new Date().toISOString(),
                     ...response.data
                 };
                 
                 // Move to next step
-                this.showMessage('Test ID verified successfully!', 'success');
+                this.showMessage('Test activated successfully!', 'success');
                 setTimeout(() => {
                     this.nextStep();
                 }, 1500);
             } else {
-                throw new Error(response.message || 'Verification failed');
+                throw new Error(response.message || 'Activation failed');
             }
             
         } catch (error) {
-            console.error('Verification error:', error);
-            this.showMessage('Unable to verify Test ID. Please check your information and try again.', 'error');
+            console.error('Activation error:', error);
+            let errorMessage = 'Unable to activate Test ID.';
+            
+            if (error.message.includes('not found')) {
+                errorMessage = 'Test ID not found. Please check your Test ID and try again.';
+            } else if (error.message.includes('already activated')) {
+                errorMessage = 'This Test ID has already been activated.';
+            }
+            
+            this.showMessage(errorMessage, 'error');
             
             // Reset button
             const button = document.querySelector('[data-action="verify-test"]');
-            button.textContent = 'Verify Test ID';
+            button.textContent = 'Activate Test';
             button.disabled = false;
         }
     },

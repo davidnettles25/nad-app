@@ -101,7 +101,19 @@ NAD.API = {
     
     async getSupplements() {
         return this.get('/api/supplements');
+    },
+    
+    // Customer portal methods
+    async activateTest(data) {
+        return this.post('/api/customer/activate-test', data);
+    },
+    
+    async verifyTest(data) {
+        return this.post('/api/customer/verify-test', data);
     }
 };
+
+// Create shorthand reference
+NAD.api = NAD.API;
 
 NAD.logger.debug('API client loaded');
