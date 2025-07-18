@@ -914,11 +914,34 @@ console.log('✅ Supplement CRUD endpoints loaded (GET, POST, PUT, DELETE)');
 
 app.get('/api/lab/pending-tests', async (req, res) => {
     try {
-        // Now that we fixed the multiple API calls issue, restore real database query
+        // Add status column if it doesn't exist
+        try {
+            await db.execute(`
+                ALTER TABLE nad_test_ids 
+                ADD COLUMN status VARCHAR(50) DEFAULT 'pending',
+                ADD INDEX idx_status (status)
+            `);
+            console.log('Added status column to nad_test_ids');
+            
+            // Migrate existing data to use status field
+            await db.execute(`
+                UPDATE nad_test_ids 
+                SET status = CASE 
+                    WHEN is_activated = 0 THEN 'pending'
+                    WHEN is_activated = 1 THEN 'activated'
+                    ELSE 'pending'
+                END
+                WHERE status = 'pending'
+            `);
+        } catch (alterError) {
+            // Column probably already exists, ignore
+        }
+        
+        // Get tests with activated status
         const [tests] = await db.execute(`
             SELECT id, test_id, batch_id, activated_date 
             FROM nad_test_ids 
-            WHERE is_activated = 1 
+            WHERE status = 'activated'
             ORDER BY activated_date ASC
         `);
         
@@ -953,14 +976,14 @@ app.get('/api/lab/recent-tests', async (req, res) => {
             SELECT 
                 ti.test_id, 
                 ts.score as nad_score,
-                ts.score_submission_date as processed_date,
+                ti.processed_date,
                 ts.technician_id,
                 ti.batch_id,
                 ti.activated_date
             FROM nad_test_ids ti
-            INNER JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-            WHERE ts.score IS NOT NULL
-            ORDER BY ts.score_submission_date DESC
+            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            WHERE ti.status = 'completed'
+            ORDER BY ti.processed_date DESC
             LIMIT 20
         `);
         res.json({ success: true, tests: tests });
@@ -1005,23 +1028,44 @@ app.post('/api/lab/process-test/:testId', async (req, res) => {
         
         console.log('Processing test:', testId);
         
-        // For now, just mark as processed with a placeholder score
-        // In a real implementation, this would involve actual lab processing
-        await db.execute(`
-            INSERT INTO nad_test_scores (
-                test_id, score, order_id, customer_id, activated_by, 
-                technician_id, status, score_submission_date, 
-                created_date, updated_date, notes
-            )
-            VALUES (?, ?, 0, 0, 'lab-interface', 'lab-tech', 'completed', CURDATE(), CURDATE(), CURDATE(), ?)
-            ON DUPLICATE KEY UPDATE
-            score = VALUES(score),
-            score_submission_date = VALUES(score_submission_date),
-            updated_date = VALUES(updated_date),
-            status = VALUES(status)
-        `, [testId, 75.5, 'Processed via lab interface']);
+        // Start a transaction to update both tables
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
         
-        res.json({ success: true, message: 'Test processed successfully' });
+        try {
+            // Update status in nad_test_ids to 'completed'
+            await connection.execute(`
+                UPDATE nad_test_ids 
+                SET status = 'completed', 
+                    processed_date = NOW()
+                WHERE test_id = ?
+            `, [testId]);
+            
+            // Insert score into nad_test_scores
+            await connection.execute(`
+                INSERT INTO nad_test_scores (
+                    test_id, score, order_id, customer_id, activated_by, 
+                    technician_id, status, score_submission_date, 
+                    created_date, updated_date, notes
+                )
+                VALUES (?, ?, 0, 0, 'lab-interface', 'lab-tech', 'completed', CURDATE(), CURDATE(), CURDATE(), ?)
+                ON DUPLICATE KEY UPDATE
+                    score = VALUES(score),
+                    score_submission_date = VALUES(score_submission_date),
+                    updated_date = VALUES(updated_date),
+                    status = VALUES(status)
+            `, [testId, 75.5, 'Processed via lab interface']);
+            
+            await connection.commit();
+            res.json({ success: true, message: 'Test processed successfully' });
+            
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+        
     } catch (error) {
         console.error('Error processing test:', error);
         res.status(500).json({ success: false, message: error.message || 'Failed to process test' });
