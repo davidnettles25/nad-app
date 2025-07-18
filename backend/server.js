@@ -948,6 +948,29 @@ app.get('/api/lab/stats', async (req, res) => {
     }
 });
 
+app.get('/api/lab/recent-tests', async (req, res) => {
+    try {
+        const [tests] = await db.execute(`
+            SELECT 
+                ti.test_id, 
+                ts.score as nad_score,
+                ts.score_submission_date as processed_date,
+                ts.technician_id,
+                ti.batch_id,
+                ti.activated_date
+            FROM nad_test_ids ti
+            INNER JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            WHERE ts.score IS NOT NULL
+            ORDER BY ts.score_submission_date DESC
+            LIMIT 20
+        `);
+        res.json({ success: true, tests: tests });
+    } catch (error) {
+        console.error('Error fetching recent tests:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // ============================================================================
 // ADMIN ENDPOINTS
 // ============================================================================
