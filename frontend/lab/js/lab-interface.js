@@ -140,19 +140,34 @@ window.NADLab = {
         // Store current test data
         this.currentProcessingTest = testData;
         
-        // Populate modal with test information
-        document.getElementById('modal-test-id').textContent = testData.test_id;
-        document.getElementById('modal-batch-id').textContent = testData.batch_id ? 
-            testData.batch_id.split('-').pop() : 'N/A';
-        document.getElementById('modal-activated-date').textContent = 
-            new Date(testData.activated_date).toLocaleDateString();
-        
-        // Reset form
-        document.getElementById('process-test-form').reset();
-        document.getElementById('modal-error-message').style.display = 'none';
-        
-        // Show modal
-        document.getElementById('process-test-modal').style.display = 'block';
+        // Wait for modal to be loaded, then populate
+        setTimeout(() => {
+            const modalTestId = document.getElementById('modal-test-id');
+            const modalBatchId = document.getElementById('modal-batch-id');
+            const modalActivatedDate = document.getElementById('modal-activated-date');
+            const processForm = document.getElementById('process-test-form');
+            const errorMessage = document.getElementById('modal-error-message');
+            const modal = document.getElementById('process-test-modal');
+            
+            if (modalTestId && modalBatchId && modalActivatedDate && processForm && modal) {
+                // Populate modal with test information
+                modalTestId.textContent = testData.test_id;
+                modalBatchId.textContent = testData.batch_id ? 
+                    testData.batch_id.split('-').pop() : 'N/A';
+                modalActivatedDate.textContent = 
+                    new Date(testData.activated_date).toLocaleDateString();
+                
+                // Reset form
+                processForm.reset();
+                if (errorMessage) errorMessage.style.display = 'none';
+                
+                // Show modal
+                modal.style.display = 'block';
+            } else {
+                console.error('Modal elements not found, retrying...');
+                setTimeout(() => this.openProcessModal(testId), 500);
+            }
+        }, 100);
     },
     
     closeProcessModal() {
