@@ -1,1 +1,283 @@
 <!-- Results Viewing Step -->
+<div class="results-section">
+    <div class="results-header">
+        <h2>🎉 Test Activated Successfully!</h2>
+        <p>Your NAD+ test has been activated and your supplement information has been recorded.</p>
+    </div>
+    
+    <div class="activation-summary">
+        <h3>Activation Summary</h3>
+        <div class="summary-card">
+            <div class="summary-row">
+                <span class="label">Test ID:</span>
+                <span class="value" id="results-test-id">-</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Status:</span>
+                <span class="value status-success">✅ Activated</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Activated:</span>
+                <span class="value" id="results-activation-date">-</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Supplements Recorded:</span>
+                <span class="value" id="results-supplements-count">-</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="next-steps">
+        <h3>What's Next?</h3>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h4>📦 Ship Your Sample</h4>
+                    <p>Follow the instructions in your test kit to collect and ship your sample to our lab.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h4>🔬 Lab Processing</h4>
+                    <p>Our lab will process your sample and analyze your NAD+ levels. This typically takes 3-5 business days.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h4>📊 Receive Results</h4>
+                    <p>You'll receive your personalized NAD+ results and recommendations via email.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="contact-info">
+        <h3>Need Help?</h3>
+        <p>If you have any questions about your test or the process, please contact our support team.</p>
+        <div class="contact-buttons">
+            <a href="#" class="btn btn-secondary" onclick="window.open('mailto:support@nadtest.com', '_blank')">
+                📧 Email Support
+            </a>
+            <a href="#" class="btn btn-secondary" onclick="window.open('tel:+1-800-NAD-TEST', '_blank')">
+                📞 Call Support
+            </a>
+        </div>
+    </div>
+    
+    <div class="action-buttons">
+        <button type="button" class="btn btn-primary" onclick="window.print()">
+            🖨️ Print Summary
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="window.location.href='/'">
+            🏠 Return to Home
+        </button>
+    </div>
+</div>
+
+<style>
+.results-section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.results-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.results-header h2 {
+    color: #28a745;
+    margin-bottom: 10px;
+}
+
+.results-header p {
+    color: #666;
+    font-size: 16px;
+}
+
+.activation-summary {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 40px;
+}
+
+.activation-summary h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 6px;
+    padding: 20px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.summary-row .label {
+    font-weight: 600;
+    color: #666;
+}
+
+.summary-row .value {
+    color: #333;
+    font-weight: 500;
+}
+
+.status-success {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.next-steps {
+    margin-bottom: 40px;
+}
+
+.next-steps h3 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.step-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    gap: 15px;
+    transition: box-shadow 0.3s ease;
+}
+
+.step-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.step-content h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.step-content p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.contact-info {
+    background: #e7f3ff;
+    border-left: 4px solid #007bff;
+    padding: 20px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 40px;
+}
+
+.contact-info h3 {
+    margin: 0 0 10px 0;
+    color: #007bff;
+}
+
+.contact-info p {
+    margin: 0 0 15px 0;
+    color: #495057;
+}
+
+.contact-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .steps-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .contact-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+</style>

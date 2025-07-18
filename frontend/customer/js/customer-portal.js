@@ -391,6 +391,28 @@ window.NADCustomer = {
     },
     
     initResultsHandlers() {
+        console.log('initResultsHandlers called, testData:', this.testData);
+        
+        // Populate results data
+        const testIdElement = document.getElementById('results-test-id');
+        if (testIdElement) {
+            testIdElement.textContent = this.testData.testId || this.testData.test_id || 'Unknown';
+        }
+        
+        const activationDateElement = document.getElementById('results-activation-date');
+        if (activationDateElement) {
+            const date = this.testData.activatedAt || this.testData.activated_date || new Date().toISOString();
+            activationDateElement.textContent = new Date(date).toLocaleDateString();
+        }
+        
+        const supplementsCountElement = document.getElementById('results-supplements-count');
+        if (supplementsCountElement) {
+            const supplementsCount = this.testData.supplements ? 
+                (this.testData.supplements.selected ? this.testData.supplements.selected.length : 0) : 0;
+            supplementsCountElement.textContent = supplementsCount > 0 ? `${supplementsCount} supplements` : 'None recorded';
+        }
+        
+        // Initialize any other results functionality
         if (window.NADResultsViewer) {
             window.NADResultsViewer.init();
         }
