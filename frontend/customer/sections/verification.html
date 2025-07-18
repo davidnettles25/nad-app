@@ -10,41 +10,88 @@
         <p>Please enter the Test ID from your NAD+ test kit</p>
     </div>
     
-    <form id="verification-form" class="nad-form">
-        <div class="form-group">
-            <label for="test-id">Test ID</label>
-            <input 
-                type="text" 
-                id="test-id" 
-                name="testId" 
-                placeholder="2025-07-15-12345" 
-                pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{5}"
-                required
-                autocomplete="off"
-                class="form-control"
-            >
-            <div class="form-hint">Format: YYYY-MM-DD-NNNNN (e.g., 2025-07-15-12345)</div>
+    <div class="verification-content">
+        <div class="form-column">
+            <form id="verification-form" class="nad-form">
+                <div class="form-group">
+                    <label for="test-id">Test ID</label>
+                    <input 
+                        type="text" 
+                        id="test-id" 
+                        name="testId" 
+                        placeholder="2025-07-15-12345" 
+                        pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{5}"
+                        required
+                        autocomplete="off"
+                        class="form-control"
+                    >
+                    <div class="form-hint">Format: YYYY-MM-DD-NNNNN (e.g., 2025-07-15-12345)</div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" data-action="verify-test">
+                        Verify Test
+                    </button>
+                </div>
+            </form>
         </div>
         
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary" data-action="verify-test">
-                Verify Test
-            </button>
+        <div class="help-column">
+            <div class="help-section">
+                <h3>Where to find your Test ID?</h3>
+                <div class="help-content">
+                    <div class="help-item">
+                        <span class="help-icon">📦</span>
+                        <div>
+                            <strong>Test Kit Label</strong>
+                            <p>Your Test ID is printed on the label of your test kit package.</p>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <span class="help-icon">📧</span>
+                        <div>
+                            <strong>Confirmation Email</strong>
+                            <p>Check your email confirmation for the Test ID when you purchased your kit.</p>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <span class="help-icon">📋</span>
+                        <div>
+                            <strong>Instructions Card</strong>
+                            <p>Look for the Test ID on the instructions card inside your kit.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="support-link">
+                    <p>Can't find your Test ID? <a href="#" data-action="show-help">Contact Support</a></p>
+                </div>
+            </div>
         </div>
-    </form>
-    
-    <div class="help-section">
-        <h3>Where to find your Test ID?</h3>
-        <p>Your Test ID is printed on the label of your test kit and in your confirmation email.</p>
-        <p>If you can't find your Test ID, please <a href="#" data-action="show-help">contact support</a>.</p>
     </div>
 </div>
 
 <style>
 .verification-section {
-    max-width: 500px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 40px 20px;
+}
+
+.verification-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+}
+
+.form-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.help-column {
+    display: flex;
+    flex-direction: column;
 }
 
 .user-greeting {
@@ -140,16 +187,80 @@
 }
 
 .help-section {
-    margin-top: 40px;
     padding: 20px;
     background: #f8f9fa;
     border-radius: 8px;
-    text-align: center;
+    height: fit-content;
 }
 
 .help-section h3 {
     color: #555;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.help-content {
+    margin-bottom: 20px;
+}
+
+.help-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.help-item:last-child {
+    margin-bottom: 0;
+}
+
+.help-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.help-item strong {
+    color: #333;
+    font-size: 16px;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.help-item p {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.support-link {
+    text-align: center;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+.support-link p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.support-link a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.support-link a:hover {
+    text-decoration: underline;
 }
 
 .message {
@@ -176,5 +287,26 @@
     background: #d1ecf1;
     color: #0c5460;
     border: 1px solid #bee5eb;
+}
+
+@media (max-width: 768px) {
+    .verification-content {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+    
+    .verification-section {
+        padding: 20px 15px;
+    }
+    
+    .help-item {
+        gap: 10px;
+    }
+    
+    .help-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 20px;
+    }
 }
 </style>
