@@ -1465,14 +1465,23 @@ app.get('/api/reports/summary', async (req, res) => {
 
 app.get('/api/admin/printable-batches', async (req, res) => {
     try {
-        // For now, return mock data or empty array
-        // TODO: Implement actual batch retrieval from database
-        const batches = [];
+        // Fetch batches from the nad_test_batches table
+        const [batches] = await db.execute(`
+            SELECT 
+                batch_id,
+                batch_size,
+                tests_created,
+                sample_test_ids,
+                notes,
+                created_date,
+                created_by
+            FROM nad_test_batches
+            ORDER BY created_date DESC
+        `);
         
         res.json({
             success: true,
-            data: batches,
-            message: 'Batch printing functionality coming soon'
+            data: batches
         });
     } catch (error) {
         console.error('Error fetching printable batches:', error);
