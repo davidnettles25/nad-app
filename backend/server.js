@@ -1465,35 +1465,40 @@ app.get('/api/reports/summary', async (req, res) => {
 
 app.get('/api/admin/printable-batches', async (req, res) => {
     try {
-        // Group all tests into batches of 10 for printing
-        const [allTests] = await db.execute(`
-            SELECT test_id, created_date
+        // Group tests by their actual batch_id
+        const [batches] = await db.execute(`
+            SELECT 
+                batch_id,
+                COUNT(*) as test_count,
+                MIN(created_date) as created_date,
+                GROUP_CONCAT(test_id ORDER BY test_id SEPARATOR ', ') as all_test_ids,
+                SUM(CASE WHEN is_activated = 1 THEN 1 ELSE 0 END) as activated_count,
+                SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) as printed_count
             FROM nad_test_ids
-            ORDER BY created_date DESC
+            WHERE batch_id IS NOT NULL
+            GROUP BY batch_id
+            ORDER BY MIN(created_date) DESC
         `);
         
-        // Create batches of 10 tests each
-        const batchSize = 10;
-        const batches = [];
-        
-        for (let i = 0; i < allTests.length; i += batchSize) {
-            const batchTests = allTests.slice(i, i + batchSize);
-            const batchNumber = Math.floor(i / batchSize) + 1;
-            
-            batches.push({
-                batch_id: `BATCH-${batchNumber.toString().padStart(3, '0')}`,
-                batch_size: batchTests.length,
-                tests_created: batchTests.length,
-                sample_test_ids: batchTests.slice(0, 3).map(t => t.test_id).join(', '),
-                notes: `Batch ${batchNumber} - Tests ${i + 1} to ${Math.min(i + batchSize, allTests.length)}`,
-                created_date: batchTests[0].created_date,
-                test_ids: batchTests.map(t => t.test_id)
-            });
-        }
+        // Format the batches
+        const formattedBatches = batches.map(batch => {
+            const testIds = batch.all_test_ids.split(', ');
+            return {
+                batch_id: batch.batch_id,
+                batch_size: batch.test_count,
+                tests_created: batch.test_count,
+                sample_test_ids: testIds.slice(0, 3).join(', '),
+                notes: `${batch.test_count} tests - ${batch.activated_count} activated, ${batch.printed_count} printed`,
+                created_date: batch.created_date,
+                test_ids: testIds,
+                activated_count: batch.activated_count,
+                printed_count: batch.printed_count
+            };
+        });
         
         res.json({
             success: true,
-            data: batches
+            data: formattedBatches
         });
     } catch (error) {
         console.error('Error fetching printable batches:', error);
@@ -1509,17 +1514,13 @@ app.get('/api/admin/batch-details/:batchId', async (req, res) => {
     try {
         const { batchId } = req.params;
         
-        // Extract batch number from ID
-        const batchNumber = parseInt(batchId.replace('BATCH-', ''));
-        const batchSize = 10;
-        const offset = (batchNumber - 1) * batchSize;
-        
+        // Get all tests for this batch
         const [tests] = await db.execute(`
-            SELECT test_id, created_date, is_activated
+            SELECT test_id, created_date, is_activated, is_printed
             FROM nad_test_ids
-            ORDER BY created_date DESC
-            LIMIT ? OFFSET ?
-        `, [batchSize, offset]);
+            WHERE batch_id = ?
+            ORDER BY test_id
+        `, [batchId]);
         
         res.json({
             success: true,
