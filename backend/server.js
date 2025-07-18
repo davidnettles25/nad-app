@@ -914,17 +914,13 @@ console.log('✅ Supplement CRUD endpoints loaded (GET, POST, PUT, DELETE)');
 
 app.get('/api/lab/pending-tests', async (req, res) => {
     try {
+        // Much simpler query - just get activated tests, frontend can handle filtering
         const [tests] = await db.execute(`
-            SELECT 
-                ti.id, ti.test_id, ti.batch_id, ti.activated_date, ti.created_date
-            FROM nad_test_ids ti
-            WHERE ti.is_activated = 1 
-            AND NOT EXISTS (
-                SELECT 1 FROM nad_test_scores ts 
-                WHERE ts.test_id = ti.test_id AND ts.score IS NOT NULL
-            )
-            ORDER BY ti.activated_date ASC
-            LIMIT 50
+            SELECT id, test_id, batch_id, activated_date 
+            FROM nad_test_ids 
+            WHERE is_activated = 1 
+            ORDER BY activated_date ASC 
+            LIMIT 20
         `);
         res.json({ success: true, tests: tests });
     } catch (error) {
