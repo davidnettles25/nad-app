@@ -62,17 +62,23 @@
     color: #fff;
 }
 
-/* Main Grid Layout */
-.main-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+/* Main Content Layout */
+.main-content {
+    display: flex;
+    flex-direction: column;
     gap: 30px;
-    margin-bottom: 30px;
+}
+
+#queue-container {
+    flex: 1;
+}
+
+#recent-container {
+    flex: 1;
 }
 
 /* Section Styles */
 .test-queue-section,
-.submission-section,
 .recent-tests-section {
     background: white;
     border-radius: 10px;
@@ -290,8 +296,7 @@
         justify-content: center;
     }
     
-    .main-grid {
-        grid-template-columns: 1fr;
+    .main-content {
         gap: 20px;
     }
     
@@ -304,9 +309,5 @@
         flex-direction: column;
         align-items: stretch;
         gap: 15px;
-    }
-    
-    .form-actions {
-        flex-direction: column;
     }
 }

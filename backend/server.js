@@ -1025,15 +1025,20 @@ app.post('/api/lab/submit-results', async (req, res) => {
     }
 });
 
-app.post('/api/lab/process-test/:testId', async (req, res) => {
+app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (req, res) => {
     try {
         const { testId } = req.params;
+        const { nadScore, technicianId, labNotes } = req.body;
         
         if (!testId) {
             return res.status(400).json({ success: false, message: 'Test ID is required' });
         }
         
-        console.log('Processing test:', testId);
+        if (!nadScore || nadScore < 0 || nadScore > 100) {
+            return res.status(400).json({ success: false, message: 'Valid NAD+ score (0-100) is required' });
+        }
+        
+        console.log('Processing test:', testId, 'with score:', nadScore);
         
         // Start a transaction to update both tables
         const connection = await db.getConnection();
@@ -1058,23 +1063,38 @@ app.post('/api/lab/process-test/:testId', async (req, res) => {
                 WHERE test_id = ?
             `, [testId]);
             
+            // Prepare file path if file was uploaded
+            const filePath = req.file ? `/uploads/${req.file.filename}` : null;
+            
             // Insert score into nad_test_scores
             await connection.execute(`
                 INSERT INTO nad_test_scores (
                     test_id, score, order_id, customer_id, activated_by, 
                     technician_id, status, score_submission_date, 
-                    created_date, updated_date, notes
+                    created_date, updated_date, notes, image
                 )
-                VALUES (?, ?, 0, 0, 'lab-interface', 'lab-tech', 'completed', CURDATE(), CURDATE(), CURDATE(), ?)
+                VALUES (?, ?, 0, 0, 'lab-interface', ?, 'completed', CURDATE(), CURDATE(), CURDATE(), ?, ?)
                 ON DUPLICATE KEY UPDATE
                     score = VALUES(score),
+                    technician_id = VALUES(technician_id),
                     score_submission_date = VALUES(score_submission_date),
                     updated_date = VALUES(updated_date),
-                    status = VALUES(status)
-            `, [testId, 75.5, 'Processed via lab interface']);
+                    status = VALUES(status),
+                    notes = VALUES(notes),
+                    image = VALUES(image)
+            `, [testId, parseFloat(nadScore), technicianId || 'lab-tech', labNotes || null, filePath]);
             
             await connection.commit();
-            res.json({ success: true, message: 'Test processed successfully' });
+            res.json({ 
+                success: true, 
+                message: 'Test processed successfully',
+                data: {
+                    testId,
+                    score: nadScore,
+                    technician: technicianId,
+                    filePath
+                }
+            });
             
         } catch (error) {
             await connection.rollback();

@@ -15,11 +15,11 @@ window.NADLab = {
             // Load test queue
             await this.loadComponent('test-queue', '#queue-container');
             
-            // Load submission form
-            await this.loadComponent('submission-form', '#submission-container');
-            
             // Load recent tests
             await this.loadComponent('recent-tests', '#recent-container');
+            
+            // Load process modal
+            await this.loadComponent('process-test-modal', '#modal-container');
             
             // Load pending tests once all components are loaded
             setTimeout(() => {
@@ -98,6 +98,9 @@ window.NADLab = {
         const container = document.getElementById('pending-tests-list');
         if (!container) return;
         
+        // Store tests data for modal access
+        this.currentTests = tests;
+        
         if (tests.length === 0) {
             container.innerHTML = '<p class="no-tests">No pending tests</p>';
             return;
@@ -115,7 +118,7 @@ window.NADLab = {
                         <p>Activated: ${new Date(test.activated_date).toLocaleDateString()}</p>
                     </div>
                     <div class="test-actions">
-                        <button class="btn btn-primary" onclick="NADLab.processTest('${test.test_id}')">
+                        <button class="btn btn-primary" onclick="NADLab.openProcessModal('${test.test_id}')">
                             Process Test
                         </button>
                     </div>
@@ -126,27 +129,59 @@ window.NADLab = {
         container.innerHTML = testsHtml;
     },
     
-    async processTest(testId) {
+    openProcessModal(testId) {
+        // Find the test data
+        const testData = this.currentTests.find(test => test.test_id === testId);
+        if (!testData) {
+            alert('Test data not found. Please refresh and try again.');
+            return;
+        }
+        
+        // Store current test data
+        this.currentProcessingTest = testData;
+        
+        // Populate modal with test information
+        document.getElementById('modal-test-id').textContent = testData.test_id;
+        document.getElementById('modal-batch-id').textContent = testData.batch_id ? 
+            testData.batch_id.split('-').pop() : 'N/A';
+        document.getElementById('modal-activated-date').textContent = 
+            new Date(testData.activated_date).toLocaleDateString();
+        
+        // Reset form
+        document.getElementById('process-test-form').reset();
+        document.getElementById('modal-error-message').style.display = 'none';
+        
+        // Show modal
+        document.getElementById('process-test-modal').style.display = 'block';
+    },
+    
+    closeProcessModal() {
+        document.getElementById('process-test-modal').style.display = 'none';
+        this.currentProcessingTest = null;
+    },
+    
+    async processTest(formData) {
         try {
-            const response = await fetch(`/api/lab/process-test/${testId}`, {
+            const response = await fetch(`/api/lab/process-test/${this.currentProcessingTest.test_id}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                body: formData  // Send as FormData for file upload support
             });
             
             const data = await response.json();
             
             if (data.success) {
-                alert('Test processed successfully!');
-                this.loadPendingTests(); // Refresh the list
-                this.loadStats(); // Refresh stats
+                this.closeProcessModal();
+                await this.loadPendingTests(); // Refresh the list
+                await this.loadStats(); // Refresh stats
+                
+                // Show success message
+                this.showSuccessMessage('Test processed successfully!');
             } else {
-                alert('Error processing test: ' + data.message);
+                throw new Error(data.message || 'Processing failed');
             }
         } catch (error) {
             console.error('Error processing test:', error);
-            alert('Error processing test. Please try again.');
+            this.showModalError(error.message || 'Error processing test. Please try again.');
         }
     },
     
@@ -160,6 +195,83 @@ window.NADLab = {
         setInterval(() => {
             this.loadPendingTests();
         }, 60000);
+        
+        // Modal form submission handler
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const form = document.getElementById('process-test-form');
+                if (form) {
+                    form.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handleProcessFormSubmit();
+                    });
+                }
+                
+                // Close modal when clicking outside
+                window.addEventListener('click', (e) => {
+                    const modal = document.getElementById('process-test-modal');
+                    if (e.target === modal) {
+                        this.closeProcessModal();
+                    }
+                });
+            }, 1000);
+        });
+    },
+    
+    handleProcessFormSubmit() {
+        const form = document.getElementById('process-test-form');
+        const formData = new FormData(form);
+        
+        // Validate required fields
+        const nadScore = formData.get('nadScore');
+        if (!nadScore || nadScore < 0 || nadScore > 100) {
+            this.showModalError('Please enter a valid NAD+ score between 0 and 100.');
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = document.getElementById('submit-process-btn');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Processing...';
+        submitBtn.disabled = true;
+        
+        // Process the test
+        this.processTest(formData).finally(() => {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        });
+    },
+    
+    showModalError(message) {
+        const errorDiv = document.getElementById('modal-error-message');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    },
+    
+    showSuccessMessage(message) {
+        // Create a temporary success message
+        const successDiv = document.createElement('div');
+        successDiv.className = 'success-message';
+        successDiv.textContent = message;
+        successDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            border-radius: 6px;
+            padding: 15px;
+            z-index: 1001;
+            animation: slideInRight 0.3s ease;
+        `;
+        
+        document.body.appendChild(successDiv);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            successDiv.remove();
+        }, 3000);
     },
     
     showError(message) {
