@@ -150,7 +150,7 @@ window.NADCustomer = {
             if (error.message.includes('not found')) {
                 errorMessage = 'Test ID not found. Please check your Test ID and try again.';
             } else if (error.message.includes('already activated')) {
-                errorMessage = 'This Test ID has already been activated.';
+                errorMessage = 'This Test ID has already been activated. Please use a different test ID.';
             }
             
             this.showMessage(errorMessage, 'error');
@@ -185,21 +185,30 @@ window.NADCustomer = {
     },
     
     initSupplementHandlers() {
+        console.log('initSupplementHandlers called, testData:', this.testData);
+        
         // Display test ID
         const testIdDisplay = document.getElementById('test-id-display');
-        if (testIdDisplay && this.testData.testId) {
-            testIdDisplay.textContent = this.testData.testId;
+        if (testIdDisplay) {
+            const testId = this.testData.testId || this.testData.test_id;
+            testIdDisplay.textContent = testId || 'Unknown';
+            console.log('Setting test ID display:', testId);
         }
         
         // Update status display
         const statusDisplay = document.querySelector('.status-activated');
-        if (statusDisplay && !this.testData.activated) {
-            statusDisplay.textContent = '✅ Verified (Pending Activation)';
-            statusDisplay.className = 'status-verified';
+        if (statusDisplay) {
+            if (!this.testData.activated) {
+                statusDisplay.textContent = '✅ Verified (Pending Activation)';
+                statusDisplay.className = 'status-verified';
+            } else {
+                statusDisplay.textContent = '✅ Activated';
+                statusDisplay.className = 'status-activated';
+            }
         }
         
-        // Load supplements
-        this.loadSupplements();
+        // Load supplements (use mock data immediately for now)
+        this.renderMockSupplements();
         
         // Handle form submission
         const form = document.getElementById('supplement-form');
@@ -286,7 +295,7 @@ window.NADCustomer = {
     
     async loadSupplements() {
         try {
-            const response = await fetch('/api/supplements');
+            const response = await fetch('https://mynadtest.info/api/supplements');
             const data = await response.json();
             
             if (data.success && data.supplements) {
