@@ -658,15 +658,6 @@
                     </div>
                 </div>
 
-                <!-- Recent Batches Section -->
-                <div class="batch-history-section">
-                    <h3>📋 Recent Test Batches</h3>
-                    <div id="batch-list">
-                        <div style="text-align: center; padding: 20px;">
-                            <div>Loading batches...</div>
-                        </div>
-                    </div>
-                </div>
 
             </div>
 
@@ -946,7 +937,7 @@
         
                                 // Refresh data
                                 loadTestsFromAPI();
-                                loadAllBatches();
+                                // Batch loading removed - use Batch Printing navigation
                             } else {
                                 showAlert('❌ Error: ' + (result.message || 'Failed to create test batch'), 'error');
                             }
@@ -1183,63 +1174,7 @@
             });
         }
 
-        // Render batch list
-        function renderBatchList(batches) {
-            const batchList = document.getElementById('batch-list');
-            if (!batchList) {return;}
-        
-            if (batches.length === 0) {
-                batchList.innerHTML = `
-                    <div style="text-align: center; padding: 40px;">
-                        <h4>📦 No Test Batches Found</h4>
-                        <p>Create your first batch using the form above.</p>
-                    </div>
-                `;
-                return;
-            }
-        
-            batchList.innerHTML = '';
-            batches.forEach(batch => {
-                const batchDiv = document.createElement('div');
-                batchDiv.className = 'batch-item';
-        
-                const batchIdShort = batch.batch_id ? batch.batch_id.split('-').pop() : 'Unknown';
-                const createdDate = new Date(batch.created_date).toLocaleDateString();
-        
-                batchDiv.innerHTML = `
-                    <div class="batch-info">
-                        <h4>Batch ${batchIdShort}</h4>
-                        <p>Created: ${createdDate}</p>
-                        <p>Sample IDs: ${batch.sample_test_ids || 'N/A'}</p>
-                        ${batch.notes && batch.notes.trim() ? `
-                            <div class="batch-notes">
-                                <small><strong>Notes:</strong> ${batch.notes}</small>
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div class="badge" style="padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #d4edda; color: #155724;">${batch.tests_created} Tests</div>
-                    <div>Requested: ${batch.batch_size}</div>
-                    <div>${batch.tests_created === batch.batch_size ? '✅ Complete' : '⚠️ Partial'}</div>
-                    <button class="view-btn" onclick="viewBatch('${batch.batch_id}')">View Details</button>
-                `;
-        
-                batchList.appendChild(batchDiv);
-            });
-        }
-
-        // Show batches error
-        function showBatchesError(errorMessage) {
-            const batchList = document.getElementById('batch-list');
-            if (!batchList) {return;}
-        
-            batchList.innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <h4 style="color: #dc3545;">⚠️ Error Loading Batches</h4>
-                    <p>${errorMessage}</p>
-                    <button class="btn btn-primary" onclick="loadAllBatches()">🔄 Try Again</button>
-                </div>
-            `;
-        }
+        // Batch list functions removed - using Batch Printing navigation instead
 
         // Update test statistics
         function updateTestStats() {
@@ -1595,7 +1530,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                         console.log('🔄 Auto-loading tests');
                         initTestManagement();
                         loadTestsFromAPI();
-                        loadAllBatches();
+                        // Batch loading removed - use Batch Printing navigation
                         break;
                     case 'batch-printing':
                         console.log('🔄 Auto-loading batch printing...');
@@ -1691,7 +1626,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 case 'tests':
                     initTestManagement();
                     loadTestsFromAPI();
-                    loadAllBatches();
+                    // Batch loading removed - use Batch Printing navigation
                     break;
                 case 'supplements':
                     loadSupplements();
@@ -1905,7 +1840,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to completely remove duplicate test elements outside #tests section
     function removeDuplicateTestManagement() {
         // Find ALL test management elements
-        const testElements = document.querySelectorAll('.tests-controls-section, .bulk-creation-section, .test-stats-section, .batch-history-section');
+        const testElements = document.querySelectorAll('.tests-controls-section, .bulk-creation-section, .test-stats-section');
         
         testElements.forEach(el => {
             // If this element is NOT inside the main #tests section, remove it completely
@@ -1916,7 +1851,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Also hide any test elements that exist but shouldn't be visible
-        const testsInSection = document.querySelectorAll('#tests .tests-controls-section, #tests .bulk-creation-section, #tests .test-stats-section, #tests .batch-history-section');
+        const testsInSection = document.querySelectorAll('#tests .tests-controls-section, #tests .bulk-creation-section, #tests .test-stats-section');
         testsInSection.forEach(el => {
             if (!document.querySelector('#tests.content-section.active')) {
                 el.style.display = 'none';
