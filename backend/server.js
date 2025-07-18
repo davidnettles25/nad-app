@@ -1597,6 +1597,121 @@ app.get('/api/admin/print-history', async (req, res) => {
     }
 });
 
+app.post('/api/admin/print-batch', async (req, res) => {
+    try {
+        const { batch_id, print_format, printer_name, notes } = req.body;
+        
+        if (!batch_id) {
+            return res.status(400).json({
+                success: false,
+                error: 'Batch ID is required'
+            });
+        }
+        
+        if (!print_format) {
+            return res.status(400).json({
+                success: false,
+                error: 'Print format is required'
+            });
+        }
+        
+        // Get all tests for this batch
+        const [tests] = await db.execute(`
+            SELECT test_id, is_printed
+            FROM nad_test_ids
+            WHERE batch_id = ?
+            ORDER BY test_id
+        `, [batch_id]);
+        
+        if (tests.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Batch not found or has no tests'
+            });
+        }
+        
+        // Generate print job ID
+        const printJobId = `PJ-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Create print data based on format
+        let printData = {};
+        const batchShortId = batch_id.split('-').pop();
+        
+        switch (print_format) {
+            case 'individual_labels':
+                printData = {
+                    print_format: 'individual_labels',
+                    batch_id: batch_id,
+                    labels: tests.map(test => ({
+                        test_id: test.test_id,
+                        batch_short_id: batchShortId
+                    }))
+                };
+                break;
+                
+            case 'batch_summary':
+                printData = {
+                    print_format: 'batch_summary',
+                    batch_id: batch_id,
+                    summary_title: `Batch Summary - ${batchShortId}`,
+                    test_count: tests.length,
+                    test_ids: tests.map(t => t.test_id)
+                };
+                break;
+                
+            case 'shipping_list':
+                printData = {
+                    print_format: 'shipping_list',
+                    batch_id: batch_id,
+                    checklist_title: `Shipping Checklist - ${batchShortId}`,
+                    total_items: tests.length,
+                    items: tests.map(test => ({
+                        test_id: test.test_id,
+                        is_printed: test.is_printed
+                    }))
+                };
+                break;
+                
+            default:
+                return res.status(400).json({
+                    success: false,
+                    error: 'Invalid print format'
+                });
+        }
+        
+        // Mark tests as printed (simulate printing)
+        await db.execute(`
+            UPDATE nad_test_ids 
+            SET is_printed = 1, printed_date = NOW()
+            WHERE batch_id = ?
+        `, [batch_id]);
+        
+        // Return success response
+        res.json({
+            success: true,
+            message: 'Print job created successfully',
+            data: {
+                print_job_id: printJobId,
+                batch_id: batch_id,
+                print_format: print_format,
+                printer_name: printer_name || 'default',
+                test_count: tests.length,
+                notes: notes,
+                print_data: printData,
+                created_at: new Date().toISOString()
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error creating print job:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create print job',
+            details: error.message
+        });
+    }
+});
+
 app.post('/api/batch/activate-tests', async (req, res) => {
     try {
         const { customer_ids, test_ids } = req.body;
