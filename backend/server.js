@@ -999,20 +999,32 @@ app.post('/api/lab/process-test/:testId', async (req, res) => {
     try {
         const { testId } = req.params;
         
+        if (!testId) {
+            return res.status(400).json({ success: false, message: 'Test ID is required' });
+        }
+        
+        console.log('Processing test:', testId);
+        
         // For now, just mark as processed with a placeholder score
         // In a real implementation, this would involve actual lab processing
         await db.execute(`
-            INSERT INTO nad_test_scores (test_id, score, technician_id, score_submission_date, notes)
-            VALUES (?, 75.5, 'lab-tech', NOW(), 'Processed via lab interface')
+            INSERT INTO nad_test_scores (
+                test_id, score, order_id, customer_id, activated_by, 
+                technician_id, status, score_submission_date, 
+                created_date, updated_date, notes
+            )
+            VALUES (?, ?, 0, 0, 'lab-interface', 'lab-tech', 'completed', CURDATE(), CURDATE(), CURDATE(), ?)
             ON DUPLICATE KEY UPDATE
             score = VALUES(score),
-            score_submission_date = VALUES(score_submission_date)
-        `, [testId]);
+            score_submission_date = VALUES(score_submission_date),
+            updated_date = VALUES(updated_date),
+            status = VALUES(status)
+        `, [testId, 75.5, 'Processed via lab interface']);
         
         res.json({ success: true, message: 'Test processed successfully' });
     } catch (error) {
         console.error('Error processing test:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: error.message || 'Failed to process test' });
     }
 });
 
