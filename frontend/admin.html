@@ -997,13 +997,13 @@
                 const response = await fetch(`${API_BASE}/api/admin/tests`);
                 const result = await response.json();
         
-                if (result.success && result.data) {
-                    window.allTests = result.data;
-                    window.filteredTests = [...result.data]; // Create filtered copy
+                if (result.success && result.tests) {
+                    window.allTests = result.tests;
+                    window.filteredTests = [...result.tests]; // Create filtered copy
                     renderTestsTable(window.filteredTests);
                     updateTestStats();
                     setupSearchAndFilter(); // Set up search/filter after loading
-                    showAlert(`✅ Loaded ${result.data.length} tests`, 'success');
+                    showAlert(`✅ Loaded ${result.tests.length} tests`, 'success');
                 } else {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">No tests found</td></tr>';
                 }
