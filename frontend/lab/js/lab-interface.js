@@ -21,6 +21,11 @@ window.NADLab = {
             // Load recent tests
             await this.loadComponent('recent-tests', '#recent-container');
             
+            // Load pending tests once all components are loaded
+            setTimeout(() => {
+                this.loadPendingTests();
+            }, 500);
+            
         } catch (error) {
             console.error('Error loading components:', error);
             this.showError('Failed to load lab interface components');
