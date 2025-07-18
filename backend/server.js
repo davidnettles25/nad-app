@@ -1483,16 +1483,29 @@ app.get('/api/admin/printable-batches', async (req, res) => {
         // Format the batches
         const formattedBatches = batches.map(batch => {
             const testIds = batch.all_test_ids.split(', ');
+            const printedCount = batch.printed_count || 0;
+            const totalTests = batch.test_count;
+            
+            // Determine print status
+            let printStatus = 'not_printed';
+            if (printedCount > 0) {
+                printStatus = printedCount === totalTests ? 'fully_printed' : 'partially_printed';
+            }
+            
             return {
                 batch_id: batch.batch_id,
                 batch_size: batch.test_count,
-                tests_created: batch.test_count,
+                total_tests: totalTests,
+                printed_tests: printedCount,
+                print_status: printStatus,
+                print_percentage: totalTests > 0 ? Math.round((printedCount / totalTests) * 100) : 0,
                 sample_test_ids: testIds.slice(0, 3).join(', '),
-                notes: `${batch.test_count} tests - ${batch.activated_count} activated, ${batch.printed_count} printed`,
+                batch_notes: `${batch.test_count} tests - ${batch.activated_count} activated, ${batch.printed_count} printed`,
                 created_date: batch.created_date,
                 test_ids: testIds,
                 activated_count: batch.activated_count,
-                printed_count: batch.printed_count
+                printed_count: batch.printed_count,
+                last_printed_date: null // Will be null for now, can be enhanced later
             };
         });
         
@@ -1522,12 +1535,40 @@ app.get('/api/admin/batch-details/:batchId', async (req, res) => {
             ORDER BY test_id
         `, [batchId]);
         
+        // Calculate batch statistics
+        const totalTests = tests.length;
+        const printedTests = tests.filter(t => t.is_printed).length;
+        const activatedTests = tests.filter(t => t.is_activated).length;
+        const printPercentage = totalTests > 0 ? Math.round((printedTests / totalTests) * 100) : 0;
+        
+        // Determine print status
+        let printStatus = 'not_printed';
+        if (printedTests > 0) {
+            printStatus = printedTests === totalTests ? 'fully_printed' : 'partially_printed';
+        }
+
         res.json({
             success: true,
             data: {
-                batch_id: batchId,
-                tests: tests,
-                total_tests: tests.length
+                batch_info: {
+                    batch_id: batchId,
+                    total_tests: totalTests,
+                    printed_tests: printedTests,
+                    activated_tests: activatedTests,
+                    print_status: printStatus,
+                    print_percentage: printPercentage,
+                    batch_size: totalTests,
+                    created_date: tests.length > 0 ? tests[0].created_date : null,
+                    last_printed_date: null, // Will be null for now
+                    batch_notes: `${totalTests} tests - ${activatedTests} activated, ${printedTests} printed`
+                },
+                test_ids: tests.map(test => ({
+                    test_id: test.test_id,
+                    is_printed: test.is_printed,
+                    is_activated: test.is_activated,
+                    created_date: test.created_date
+                })),
+                print_history: [] // Empty for now
             }
         });
     } catch (error) {
