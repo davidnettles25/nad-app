@@ -1463,6 +1463,26 @@ app.get('/api/reports/summary', async (req, res) => {
 // BATCH OPERATIONS ENDPOINTS
 // ============================================================================
 
+app.get('/api/admin/printable-batches', async (req, res) => {
+    try {
+        // For now, return mock data or empty array
+        // TODO: Implement actual batch retrieval from database
+        const batches = [];
+        
+        res.json({
+            success: true,
+            data: batches,
+            message: 'Batch printing functionality coming soon'
+        });
+    } catch (error) {
+        console.error('Error fetching printable batches:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch printable batches' 
+        });
+    }
+});
+
 app.post('/api/batch/activate-tests', async (req, res) => {
     try {
         const { customer_ids, test_ids } = req.body;
