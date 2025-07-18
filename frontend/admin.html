@@ -994,7 +994,7 @@
             tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Loading tests...</td></tr>';
         
             try {
-                const response = await fetch(`${API_BASE}/api/tests`);
+                const response = await fetch(`${API_BASE}/api/admin/tests`);
                 const result = await response.json();
         
                 if (result.success && result.data) {
@@ -1117,6 +1117,10 @@
         // Load all batches from API
         async function loadAllBatches() {
             console.log('📊 Loading all batches...');
+            
+            // TODO: Implement batch loading when endpoint is available
+            console.log('⚠️ Batch loading not yet implemented');
+            return;
         
             try {
                 const response = await fetch(`${API_BASE}/api/admin/test-batches`);
