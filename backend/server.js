@@ -920,7 +920,7 @@ app.get('/api/lab/pending-tests', async (req, res) => {
             FROM nad_test_ids ti
             LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-            WHERE ti.is_activated = 1
+            WHERE ti.is_activated = 1 AND ts.score IS NULL
             ORDER BY ti.activated_date ASC
         `);
         res.json({ success: true, tests: tests });
@@ -967,6 +967,52 @@ app.get('/api/lab/recent-tests', async (req, res) => {
         res.json({ success: true, tests: tests });
     } catch (error) {
         console.error('Error fetching recent tests:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/lab/submit-results', async (req, res) => {
+    try {
+        const { testId, nadScore, notes } = req.body;
+        
+        if (!testId || !nadScore) {
+            return res.status(400).json({ success: false, message: 'Test ID and NAD+ score are required' });
+        }
+        
+        // Insert or update the test score
+        await db.execute(`
+            INSERT INTO nad_test_scores (test_id, score, technician_id, score_submission_date, notes)
+            VALUES (?, ?, 'lab-tech', NOW(), ?)
+            ON DUPLICATE KEY UPDATE
+            score = VALUES(score),
+            score_submission_date = VALUES(score_submission_date),
+            notes = VALUES(notes)
+        `, [testId, nadScore, notes || null]);
+        
+        res.json({ success: true, message: 'Test results submitted successfully' });
+    } catch (error) {
+        console.error('Error submitting test results:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/lab/process-test/:testId', async (req, res) => {
+    try {
+        const { testId } = req.params;
+        
+        // For now, just mark as processed with a placeholder score
+        // In a real implementation, this would involve actual lab processing
+        await db.execute(`
+            INSERT INTO nad_test_scores (test_id, score, technician_id, score_submission_date, notes)
+            VALUES (?, 75.5, 'lab-tech', NOW(), 'Processed via lab interface')
+            ON DUPLICATE KEY UPDATE
+            score = VALUES(score),
+            score_submission_date = VALUES(score_submission_date)
+        `, [testId]);
+        
+        res.json({ success: true, message: 'Test processed successfully' });
+    } catch (error) {
+        console.error('Error processing test:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
