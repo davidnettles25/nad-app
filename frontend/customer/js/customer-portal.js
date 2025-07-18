@@ -185,9 +185,85 @@ window.NADCustomer = {
     },
     
     initSupplementHandlers() {
-        if (window.NADSupplementHandler) {
-            window.NADSupplementHandler.init();
+        // Display test ID
+        const testIdDisplay = document.getElementById('test-id-display');
+        if (testIdDisplay && this.testData.testId) {
+            testIdDisplay.textContent = this.testData.testId;
         }
+        
+        // Load supplements
+        this.loadSupplements();
+        
+        // Handle form submission
+        const form = document.getElementById('supplement-form');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.nextStep();
+            });
+        }
+        
+        // Handle supplement selection
+        document.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox' && e.target.closest('.supplement-item')) {
+                const item = e.target.closest('.supplement-item');
+                if (e.target.checked) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            }
+        });
+    },
+    
+    async loadSupplements() {
+        try {
+            const response = await fetch('/api/supplements');
+            const data = await response.json();
+            
+            if (data.success && data.supplements) {
+                this.renderSupplements(data.supplements);
+            } else {
+                this.renderMockSupplements();
+            }
+        } catch (error) {
+            console.error('Error loading supplements:', error);
+            this.renderMockSupplements();
+        }
+    },
+    
+    renderSupplements(supplements) {
+        const grid = document.getElementById('supplement-grid');
+        if (!grid) return;
+        
+        const supplementsHtml = supplements.map(supplement => `
+            <div class="supplement-item">
+                <label>
+                    <input type="checkbox" name="supplements" value="${supplement.id}">
+                    <div>
+                        <div class="supplement-name">${supplement.name}</div>
+                        <div class="supplement-description">${supplement.description || 'Common supplement'}</div>
+                    </div>
+                </label>
+            </div>
+        `).join('');
+        
+        grid.innerHTML = supplementsHtml;
+    },
+    
+    renderMockSupplements() {
+        const mockSupplements = [
+            { id: 1, name: 'NAD+ Precursor', description: 'Nicotinamide Riboside or NMN' },
+            { id: 2, name: 'Vitamin D3', description: 'Supports cellular energy production' },
+            { id: 3, name: 'Magnesium', description: 'Essential for NAD+ synthesis' },
+            { id: 4, name: 'B-Complex', description: 'Supports energy metabolism' },
+            { id: 5, name: 'Resveratrol', description: 'Activates sirtuins' },
+            { id: 6, name: 'Omega-3', description: 'Supports cellular health' },
+            { id: 7, name: 'Coenzyme Q10', description: 'Mitochondrial support' },
+            { id: 8, name: 'Multivitamin', description: 'General nutritional support' }
+        ];
+        
+        this.renderSupplements(mockSupplements);
     },
     
     initResultsHandlers() {
