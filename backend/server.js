@@ -956,14 +956,21 @@ app.get('/api/lab/stats', async (req, res) => {
     try {
         const [stats] = await db.execute(`
             SELECT 
-                COUNT(DISTINCT CASE WHEN ti.is_activated = 1 AND ts.test_id IS NULL THEN ti.test_id END) as pending_tests,
-                COUNT(DISTINCT ts.test_id) as completed_tests,
+                COUNT(DISTINCT CASE WHEN ti.status = 'activated' THEN ti.test_id END) as pending_tests,
+                COUNT(DISTINCT CASE WHEN ti.status = 'completed' THEN ti.test_id END) as completed_tests,
                 AVG(CAST(ts.score AS DECIMAL(10,2))) as average_score,
-                COUNT(DISTINCT CASE WHEN ts.score_submission_date = CURDATE() THEN ts.test_id END) as tests_today
+                COUNT(DISTINCT CASE WHEN ti.status = 'completed' AND ti.processed_date = CURDATE() THEN ti.test_id END) as tests_today
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
         `);
-        res.json({ success: true, stats: stats[0] });
+        
+        const result = stats[0];
+        // Rename for clarity
+        result.pending = result.pending_tests;
+        result.completed_today = result.tests_today;
+        result.total_processed = result.completed_tests;
+        
+        res.json({ success: true, stats: result });
     } catch (error) {
         console.error('Error fetching lab stats:', error);
         res.status(500).json({ success: false, error: error.message });
@@ -1107,7 +1114,7 @@ app.post('/api/admin/tests/bulk-activate', async (req, res) => {
         const placeholders = test_ids.map(() => '?').join(',');
         const [result] = await db.execute(`
             UPDATE nad_test_ids 
-            SET is_activated = 1, activated_date = NOW()
+            SET status = 'activated', is_activated = 1, activated_date = NOW()
             WHERE test_id IN (${placeholders})
         `, test_ids);
         
@@ -1186,7 +1193,7 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
         console.log('📊 Updating test activation status...');
         const [updateResult] = await db.execute(`
             UPDATE nad_test_ids 
-            SET is_activated = 1, activated_date = NOW()
+            SET status = 'activated', is_activated = 1, activated_date = NOW()
             WHERE test_id = ?
         `, [testId]);
         
@@ -1303,7 +1310,7 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
         console.log('📊 Updating test deactivation status...');
         const [updateResult] = await db.execute(`
             UPDATE nad_test_ids 
-            SET is_activated = 0, activated_date = NULL
+            SET status = 'pending', is_activated = 0, activated_date = NULL
             WHERE test_id = ?
         `, [testId]);
         
@@ -1371,7 +1378,7 @@ app.post('/api/admin/tests/bulk-deactivate', async (req, res) => {
         const placeholders = test_ids.map(() => '?').join(',');
         const [result] = await db.execute(`
             UPDATE nad_test_ids 
-            SET is_activated = 0, activated_date = NULL
+            SET status = 'pending', is_activated = 0, activated_date = NULL
             WHERE test_id IN (${placeholders})
         `, test_ids);
         
