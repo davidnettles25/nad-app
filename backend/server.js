@@ -914,29 +914,15 @@ console.log('✅ Supplement CRUD endpoints loaded (GET, POST, PUT, DELETE)');
 
 app.get('/api/lab/pending-tests', async (req, res) => {
     try {
-        // Bypass database entirely for now - return mock data for immediate response
-        const mockTests = [
-            {
-                id: 69,
-                test_id: "2025-07-69-79090",
-                batch_id: "BATCH-1752630044576-pd36p7",
-                activated_date: "2025-07-18T14:02:09.000Z"
-            },
-            {
-                id: 70,
-                test_id: "2025-07-70-50018",
-                batch_id: "BATCH-1752630044576-pd36p7",
-                activated_date: "2025-07-18T14:08:37.000Z"
-            },
-            {
-                id: 71,
-                test_id: "2025-07-71-80953",
-                batch_id: "BATCH-1752630044576-pd36p7",
-                activated_date: "2025-07-18T14:13:55.000Z"
-            }
-        ];
+        // Now that we fixed the multiple API calls issue, restore real database query
+        const [tests] = await db.execute(`
+            SELECT id, test_id, batch_id, activated_date 
+            FROM nad_test_ids 
+            WHERE is_activated = 1 
+            ORDER BY activated_date ASC
+        `);
         
-        res.json({ success: true, tests: mockTests });
+        res.json({ success: true, tests: tests });
     } catch (error) {
         console.error('Error fetching pending tests:', error);
         res.status(500).json({ success: false, error: error.message });
