@@ -207,10 +207,8 @@ window.NADCustomer = {
             }
         }
         
-        // Load supplements (use mock data immediately for now)
-        setTimeout(() => {
-            this.renderMockSupplements();
-        }, 100);
+        // Load supplements from API with fallback to mock data
+        this.loadSupplements();
         
         // Handle form submission
         const form = document.getElementById('supplement-form');
@@ -221,17 +219,7 @@ window.NADCustomer = {
             });
         }
         
-        // Handle supplement selection
-        document.addEventListener('change', (e) => {
-            if (e.target.type === 'checkbox' && e.target.closest('.supplement-item')) {
-                const item = e.target.closest('.supplement-item');
-                if (e.target.checked) {
-                    item.classList.add('selected');
-                } else {
-                    item.classList.remove('selected');
-                }
-            }
-        });
+        // Supplement selection is now handled by setupSupplementCheckboxes()
     },
     
     async handleSupplementSubmission() {
@@ -242,12 +230,20 @@ window.NADCustomer = {
             button.textContent = 'Activating Test...';
             button.disabled = true;
             
-            // Collect supplement data
+            // Collect supplement data with amounts
             const selectedSupplements = Array.from(document.querySelectorAll('input[name="supplements"]:checked'))
-                .map(input => ({
-                    id: input.value,
-                    name: input.closest('.supplement-item').querySelector('.supplement-name').textContent
-                }));
+                .map(input => {
+                    const supplementItem = input.closest('.supplement-item');
+                    const amountInput = supplementItem.querySelector('.amount-input');
+                    const unitElement = supplementItem.querySelector('.amount-unit');
+                    
+                    return {
+                        id: input.value,
+                        name: supplementItem.querySelector('.supplement-name').textContent,
+                        amount: parseFloat(amountInput.value) || 0,
+                        unit: unitElement.textContent
+                    };
+                });
             
             const otherSupplements = document.getElementById('other-supplements').value;
             const healthConditions = document.getElementById('health-conditions').value;
@@ -321,36 +317,77 @@ window.NADCustomer = {
         }
         
         const supplementsHtml = supplements.map(supplement => `
-            <div class="supplement-item">
-                <label>
-                    <input type="checkbox" name="supplements" value="${supplement.id}">
-                    <div>
+            <div class="supplement-item" data-supplement-id="${supplement.id}">
+                <label class="supplement-label">
+                    <input type="checkbox" name="supplements" value="${supplement.id}" class="supplement-checkbox">
+                    <div class="supplement-info">
                         <div class="supplement-name">${supplement.name}</div>
                         <div class="supplement-description">${supplement.description || 'Common supplement'}</div>
                     </div>
                 </label>
+                <div class="supplement-amount-section" style="display: none;">
+                    <label class="amount-label">
+                        Amount taken:
+                        <div class="amount-input-group">
+                            <input type="number" 
+                                   name="supplement-amount-${supplement.id}" 
+                                   class="amount-input" 
+                                   value="${supplement.default_dose || 1}" 
+                                   min="0" 
+                                   step="0.1"
+                                   placeholder="Amount">
+                            <span class="amount-unit">${supplement.unit || 'mg'}</span>
+                        </div>
+                    </label>
+                </div>
             </div>
         `).join('');
         
         console.log('Setting grid innerHTML to:', supplementsHtml);
         grid.innerHTML = supplementsHtml;
+        
+        // Add event listeners for checkbox changes
+        this.setupSupplementCheckboxes();
     },
     
     renderMockSupplements() {
         console.log('renderMockSupplements called');
         const mockSupplements = [
-            { id: 1, name: 'NAD+ Precursor', description: 'Nicotinamide Riboside or NMN' },
-            { id: 2, name: 'Vitamin D3', description: 'Supports cellular energy production' },
-            { id: 3, name: 'Magnesium', description: 'Essential for NAD+ synthesis' },
-            { id: 4, name: 'B-Complex', description: 'Supports energy metabolism' },
-            { id: 5, name: 'Resveratrol', description: 'Activates sirtuins' },
-            { id: 6, name: 'Omega-3', description: 'Supports cellular health' },
-            { id: 7, name: 'Coenzyme Q10', description: 'Mitochondrial support' },
-            { id: 8, name: 'Multivitamin', description: 'General nutritional support' }
+            { id: 1, name: 'NAD+ Precursor', description: 'Nicotinamide Riboside or NMN', default_dose: 250, unit: 'mg' },
+            { id: 2, name: 'Vitamin D3', description: 'Supports cellular energy production', default_dose: 2000, unit: 'IU' },
+            { id: 3, name: 'Magnesium', description: 'Essential for NAD+ synthesis', default_dose: 400, unit: 'mg' },
+            { id: 4, name: 'B-Complex', description: 'Supports energy metabolism', default_dose: 1, unit: 'capsule' },
+            { id: 5, name: 'Resveratrol', description: 'Activates sirtuins', default_dose: 100, unit: 'mg' },
+            { id: 6, name: 'Omega-3', description: 'Supports cellular health', default_dose: 1000, unit: 'mg' },
+            { id: 7, name: 'Coenzyme Q10', description: 'Mitochondrial support', default_dose: 100, unit: 'mg' },
+            { id: 8, name: 'Multivitamin', description: 'General nutritional support', default_dose: 1, unit: 'tablet' }
         ];
         
         console.log('Mock supplements:', mockSupplements);
         this.renderSupplements(mockSupplements);
+    },
+    
+    setupSupplementCheckboxes() {
+        // Remove old listeners
+        document.removeEventListener('change', this.handleSupplementChange);
+        
+        // Add new listeners
+        document.addEventListener('change', this.handleSupplementChange.bind(this));
+    },
+    
+    handleSupplementChange(e) {
+        if (e.target.type === 'checkbox' && e.target.name === 'supplements') {
+            const supplementItem = e.target.closest('.supplement-item');
+            const amountSection = supplementItem.querySelector('.supplement-amount-section');
+            
+            if (e.target.checked) {
+                supplementItem.classList.add('selected');
+                amountSection.style.display = 'block';
+            } else {
+                supplementItem.classList.remove('selected');
+                amountSection.style.display = 'none';
+            }
+        }
     },
     
     initResultsHandlers() {
