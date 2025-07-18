@@ -1755,9 +1755,71 @@ app.post('/api/admin/print-batch', async (req, res) => {
 // CUSTOMER PORTAL ENDPOINTS
 // ============================================================================
 
-app.post('/api/customer/activate-test', async (req, res) => {
+app.post('/api/customer/verify-test', async (req, res) => {
     try {
         const { testId, email, firstName, lastName } = req.body;
+        
+        if (!testId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Test ID is required'
+            });
+        }
+        
+        console.log(`🔍 Customer verification attempt for test ID: ${testId}`);
+        
+        // Check if test exists
+        const [testRows] = await db.execute(`
+            SELECT test_id, is_activated, activated_date, customer_id, order_id, batch_id
+            FROM nad_test_ids 
+            WHERE test_id = ?
+        `, [testId]);
+        
+        if (testRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Test ID not found. Please verify the test ID is correct.'
+            });
+        }
+        
+        const test = testRows[0];
+        
+        if (test.is_activated) {
+            return res.status(400).json({
+                success: false,
+                error: 'This test has already been activated.',
+                activatedDate: test.activated_date
+            });
+        }
+        
+        console.log(`✅ Test ${testId} verified successfully`);
+        
+        // Return success with test data (but don't activate yet)
+        res.json({
+            success: true,
+            message: 'Test verified successfully!',
+            data: {
+                test_id: testId,
+                customer_id: test.customer_id,
+                order_id: test.order_id,
+                batch_id: test.batch_id,
+                verified_date: new Date().toISOString()
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error verifying test:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error. Please try again.',
+            details: error.message
+        });
+    }
+});
+
+app.post('/api/customer/activate-test', async (req, res) => {
+    try {
+        const { testId, email, firstName, lastName, supplements } = req.body;
         
         if (!testId) {
             return res.status(400).json({
@@ -1806,18 +1868,37 @@ app.post('/api/customer/activate-test', async (req, res) => {
             });
         }
         
+        // Store supplement data if provided
+        if (supplements) {
+            try {
+                await db.execute(`
+                    INSERT INTO nad_user_supplements (
+                        test_id, customer_id, supplement_data, created_at
+                    ) VALUES (?, ?, ?, NOW())
+                    ON DUPLICATE KEY UPDATE
+                    supplement_data = VALUES(supplement_data), updated_at = NOW()
+                `, [testId, test.customer_id, JSON.stringify(supplements)]);
+                
+                console.log(`✅ Supplement data stored for test ${testId}`);
+            } catch (supplementError) {
+                console.error('Error storing supplement data:', supplementError);
+                // Don't fail the activation if supplement storage fails
+            }
+        }
+        
         console.log(`✅ Test ${testId} activated successfully`);
         
         // Return success with test data
         res.json({
             success: true,
-            message: 'Test activated successfully!',
+            message: 'Test activated successfully with supplement information!',
             data: {
                 test_id: testId,
                 customer_id: test.customer_id,
                 order_id: test.order_id,
                 batch_id: test.batch_id,
-                activated_date: new Date().toISOString()
+                activated_date: new Date().toISOString(),
+                supplements_recorded: supplements ? true : false
             }
         });
         

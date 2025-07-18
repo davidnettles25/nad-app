@@ -113,11 +113,11 @@ window.NADCustomer = {
             // Show loading state
             const button = document.querySelector('[data-action="verify-test"]');
             const originalText = button.textContent;
-            button.textContent = 'Activating...';
+            button.textContent = 'Verifying...';
             button.disabled = true;
             
-            // Make API call to check and activate test ID
-            const response = await NAD.api.activateTest({
+            // Make API call to verify test ID (not activate yet)
+            const response = await NAD.api.verifyTest({
                 testId: testId,
                 email: this.userData.email,
                 firstName: this.userData.firstName,
@@ -125,27 +125,27 @@ window.NADCustomer = {
             });
             
             if (response.success) {
-                // Store test data
+                // Store test data (not activated yet)
                 this.testData = {
                     testId: testId,
                     email: this.userData.email,
-                    activated: true,
-                    activatedAt: new Date().toISOString(),
+                    activated: false,
+                    verifiedAt: new Date().toISOString(),
                     ...response.data
                 };
                 
-                // Move to next step
-                this.showMessage('Test activated successfully!', 'success');
+                // Move to supplement collection step
+                this.showMessage('Test ID verified! Please provide supplement information.', 'success');
                 setTimeout(() => {
                     this.nextStep();
                 }, 1500);
             } else {
-                throw new Error(response.message || 'Activation failed');
+                throw new Error(response.message || 'Verification failed');
             }
             
         } catch (error) {
-            console.error('Activation error:', error);
-            let errorMessage = 'Unable to activate Test ID.';
+            console.error('Verification error:', error);
+            let errorMessage = 'Unable to verify Test ID.';
             
             if (error.message.includes('not found')) {
                 errorMessage = 'Test ID not found. Please check your Test ID and try again.';
@@ -157,7 +157,7 @@ window.NADCustomer = {
             
             // Reset button
             const button = document.querySelector('[data-action="verify-test"]');
-            button.textContent = 'Activate Test';
+            button.textContent = 'Verify Test';
             button.disabled = false;
         }
     },
@@ -191,6 +191,13 @@ window.NADCustomer = {
             testIdDisplay.textContent = this.testData.testId;
         }
         
+        // Update status display
+        const statusDisplay = document.querySelector('.status-activated');
+        if (statusDisplay && !this.testData.activated) {
+            statusDisplay.textContent = '✅ Verified (Pending Activation)';
+            statusDisplay.className = 'status-verified';
+        }
+        
         // Load supplements
         this.loadSupplements();
         
@@ -199,7 +206,7 @@ window.NADCustomer = {
         if (form) {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                this.nextStep();
+                this.handleSupplementSubmission();
             });
         }
         
@@ -214,6 +221,67 @@ window.NADCustomer = {
                 }
             }
         });
+    },
+    
+    async handleSupplementSubmission() {
+        try {
+            // Show loading state
+            const button = document.querySelector('[data-action="next-step"]');
+            const originalText = button.textContent;
+            button.textContent = 'Activating Test...';
+            button.disabled = true;
+            
+            // Collect supplement data
+            const selectedSupplements = Array.from(document.querySelectorAll('input[name="supplements"]:checked'))
+                .map(input => ({
+                    id: input.value,
+                    name: input.closest('.supplement-item').querySelector('.supplement-name').textContent
+                }));
+            
+            const otherSupplements = document.getElementById('other-supplements').value;
+            const healthConditions = document.getElementById('health-conditions').value;
+            
+            // Prepare activation data with supplements
+            const activationData = {
+                testId: this.testData.testId,
+                email: this.userData.email,
+                firstName: this.userData.firstName,
+                lastName: this.userData.lastName,
+                supplements: {
+                    selected: selectedSupplements,
+                    other: otherSupplements,
+                    health_conditions: healthConditions,
+                    submitted_at: new Date().toISOString()
+                }
+            };
+            
+            // Make API call to activate test with supplement data
+            const response = await NAD.api.activateTest(activationData);
+            
+            if (response.success) {
+                // Update test data
+                this.testData.activated = true;
+                this.testData.activatedAt = new Date().toISOString();
+                this.testData.supplements = activationData.supplements;
+                
+                // Show success message and move to next step
+                this.showMessage('Test activated successfully with supplement information!', 'success');
+                setTimeout(() => {
+                    this.nextStep();
+                }, 1500);
+            } else {
+                throw new Error(response.message || 'Activation failed');
+            }
+            
+        } catch (error) {
+            console.error('Activation error:', error);
+            this.showMessage('Failed to activate test. Please try again.', 'error');
+            
+            // Reset button
+            const button = document.querySelector('[data-action="next-step"]');
+            button.textContent = 'Continue to Results →';
+            button.disabled = false;
+        }
     },
     
     async loadSupplements() {
