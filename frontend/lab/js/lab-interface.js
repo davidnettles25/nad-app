@@ -103,20 +103,25 @@ window.NADLab = {
             return;
         }
         
-        const testsHtml = tests.map(test => `
-            <div class="test-item" data-test-id="${test.id}">
-                <div class="test-info">
-                    <h3>${test.test_id}</h3>
-                    <p>Batch: ${test.batch_id || 'N/A'}</p>
-                    <p>Activated: ${new Date(test.activated_date).toLocaleDateString()}</p>
+        const testsHtml = tests.map(test => {
+            // Extract just the random string part from batch_id (e.g., "pd36p7" from "BATCH-1752630044576-pd36p7")
+            const batchShort = test.batch_id ? test.batch_id.split('-').pop() : 'N/A';
+            
+            return `
+                <div class="test-item" data-test-id="${test.id}">
+                    <div class="test-info">
+                        <h3>${test.test_id}</h3>
+                        <p>Batch: ${batchShort}</p>
+                        <p>Activated: ${new Date(test.activated_date).toLocaleDateString()}</p>
+                    </div>
+                    <div class="test-actions">
+                        <button class="btn btn-primary" onclick="NADLab.processTest('${test.test_id}')">
+                            Process Test
+                        </button>
+                    </div>
                 </div>
-                <div class="test-actions">
-                    <button class="btn btn-primary" onclick="NADLab.processTest('${test.test_id}')">
-                        Process Test
-                    </button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
         
         container.innerHTML = testsHtml;
     },
