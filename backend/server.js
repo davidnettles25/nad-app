@@ -1751,6 +1751,86 @@ app.post('/api/admin/print-batch', async (req, res) => {
     }
 });
 
+// ============================================================================
+// CUSTOMER PORTAL ENDPOINTS
+// ============================================================================
+
+app.post('/api/customer/activate-test', async (req, res) => {
+    try {
+        const { testId, email, firstName, lastName } = req.body;
+        
+        if (!testId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Test ID is required'
+            });
+        }
+        
+        console.log(`🔍 Customer activation attempt for test ID: ${testId}`);
+        
+        // Check if test exists and is not already activated
+        const [testRows] = await db.execute(`
+            SELECT test_id, is_activated, activated_date, customer_id, order_id, batch_id
+            FROM nad_test_ids 
+            WHERE test_id = ?
+        `, [testId]);
+        
+        if (testRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Test ID not found. Please verify the test ID is correct.'
+            });
+        }
+        
+        const test = testRows[0];
+        
+        if (test.is_activated) {
+            return res.status(400).json({
+                success: false,
+                error: 'This test has already been activated.',
+                activatedDate: test.activated_date
+            });
+        }
+        
+        // Activate the test
+        const [result] = await db.execute(`
+            UPDATE nad_test_ids 
+            SET is_activated = 1, activated_date = NOW()
+            WHERE test_id = ?
+        `, [testId]);
+        
+        if (result.affectedRows === 0) {
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to activate test. Please try again.'
+            });
+        }
+        
+        console.log(`✅ Test ${testId} activated successfully`);
+        
+        // Return success with test data
+        res.json({
+            success: true,
+            message: 'Test activated successfully!',
+            data: {
+                test_id: testId,
+                customer_id: test.customer_id,
+                order_id: test.order_id,
+                batch_id: test.batch_id,
+                activated_date: new Date().toISOString()
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error activating test:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error. Please try again.',
+            details: error.message
+        });
+    }
+});
+
 app.post('/api/batch/activate-tests', async (req, res) => {
     try {
         const { customer_ids, test_ids } = req.body;
