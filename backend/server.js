@@ -1465,38 +1465,35 @@ app.get('/api/reports/summary', async (req, res) => {
 
 app.get('/api/admin/printable-batches', async (req, res) => {
     try {
-        // For now, group tests by creation date to simulate batches
-        // Since nad_test_batches table might not exist
-        const [batches] = await db.execute(`
-            SELECT 
-                DATE(created_date) as batch_date,
-                COUNT(*) as test_count,
-                MIN(test_id) as first_test_id,
-                MAX(test_id) as last_test_id,
-                GROUP_CONCAT(test_id ORDER BY test_id LIMIT 3) as sample_test_ids
+        // Group all tests into batches of 10 for printing
+        const [allTests] = await db.execute(`
+            SELECT test_id, created_date
             FROM nad_test_ids
-            WHERE created_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            GROUP BY DATE(created_date)
-            HAVING COUNT(*) > 1
-            ORDER BY batch_date DESC
-            LIMIT 20
+            ORDER BY created_date DESC
         `);
         
-        // Transform into batch format
-        const formattedBatches = batches.map((batch, index) => ({
-            batch_id: `BATCH-${batch.batch_date}-${index + 1}`,
-            batch_size: batch.test_count,
-            tests_created: batch.test_count,
-            sample_test_ids: batch.sample_test_ids,
-            notes: `Auto-grouped batch from ${batch.batch_date}`,
-            created_date: batch.batch_date,
-            first_test_id: batch.first_test_id,
-            last_test_id: batch.last_test_id
-        }));
+        // Create batches of 10 tests each
+        const batchSize = 10;
+        const batches = [];
+        
+        for (let i = 0; i < allTests.length; i += batchSize) {
+            const batchTests = allTests.slice(i, i + batchSize);
+            const batchNumber = Math.floor(i / batchSize) + 1;
+            
+            batches.push({
+                batch_id: `BATCH-${batchNumber.toString().padStart(3, '0')}`,
+                batch_size: batchTests.length,
+                tests_created: batchTests.length,
+                sample_test_ids: batchTests.slice(0, 3).map(t => t.test_id).join(', '),
+                notes: `Batch ${batchNumber} - Tests ${i + 1} to ${Math.min(i + batchSize, allTests.length)}`,
+                created_date: batchTests[0].created_date,
+                test_ids: batchTests.map(t => t.test_id)
+            });
+        }
         
         res.json({
             success: true,
-            data: formattedBatches
+            data: batches
         });
     } catch (error) {
         console.error('Error fetching printable batches:', error);
@@ -1504,6 +1501,56 @@ app.get('/api/admin/printable-batches', async (req, res) => {
             success: false, 
             error: 'Failed to fetch printable batches',
             details: error.message 
+        });
+    }
+});
+
+app.get('/api/admin/batch-details/:batchId', async (req, res) => {
+    try {
+        const { batchId } = req.params;
+        
+        // Extract batch number from ID
+        const batchNumber = parseInt(batchId.replace('BATCH-', ''));
+        const batchSize = 10;
+        const offset = (batchNumber - 1) * batchSize;
+        
+        const [tests] = await db.execute(`
+            SELECT test_id, created_date, is_activated
+            FROM nad_test_ids
+            ORDER BY created_date DESC
+            LIMIT ? OFFSET ?
+        `, [batchSize, offset]);
+        
+        res.json({
+            success: true,
+            data: {
+                batch_id: batchId,
+                tests: tests,
+                total_tests: tests.length
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching batch details:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch batch details' 
+        });
+    }
+});
+
+app.get('/api/admin/print-history', async (req, res) => {
+    try {
+        // Return empty history for now
+        res.json({
+            success: true,
+            data: [],
+            message: 'Print history not yet implemented'
+        });
+    } catch (error) {
+        console.error('Error fetching print history:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch print history' 
         });
     }
 });
