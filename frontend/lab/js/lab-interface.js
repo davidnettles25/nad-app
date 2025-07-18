@@ -19,11 +19,14 @@ window.NADLab = {
             await this.loadComponent('recent-tests', '#recent-container');
             
             // Load process modal
+            console.log('Loading process modal...');
             await this.loadComponent('process-test-modal', '#modal-container');
+            console.log('Process modal loaded');
             
             // Load pending tests once all components are loaded
             setTimeout(() => {
                 this.loadPendingTests();
+                this.setupModalEventListeners();
             }, 500);
             
         } catch (error) {
@@ -130,6 +133,8 @@ window.NADLab = {
     },
     
     openProcessModal(testId) {
+        console.log('Opening process modal for test:', testId);
+        
         // Find the test data
         const testData = this.currentTests.find(test => test.test_id === testId);
         if (!testData) {
@@ -140,34 +145,41 @@ window.NADLab = {
         // Store current test data
         this.currentProcessingTest = testData;
         
-        // Wait for modal to be loaded, then populate
-        setTimeout(() => {
-            const modalTestId = document.getElementById('modal-test-id');
-            const modalBatchId = document.getElementById('modal-batch-id');
-            const modalActivatedDate = document.getElementById('modal-activated-date');
-            const processForm = document.getElementById('process-test-form');
-            const errorMessage = document.getElementById('modal-error-message');
-            const modal = document.getElementById('process-test-modal');
-            
-            if (modalTestId && modalBatchId && modalActivatedDate && processForm && modal) {
-                // Populate modal with test information
-                modalTestId.textContent = testData.test_id;
-                modalBatchId.textContent = testData.batch_id ? 
-                    testData.batch_id.split('-').pop() : 'N/A';
-                modalActivatedDate.textContent = 
-                    new Date(testData.activated_date).toLocaleDateString();
-                
-                // Reset form
-                processForm.reset();
-                if (errorMessage) errorMessage.style.display = 'none';
-                
-                // Show modal
-                modal.style.display = 'block';
-            } else {
-                console.error('Modal elements not found, retrying...');
-                setTimeout(() => this.openProcessModal(testId), 500);
-            }
-        }, 100);
+        // Get modal elements
+        const modalTestId = document.getElementById('modal-test-id');
+        const modalBatchId = document.getElementById('modal-batch-id');
+        const modalActivatedDate = document.getElementById('modal-activated-date');
+        const processForm = document.getElementById('process-test-form');
+        const errorMessage = document.getElementById('modal-error-message');
+        const modal = document.getElementById('process-test-modal');
+        
+        console.log('Modal elements found:', {
+            modalTestId: !!modalTestId,
+            modalBatchId: !!modalBatchId,
+            modalActivatedDate: !!modalActivatedDate,
+            processForm: !!processForm,
+            modal: !!modal
+        });
+        
+        if (!modal) {
+            console.error('Modal not found! Check if process-test-modal.html loaded correctly.');
+            alert('Modal component not loaded. Please refresh the page.');
+            return;
+        }
+        
+        // Populate modal with test information
+        if (modalTestId) modalTestId.textContent = testData.test_id;
+        if (modalBatchId) modalBatchId.textContent = testData.batch_id ? 
+            testData.batch_id.split('-').pop() : 'N/A';
+        if (modalActivatedDate) modalActivatedDate.textContent = 
+            new Date(testData.activated_date).toLocaleDateString();
+        
+        // Reset form
+        if (processForm) processForm.reset();
+        if (errorMessage) errorMessage.style.display = 'none';
+        
+        // Show modal
+        modal.style.display = 'block';
     },
     
     closeProcessModal() {
@@ -210,26 +222,28 @@ window.NADLab = {
         setInterval(() => {
             this.loadPendingTests();
         }, 60000);
+    },
+    
+    setupModalEventListeners() {
+        console.log('Setting up modal event listeners...');
         
-        // Modal form submission handler
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                const form = document.getElementById('process-test-form');
-                if (form) {
-                    form.addEventListener('submit', (e) => {
-                        e.preventDefault();
-                        this.handleProcessFormSubmit();
-                    });
-                }
-                
-                // Close modal when clicking outside
-                window.addEventListener('click', (e) => {
-                    const modal = document.getElementById('process-test-modal');
-                    if (e.target === modal) {
-                        this.closeProcessModal();
-                    }
-                });
-            }, 1000);
+        const form = document.getElementById('process-test-form');
+        if (form) {
+            console.log('Modal form found, adding event listener');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleProcessFormSubmit();
+            });
+        } else {
+            console.error('Modal form not found!');
+        }
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('process-test-modal');
+            if (e.target === modal) {
+                this.closeProcessModal();
+            }
         });
     },
     
