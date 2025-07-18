@@ -1040,6 +1040,16 @@ app.post('/api/lab/process-test/:testId', async (req, res) => {
         await connection.beginTransaction();
         
         try {
+            // Add processed_date column if it doesn't exist
+            try {
+                await connection.execute(`
+                    ALTER TABLE nad_test_ids 
+                    ADD COLUMN processed_date DATETIME DEFAULT NULL
+                `);
+            } catch (alterError) {
+                // Column probably already exists, ignore
+            }
+            
             // Update status in nad_test_ids to 'completed'
             await connection.execute(`
                 UPDATE nad_test_ids 
