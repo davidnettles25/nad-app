@@ -208,7 +208,9 @@ window.NADCustomer = {
         }
         
         // Load supplements (use mock data immediately for now)
-        this.renderMockSupplements();
+        setTimeout(() => {
+            this.renderMockSupplements();
+        }, 100);
         
         // Handle form submission
         const form = document.getElementById('supplement-form');
@@ -310,8 +312,13 @@ window.NADCustomer = {
     },
     
     renderSupplements(supplements) {
+        console.log('renderSupplements called with:', supplements);
         const grid = document.getElementById('supplement-grid');
-        if (!grid) return;
+        console.log('Grid element:', grid);
+        if (!grid) {
+            console.error('supplement-grid element not found');
+            return;
+        }
         
         const supplementsHtml = supplements.map(supplement => `
             <div class="supplement-item">
@@ -325,10 +332,12 @@ window.NADCustomer = {
             </div>
         `).join('');
         
+        console.log('Setting grid innerHTML to:', supplementsHtml);
         grid.innerHTML = supplementsHtml;
     },
     
     renderMockSupplements() {
+        console.log('renderMockSupplements called');
         const mockSupplements = [
             { id: 1, name: 'NAD+ Precursor', description: 'Nicotinamide Riboside or NMN' },
             { id: 2, name: 'Vitamin D3', description: 'Supports cellular energy production' },
@@ -340,6 +349,7 @@ window.NADCustomer = {
             { id: 8, name: 'Multivitamin', description: 'General nutritional support' }
         ];
         
+        console.log('Mock supplements:', mockSupplements);
         this.renderSupplements(mockSupplements);
     },
     
