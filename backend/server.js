@@ -1582,17 +1582,56 @@ app.get('/api/admin/batch-details/:batchId', async (req, res) => {
 
 app.get('/api/admin/print-history', async (req, res) => {
     try {
-        // Return empty history for now
+        const limit = parseInt(req.query.limit) || 50;
+        
+        // Query for batches that have been printed
+        const [printHistory] = await db.execute(`
+            SELECT DISTINCT
+                batch_id,
+                MIN(printed_date) as first_printed_date,
+                MAX(printed_date) as last_printed_date,
+                COUNT(*) as test_count,
+                SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) as printed_count
+            FROM nad_test_ids 
+            WHERE is_printed = 1 AND printed_date IS NOT NULL
+            GROUP BY batch_id
+            ORDER BY MAX(printed_date) DESC
+            LIMIT ?
+        `, [limit]);
+        
+        // Format the history data
+        const formattedHistory = printHistory.map(entry => {
+            const batchShortId = entry.batch_id.split('-').pop();
+            return {
+                batch_id: entry.batch_id,
+                batch_short_id: batchShortId,
+                printed_date: entry.last_printed_date,
+                first_printed_date: entry.first_printed_date,
+                test_count: entry.test_count,
+                printed_count: entry.printed_count,
+                print_format: 'individual_labels', // Default format for now
+                printer_name: 'Generic Printer',
+                print_job_id: `PJ-${entry.batch_id}-${Date.now()}`,
+                notes: `Batch ${batchShortId} - ${entry.printed_count} tests printed`,
+                printed_by: 'Admin'
+            };
+        });
+        
         res.json({
             success: true,
-            data: [],
-            message: 'Print history not yet implemented'
+            data: formattedHistory,
+            total: formattedHistory.length,
+            message: formattedHistory.length > 0 ? 
+                `Found ${formattedHistory.length} print history entries` : 
+                'No print history found'
         });
+        
     } catch (error) {
         console.error('Error fetching print history:', error);
         res.status(500).json({ 
             success: false, 
-            error: 'Failed to fetch print history' 
+            error: 'Failed to fetch print history',
+            details: error.message
         });
     }
 });
