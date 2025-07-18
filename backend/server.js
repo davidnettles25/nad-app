@@ -914,6 +914,14 @@ console.log('✅ Supplement CRUD endpoints loaded (GET, POST, PUT, DELETE)');
 
 app.get('/api/lab/pending-tests', async (req, res) => {
     try {
+        // Add missing index if it doesn't exist
+        try {
+            await db.execute(`CREATE INDEX idx_is_activated ON nad_test_ids (is_activated)`);
+            console.log('Created missing index on is_activated');
+        } catch (indexError) {
+            // Index probably already exists, ignore
+        }
+        
         // Much simpler query - just get activated tests, frontend can handle filtering
         const [tests] = await db.execute(`
             SELECT id, test_id, batch_id, activated_date 
