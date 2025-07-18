@@ -1,1 +1,29 @@
 <!-- Pending Tests Queue -->
+<div class="test-queue-section">
+    <div class="section-header">
+        <h2>📋 Pending Tests Queue</h2>
+        <button class="btn btn-secondary" onclick="NADLab.loadPendingTests()">
+            🔄 Refresh
+        </button>
+    </div>
+    
+    <div class="queue-container">
+        <div id="pending-tests-list" class="tests-list">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading pending tests...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load pending tests when this component is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.NADLab && window.NADLab.loadPendingTests) {
+        setTimeout(() => {
+            window.NADLab.loadPendingTests();
+        }, 1000);
+    }
+});
+</script>

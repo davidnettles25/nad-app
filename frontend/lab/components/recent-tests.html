@@ -1,0 +1,67 @@
+<!-- Recent Tests -->
+<div class="recent-tests-section">
+    <div class="section-header">
+        <h2>📈 Recent Test Results</h2>
+        <p>Recently processed tests</p>
+    </div>
+    
+    <div class="recent-tests-container">
+        <div id="recent-tests-list" class="tests-list">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading recent tests...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load recent tests when this component is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        loadRecentTests();
+    }, 1500);
+});
+
+async function loadRecentTests() {
+    try {
+        const response = await fetch('/api/lab/recent-tests');
+        const data = await response.json();
+        
+        if (data.success) {
+            renderRecentTests(data.tests);
+        } else {
+            console.error('Failed to load recent tests:', data.message);
+        }
+    } catch (error) {
+        console.error('Error loading recent tests:', error);
+        document.getElementById('recent-tests-list').innerHTML = 
+            '<p class="error-message">Error loading recent tests</p>';
+    }
+}
+
+function renderRecentTests(tests) {
+    const container = document.getElementById('recent-tests-list');
+    if (!container) return;
+    
+    if (tests.length === 0) {
+        container.innerHTML = '<p class="no-tests">No recent tests</p>';
+        return;
+    }
+    
+    const testsHtml = tests.map(test => `
+        <div class="test-item recent-test-item">
+            <div class="test-info">
+                <h3>${test.test_id}</h3>
+                <p>NAD+ Score: <strong>${test.nad_score || 'N/A'}</strong></p>
+                <p>Processed: ${new Date(test.processed_date).toLocaleDateString()}</p>
+            </div>
+            <div class="test-status">
+                <span class="status-badge status-completed">✅ Completed</span>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = testsHtml;
+}
+</script>
