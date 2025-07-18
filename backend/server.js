@@ -916,12 +916,15 @@ app.get('/api/lab/pending-tests', async (req, res) => {
     try {
         const [tests] = await db.execute(`
             SELECT 
-                ti.*, us.supplements_with_dose, us.habits_notes, ts.score as existing_score
+                ti.id, ti.test_id, ti.batch_id, ti.activated_date, ti.created_date
             FROM nad_test_ids ti
-            LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id
-            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-            WHERE ti.is_activated = 1 AND ts.score IS NULL
+            WHERE ti.is_activated = 1 
+            AND NOT EXISTS (
+                SELECT 1 FROM nad_test_scores ts 
+                WHERE ts.test_id = ti.test_id AND ts.score IS NOT NULL
+            )
             ORDER BY ti.activated_date ASC
+            LIMIT 50
         `);
         res.json({ success: true, tests: tests });
     } catch (error) {
