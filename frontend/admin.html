@@ -628,8 +628,9 @@
                             <input type="text" id="test-search" placeholder="🔍 Search tests..." class="search-input">
                             <select id="status-filter" class="filter-select">
                                 <option value="">All Statuses</option>
-                                <option value="activated">Activated</option>
                                 <option value="pending">Pending</option>
+                                <option value="activated">Activated</option>
+                                <option value="completed">Completed</option>
                             </select>
                             <button class="btn btn-secondary" onclick="loadTestsFromAPI()">🔄 Refresh Tests</button>
                             <button class="btn btn-secondary" onclick="clearFilters()">🗑️ Clear Filters</button>
@@ -1067,14 +1068,8 @@
             // Apply status filter
             if (statusFilter) {
                 filtered = filtered.filter(test => {
-                    switch(statusFilter) {
-                    case 'activated':
-                        return test.is_activated === true;
-                    case 'pending':
-                        return test.is_activated === false;
-                    default:
-                        return true;
-                    }
+                    // Use the new status field
+                    return test.status === statusFilter;
                 });
             }
         
@@ -1153,20 +1148,29 @@
             tbody.innerHTML = '';
             tests.forEach(test => {
                 const row = document.createElement('tr');
-                const statusLabel = test.is_activated ? 'Activated' : 'Pending';
+                // Use the status field now
+                const statusLabel = test.status ? test.status.charAt(0).toUpperCase() + test.status.slice(1) : 'Pending';
+                const statusColor = {
+                    'pending': { bg: '#fff3cd', text: '#856404' },
+                    'activated': { bg: '#cfe2ff', text: '#084298' },
+                    'completed': { bg: '#d4edda', text: '#155724' }
+                };
+                const colors = statusColor[test.status] || statusColor['pending'];
                 const createdDate = new Date(test.created_date).toLocaleDateString();
                 const batchDisplay = test.batch_id ? test.batch_id.split('-').pop() : 'Individual';
         
                 row.innerHTML = `
                     <td><strong>${test.test_id}</strong></td>
-                    <td><span class="badge" style="padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ${test.is_activated ? '#d4edda' : '#fff3cd'}; color: ${test.is_activated ? '#155724' : '#856404'};">${statusLabel}</span></td>
+                    <td><span class="badge" style="padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ${colors.bg}; color: ${colors.text};">${statusLabel}</span></td>
                     <td>${batchDisplay}</td>
                     <td>${createdDate}</td>
                     <td>
                         <button class="btn btn-sm" onclick="viewTest('${test.test_id}')" style="margin-right: 5px;">👁️ View</button>
-                        ${!test.is_activated ? 
+                        ${test.status === 'pending' ? 
                             `<button class="btn btn-sm btn-success" onclick="activateTest('${test.test_id}')">⚡ Activate</button>` : 
-                            `<button class="btn btn-sm btn-warning" onclick="deactivateTest('${test.test_id}')">❌ Deactivate</button>`
+                            test.status === 'activated' ?
+                            `<button class="btn btn-sm btn-warning" onclick="deactivateTest('${test.test_id}')">❌ Deactivate</button>` :
+                            ''
                         }
                     </td>
                 `;
