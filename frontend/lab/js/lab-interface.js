@@ -253,13 +253,19 @@ window.NADLab = {
         if (processForm) processForm.reset();
         if (errorMessage) errorMessage.style.display = 'none';
         
+        // Re-populate technician email after form reset
+        if (technicianEmailField) technicianEmailField.value = technicianEmail;
+        
         // Show modal
         modal.style.display = 'block';
     },
 
     getTechnicianEmail() {
+        console.log('Getting technician email...');
+        
         // Try to get from multipass data first
         if (window.shopifyMultipass && window.shopifyMultipass.email) {
+            console.log('Found email in multipass:', window.shopifyMultipass.email);
             return window.shopifyMultipass.email;
         }
         
@@ -267,6 +273,7 @@ window.NADLab = {
         const urlParams = new URLSearchParams(window.location.search);
         const emailFromUrl = urlParams.get('email');
         if (emailFromUrl) {
+            console.log('Found email in URL:', emailFromUrl);
             return emailFromUrl;
         }
         
@@ -276,6 +283,7 @@ window.NADLab = {
             try {
                 const userData = JSON.parse(storedUser);
                 if (userData.email) {
+                    console.log('Found email in localStorage:', userData.email);
                     return userData.email;
                 }
             } catch (e) {
@@ -284,6 +292,7 @@ window.NADLab = {
         }
         
         // Default fallback
+        console.log('Using default email fallback');
         return 'lab-tech@example.com';
     },
     
@@ -361,6 +370,12 @@ window.NADLab = {
         if (!nadScore || nadScore < 0 || nadScore > 100) {
             this.showModalError('Please enter a valid NAD+ score between 0 and 100.');
             return;
+        }
+        
+        // Ensure technician email is included
+        const technicianEmail = formData.get('technicianEmail') || this.getTechnicianEmail();
+        if (technicianEmail && technicianEmail !== 'lab-tech@example.com') {
+            formData.set('technicianEmail', technicianEmail);
         }
         
         // Show loading state

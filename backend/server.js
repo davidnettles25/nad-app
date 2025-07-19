@@ -1114,15 +1114,16 @@ app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (re
             await connection.execute(`
                 INSERT INTO nad_test_scores (
                     test_id, score, technician_id, score_submission_date, 
-                    notes, image
+                    notes, image, created_date, updated_date
                 )
-                VALUES (?, ?, ?, NOW(), ?, ?)
+                VALUES (?, ?, ?, NOW(), ?, ?, NOW(), NOW())
                 ON DUPLICATE KEY UPDATE
                     score = VALUES(score),
                     technician_id = VALUES(technician_id),
                     score_submission_date = VALUES(score_submission_date),
                     notes = VALUES(notes),
-                    image = VALUES(image)
+                    image = VALUES(image),
+                    updated_date = VALUES(updated_date)
             `, [testId, parseFloat(nadScore), technicianEmail || 'lab-tech@example.com', labNotes || null, filePath]);
             
             await connection.commit();
