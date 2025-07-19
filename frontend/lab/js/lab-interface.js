@@ -37,15 +37,31 @@ window.NADLab = {
     
     async loadComponent(componentName, targetSelector) {
         try {
+            console.log(`Loading component: ${componentName} into ${targetSelector}`);
             const response = await fetch(`lab/components/${componentName}.html`);
             if (!response.ok) {
                 throw new Error(`Failed to load ${componentName}`);
             }
             
             const html = await response.text();
+            console.log(`Component HTML length: ${html.length}`);
+            
             const target = document.querySelector(targetSelector);
+            console.log(`Target element found: ${!!target}`);
+            
             if (target) {
                 target.innerHTML = html;
+                console.log(`Component ${componentName} inserted into DOM`);
+                
+                // Special handling for modal component
+                if (componentName === 'process-test-modal') {
+                    setTimeout(() => {
+                        const modal = document.getElementById('process-test-modal');
+                        console.log(`Modal element check after insert: ${!!modal}`);
+                    }, 100);
+                }
+            } else {
+                console.error(`Target selector ${targetSelector} not found!`);
             }
         } catch (error) {
             console.error(`Error loading ${componentName}:`, error);
