@@ -392,7 +392,7 @@ app.post('/api/tests/verify', async (req, res) => {
         }
         
         const [testRows] = await db.execute(`
-            SELECT ti.*, ts.score, ts.status as score_status 
+            SELECT ti.*, ts.score
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
             WHERE ti.test_id = ?
@@ -1159,8 +1159,11 @@ app.get('/api/admin/tests', async (req, res) => {
     try {
         const [tests] = await db.execute(`
             SELECT 
-                ti.*, ts.score, ts.technician_id, ts.score_submission_date, 
-                ts.status as score_status, us.supplements_with_dose
+                ti.*, 
+                ts.score, 
+                ts.technician_id, 
+                ts.score_submission_date,
+                us.supplements_with_dose
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
             LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id
