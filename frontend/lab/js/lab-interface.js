@@ -151,6 +151,13 @@ window.NADLab = {
     openProcessModal(testId) {
         console.log('Opening process modal for test:', testId);
         
+        // First check if modal container exists
+        const modalContainer = document.getElementById('modal-container');
+        console.log('Modal container found:', !!modalContainer);
+        if (modalContainer) {
+            console.log('Modal container HTML:', modalContainer.innerHTML.substring(0, 100) + '...');
+        }
+        
         // Find the test data
         const testData = this.currentTests.find(test => test.test_id === testId);
         if (!testData) {
@@ -178,8 +185,19 @@ window.NADLab = {
         });
         
         if (!modal) {
-            console.error('Modal not found! Check if process-test-modal.html loaded correctly.');
-            alert('Modal component not loaded. Please refresh the page.');
+            console.error('Modal not found! Attempting to reload modal component...');
+            // Try to reload the modal component
+            this.loadComponent('process-test-modal', '#modal-container').then(() => {
+                setTimeout(() => {
+                    const reloadedModal = document.getElementById('process-test-modal');
+                    if (reloadedModal) {
+                        console.log('Modal reloaded successfully');
+                        this.openProcessModal(testId); // Retry
+                    } else {
+                        alert('Failed to load modal component. Please refresh the page.');
+                    }
+                }, 500);
+            });
             return;
         }
         
