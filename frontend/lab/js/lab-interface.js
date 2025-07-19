@@ -61,6 +61,7 @@ window.NADLab = {
             // Load pending tests once all components are loaded
             setTimeout(() => {
                 this.loadPendingTests();
+                this.loadRecentTests();
                 this.setupModalEventListeners();
             }, 500);
             
@@ -175,6 +176,60 @@ window.NADLab = {
                         <button class="btn btn-primary" onclick="NADLab.openProcessModal('${test.test_id}')">
                             Process Test
                         </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = testsHtml;
+    },
+
+    async loadRecentTests() {
+        try {
+            const response = await fetch('/api/lab/recent-tests');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.renderRecentTests(data.tests);
+            } else {
+                console.error('Failed to load recent tests:', data.message);
+                const container = document.getElementById('recent-tests-list');
+                if (container) {
+                    container.innerHTML = '<p class="error-message">Failed to load recent tests</p>';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading recent tests:', error);
+            const container = document.getElementById('recent-tests-list');
+            if (container) {
+                container.innerHTML = '<p class="error-message">Error loading recent tests</p>';
+            }
+        }
+    },
+
+    renderRecentTests(tests) {
+        const container = document.getElementById('recent-tests-list');
+        if (!container) return;
+        
+        if (tests.length === 0) {
+            container.innerHTML = '<p class="no-tests">No recent tests</p>';
+            return;
+        }
+        
+        const testsHtml = tests.map(test => {
+            const batchShort = test.batch_id ? test.batch_id.split('-').pop() : 'N/A';
+            
+            return `
+                <div class="test-item recent-test-item">
+                    <div class="test-info">
+                        <h3>${test.test_id}</h3>
+                        <p>Batch: ${batchShort}</p>
+                        <p>NAD+ Score: <strong>${test.nad_score || 'N/A'}</strong></p>
+                        <p>Processed: ${new Date(test.processed_date).toLocaleDateString()}</p>
+                        <p>Technician: ${test.technician_id || 'N/A'}</p>
+                    </div>
+                    <div class="test-status">
+                        <span class="status-badge status-completed">✅ Completed</span>
                     </div>
                 </div>
             `;
@@ -313,6 +368,7 @@ window.NADLab = {
             if (data.success) {
                 this.closeProcessModal();
                 await this.loadPendingTests(); // Refresh the list
+                await this.loadRecentTests(); // Refresh recent tests
                 await this.loadStats(); // Refresh stats
                 
                 // Show success message
@@ -335,6 +391,7 @@ window.NADLab = {
         // Auto-refresh pending tests every 60 seconds
         setInterval(() => {
             this.loadPendingTests();
+            this.loadRecentTests();
         }, 60000);
     },
     
