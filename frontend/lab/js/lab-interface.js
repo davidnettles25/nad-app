@@ -1,10 +1,45 @@
-// Main lab controller
+// Main lab controller - Version 20250719-1
+console.log('🔄 Loading NAD Lab Interface JS - Version 20250719-1');
+
 window.NADLab = {
     init() {
         console.log('Initializing NAD Lab Interface');
+        
+        // Diagnostic: Check what containers exist in the DOM
+        console.log('DOM Container Check:');
+        console.log('- header-container:', !!document.getElementById('header-container'));
+        console.log('- queue-container:', !!document.getElementById('queue-container'));
+        console.log('- recent-container:', !!document.getElementById('recent-container'));
+        console.log('- modal-container:', !!document.getElementById('modal-container'));
+        
+        // Also check the HTML structure
+        const labContainer = document.querySelector('.lab-container');
+        if (labContainer) {
+            console.log('Lab container children:', labContainer.children.length);
+            for (let i = 0; i < labContainer.children.length; i++) {
+                console.log(`  Child ${i}:`, labContainer.children[i].id || labContainer.children[i].className);
+            }
+        }
+        
+        // Ensure modal container exists BEFORE loading components
+        this.ensureModalContainer();
+        
         this.loadComponents();
         this.loadStats();
         this.setupEventListeners();
+    },
+
+    ensureModalContainer() {
+        let modalContainer = document.getElementById('modal-container');
+        if (!modalContainer) {
+            console.warn('Modal container not found in HTML, creating it...');
+            modalContainer = document.createElement('div');
+            modalContainer.id = 'modal-container';
+            document.querySelector('.lab-container').appendChild(modalContainer);
+            console.log('Modal container created and added to DOM');
+        } else {
+            console.log('Modal container found in DOM');
+        }
     },
     
     async loadComponents() {
@@ -18,7 +53,7 @@ window.NADLab = {
             // Load recent tests
             await this.loadComponent('recent-tests', '#recent-container');
             
-            // Load process modal
+            // Load process modal (container should exist from ensureModalContainer)
             console.log('Loading process modal...');
             await this.loadComponent('process-test-modal', '#modal-container');
             console.log('Process modal loaded');

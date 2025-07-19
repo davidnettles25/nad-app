@@ -17,11 +17,11 @@
 <body>
     <div class="lab-container">
         <div id="header-container"></div>
-        <div class="main-grid">
+        <div class="main-content">
             <div id="queue-container"></div>
-            <div id="submission-container"></div>
+            <div id="recent-container"></div>
         </div>
-        <div id="recent-container"></div>
+        <div id="modal-container"></div>
     </div>
     
     <!-- Shared JS -->
@@ -30,6 +30,35 @@
     <script src="shared/js/components.js"></script>
     
     <!-- Lab-specific JS -->
-    <script src="lab/js/lab-interface.js"></script>
+    <script src="lab/js/lab-interface.js?v=1721410000"></script>
+    <script>
+        // Emergency modal container creation - runs immediately
+        console.log('🚨 Emergency DOM check running...');
+        
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', createModalContainer);
+        } else {
+            createModalContainer();
+        }
+        
+        function createModalContainer() {
+            console.log('🚨 Checking for modal container...');
+            if (!document.getElementById('modal-container')) {
+                console.log('🚨 Creating missing modal container...');
+                const container = document.createElement('div');
+                container.id = 'modal-container';
+                const labContainer = document.querySelector('.lab-container');
+                if (labContainer) {
+                    labContainer.appendChild(container);
+                    console.log('🚨 Modal container created successfully!');
+                } else {
+                    console.error('🚨 Lab container not found!');
+                }
+            } else {
+                console.log('🚨 Modal container already exists');
+            }
+        }
+    </script>
 </body>
 </html>
