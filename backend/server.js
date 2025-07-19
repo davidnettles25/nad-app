@@ -1133,7 +1133,7 @@ app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (re
                 data: {
                     testId,
                     score: nadScore,
-                    technician: technicianId,
+                    technician: technicianEmail,
                     filePath
                 }
             });
