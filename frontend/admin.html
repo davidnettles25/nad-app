@@ -990,6 +990,22 @@
                 const result = await response.json();
         
                 if (result.success && result.tests) {
+                    // Ensure all tests have a status field
+                    result.tests = result.tests.map(test => {
+                        if (!test.status) {
+                            // Fallback logic for tests without status
+                            if (test.score !== null && test.score !== undefined) {
+                                test.status = 'completed';
+                            } else if (test.is_activated === 1 || test.is_activated === true) {
+                                test.status = 'activated';
+                            } else {
+                                test.status = 'pending';
+                            }
+                            console.log(`🔧 Fixed missing status for test ${test.test_id}: ${test.status}`);
+                        }
+                        return test;
+                    });
+                    
                     window.allTests = result.tests;
                     window.filteredTests = [...result.tests]; // Create filtered copy
                     renderTestsTable(window.filteredTests);
@@ -1067,10 +1083,17 @@
         
             // Apply status filter
             if (statusFilter) {
+                console.log(`🔍 Applying status filter: "${statusFilter}"`);
+                console.log('Sample test status values:', filtered.slice(0, 3).map(t => ({ id: t.test_id, status: t.status, type: typeof t.status })));
+                
                 filtered = filtered.filter(test => {
-                    // Use the new status field
-                    return test.status === statusFilter;
+                    // Use the new status field - ensure both are strings for comparison
+                    const testStatus = test.status ? test.status.toString().toLowerCase() : '';
+                    const filterStatus = statusFilter.toString().toLowerCase();
+                    return testStatus === filterStatus;
                 });
+                
+                console.log(`🔍 Filtered to ${filtered.length} tests with status "${statusFilter}"`);
             }
         
             window.filteredTests = filtered;

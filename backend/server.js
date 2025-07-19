@@ -1261,6 +1261,17 @@ app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (re
 
 app.get('/api/admin/tests', async (req, res) => {
     try {
+        // First ensure all tests have a status value
+        await db.execute(`
+            UPDATE nad_test_ids 
+            SET status = CASE 
+                WHEN status IS NULL AND is_activated = 1 THEN 'activated'
+                WHEN status IS NULL AND is_activated = 0 THEN 'pending'
+                ELSE status
+            END
+            WHERE status IS NULL
+        `);
+        
         const [tests] = await db.execute(`
             SELECT 
                 ti.*, 
@@ -1273,6 +1284,15 @@ app.get('/api/admin/tests', async (req, res) => {
             LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id
             ORDER BY ti.created_date DESC
         `);
+        
+        // Log sample data for debugging
+        if (tests.length > 0) {
+            console.log('Sample test data:', {
+                total: tests.length,
+                statuses: tests.slice(0, 5).map(t => ({ id: t.test_id, status: t.status, is_activated: t.is_activated }))
+            });
+        }
+        
         res.json({ success: true, tests: tests });
     } catch (error) {
         console.error('Error fetching all tests:', error);
