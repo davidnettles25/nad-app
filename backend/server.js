@@ -1261,15 +1261,19 @@ app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (re
 
 app.get('/api/admin/tests', async (req, res) => {
     try {
-        // First ensure all tests have a status value
+        // First ensure all tests have proper status values
+        // Fix any inconsistencies between is_activated and status fields
         await db.execute(`
-            UPDATE nad_test_ids 
-            SET status = CASE 
-                WHEN status IS NULL AND is_activated = 1 THEN 'activated'
-                WHEN status IS NULL AND is_activated = 0 THEN 'pending'
-                ELSE status
+            UPDATE nad_test_ids ti
+            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            SET ti.status = CASE 
+                WHEN ts.score IS NOT NULL THEN 'completed'
+                WHEN ts.score IS NULL AND ti.is_activated = 1 THEN 'activated'
+                ELSE 'pending'
             END
-            WHERE status IS NULL
+            WHERE ti.status IS NULL 
+               OR (ti.status = 'activated' AND ts.score IS NOT NULL)
+               OR (ti.status = 'completed' AND ts.score IS NULL)
         `);
         
         const [tests] = await db.execute(`

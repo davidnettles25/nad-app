@@ -994,9 +994,7 @@
                     result.tests = result.tests.map(test => {
                         if (!test.status) {
                             // Fallback logic for tests without status
-                            if (test.score !== null && test.score !== undefined) {
-                                test.status = 'completed';
-                            } else if (test.is_activated === 1 || test.is_activated === true) {
+                            if (test.is_activated === 1 || test.is_activated === true) {
                                 test.status = 'activated';
                             } else {
                                 test.status = 'pending';
@@ -1005,6 +1003,13 @@
                         }
                         return test;
                     });
+                    
+                    // Debug: Show status distribution
+                    const statusCounts = result.tests.reduce((acc, test) => {
+                        acc[test.status] = (acc[test.status] || 0) + 1;
+                        return acc;
+                    }, {});
+                    console.log('📊 Test status distribution:', statusCounts);
                     
                     window.allTests = result.tests;
                     window.filteredTests = [...result.tests]; // Create filtered copy
@@ -1084,16 +1089,36 @@
             // Apply status filter
             if (statusFilter) {
                 console.log(`🔍 Applying status filter: "${statusFilter}"`);
-                console.log('Sample test status values:', filtered.slice(0, 3).map(t => ({ id: t.test_id, status: t.status, type: typeof t.status })));
+                
+                // Debug: show all unique statuses before filtering
+                const uniqueStatuses = [...new Set(filtered.map(t => t.status))];
+                console.log('All unique statuses in data:', uniqueStatuses);
+                
+                // Debug: show sample tests
+                console.log('Sample tests before filter:', filtered.slice(0, 5).map(t => ({ 
+                    id: t.test_id, 
+                    status: t.status,
+                    is_activated: t.is_activated,
+                    score: t.score
+                })));
                 
                 filtered = filtered.filter(test => {
-                    // Use the new status field - ensure both are strings for comparison
-                    const testStatus = test.status ? test.status.toString().toLowerCase() : '';
-                    const filterStatus = statusFilter.toString().toLowerCase();
-                    return testStatus === filterStatus;
+                    // Use the new status field - ensure exact match
+                    const matches = test.status === statusFilter;
+                    
+                    // Debug problematic matches
+                    if (statusFilter === 'activated' && test.status === 'completed') {
+                        console.warn(`⚠️ Test ${test.test_id} has status "${test.status}" but is_activated=${test.is_activated}`);
+                    }
+                    
+                    return matches;
                 });
                 
                 console.log(`🔍 Filtered to ${filtered.length} tests with status "${statusFilter}"`);
+                console.log('Sample filtered tests:', filtered.slice(0, 3).map(t => ({ 
+                    id: t.test_id, 
+                    status: t.status 
+                })));
             }
         
             window.filteredTests = filtered;
