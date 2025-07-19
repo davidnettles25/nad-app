@@ -91,7 +91,12 @@ window.NADLab = {
             console.log(`Target element found: ${!!target}`);
             
             if (target) {
-                target.innerHTML = html;
+                // For modal container, append instead of replace to allow multiple modals
+                if (targetSelector === '#modal-container') {
+                    target.insertAdjacentHTML('beforeend', html);
+                } else {
+                    target.innerHTML = html;
+                }
                 console.log(`Component ${componentName} inserted into DOM`);
                 
                 // Special handling for modal component
@@ -470,27 +475,30 @@ window.NADLab = {
     setupModalEventListeners() {
         console.log('Setting up modal event listeners...');
         
-        const processForm = document.getElementById('process-test-form');
-        if (processForm) {
-            console.log('Process modal form found, adding event listener');
-            processForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.handleProcessFormSubmit();
-            });
-        } else {
-            console.error('Process modal form not found!');
-        }
-        
-        const editForm = document.getElementById('edit-test-form');
-        if (editForm) {
-            console.log('Edit modal form found, adding event listener');
-            editForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.handleEditFormSubmit();
-            });
-        } else {
-            console.error('Edit modal form not found!');
-        }
+        // Add a small delay to ensure modals are fully loaded
+        setTimeout(() => {
+            const processForm = document.getElementById('process-test-form');
+            if (processForm) {
+                console.log('Process modal form found, adding event listener');
+                processForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleProcessFormSubmit();
+                });
+            } else {
+                console.error('Process modal form not found!');
+            }
+            
+            const editForm = document.getElementById('edit-test-form');
+            if (editForm) {
+                console.log('Edit modal form found, adding event listener');
+                editForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleEditFormSubmit();
+                });
+            } else {
+                console.error('Edit modal form not found!');
+            }
+        }, 100);
         
         // Close modal when clicking outside
         window.addEventListener('click', (e) => {
