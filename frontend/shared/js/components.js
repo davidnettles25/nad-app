@@ -60,8 +60,13 @@ window.NADComponents = {
 
 // Auto-load sections when DOM is ready
 document.addEventListener('DOMContentLoaded', async function() {
-    // Only run on admin pages
-    if (document.querySelector('.main-content')) {
+    // Only run on admin pages (check for admin-specific elements)
+    const isAdminPage = document.querySelector('.admin-container') || 
+                        document.querySelector('#admin-dashboard') ||
+                        document.title.includes('Admin') ||
+                        window.location.pathname.includes('admin');
+    
+    if (isAdminPage && document.querySelector('.main-content')) {
         console.log('🔄 Auto-loading admin sections...');
         await window.NADComponents.loadAllSections();
         
@@ -69,5 +74,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (typeof window.initializeAdminDashboard === 'function') {
             window.initializeAdminDashboard();
         }
+    } else if (document.querySelector('.main-content')) {
+        console.log('✅ Non-admin page detected, skipping admin section loading');
     }
 });
