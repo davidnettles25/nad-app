@@ -203,10 +203,14 @@ window.NADLab = {
         // Store current test data
         this.currentProcessingTest = testData;
         
+        // Get technician email from multipass or localStorage
+        const technicianEmail = this.getTechnicianEmail();
+        
         // Get modal elements
         const modalTestId = document.getElementById('modal-test-id');
         const modalBatchId = document.getElementById('modal-batch-id');
         const modalActivatedDate = document.getElementById('modal-activated-date');
+        const technicianEmailField = document.getElementById('technician-email');
         const processForm = document.getElementById('process-test-form');
         const errorMessage = document.getElementById('modal-error-message');
         const modal = document.getElementById('process-test-modal');
@@ -215,6 +219,7 @@ window.NADLab = {
             modalTestId: !!modalTestId,
             modalBatchId: !!modalBatchId,
             modalActivatedDate: !!modalActivatedDate,
+            technicianEmailField: !!technicianEmailField,
             processForm: !!processForm,
             modal: !!modal
         });
@@ -242,6 +247,7 @@ window.NADLab = {
             testData.batch_id.split('-').pop() : 'N/A';
         if (modalActivatedDate) modalActivatedDate.textContent = 
             new Date(testData.activated_date).toLocaleDateString();
+        if (technicianEmailField) technicianEmailField.value = technicianEmail;
         
         // Reset form
         if (processForm) processForm.reset();
@@ -249,6 +255,36 @@ window.NADLab = {
         
         // Show modal
         modal.style.display = 'block';
+    },
+
+    getTechnicianEmail() {
+        // Try to get from multipass data first
+        if (window.shopifyMultipass && window.shopifyMultipass.email) {
+            return window.shopifyMultipass.email;
+        }
+        
+        // Fallback to localStorage or URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const emailFromUrl = urlParams.get('email');
+        if (emailFromUrl) {
+            return emailFromUrl;
+        }
+        
+        // Check localStorage for stored user data
+        const storedUser = localStorage.getItem('nad_user_data');
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                if (userData.email) {
+                    return userData.email;
+                }
+            } catch (e) {
+                console.warn('Failed to parse stored user data');
+            }
+        }
+        
+        // Default fallback
+        return 'lab-tech@example.com';
     },
     
     closeProcessModal() {

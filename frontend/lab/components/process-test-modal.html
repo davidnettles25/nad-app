@@ -26,35 +26,32 @@
             </div>
             
             <form id="process-test-form" class="process-form">
-                <div class="form-group">
-                    <label for="nad-score">NAD+ Score *</label>
-                    <input type="number" id="nad-score" name="nadScore" 
-                           min="0" max="100" step="0.1" required
-                           placeholder="Enter score (0-100)">
-                    <div class="form-hint">Enter the NAD+ test score as a number between 0 and 100</div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="technician-id">Technician ID</label>
-                    <select id="technician-id" name="technicianId">
-                        <option value="lab-tech-1">Lab Tech 1</option>
-                        <option value="lab-tech-2">Lab Tech 2</option>
-                        <option value="lab-tech-3">Lab Tech 3</option>
-                        <option value="lab-supervisor">Lab Supervisor</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nad-score">NAD+ Score *</label>
+                        <input type="number" id="nad-score" name="nadScore" 
+                               min="0" max="100" step="0.1" required
+                               placeholder="0-100">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="technician-email">Technician</label>
+                        <input type="email" id="technician-email" name="technicianEmail" 
+                               readonly class="readonly-field"
+                               placeholder="Loading technician...">
+                    </div>
                 </div>
                 
                 <div class="form-group">
                     <label for="result-file">Result File (Optional)</label>
                     <input type="file" id="result-file" name="resultFile" 
                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-                    <div class="form-hint">Upload test result documents (PDF, images, or documents)</div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="lab-notes">Lab Notes (Optional)</label>
-                    <textarea id="lab-notes" name="labNotes" rows="3" 
-                              placeholder="Enter any additional notes about the test processing..."></textarea>
+                    <label for="lab-notes">Notes (Optional)</label>
+                    <textarea id="lab-notes" name="labNotes" rows="2" 
+                              placeholder="Additional notes..."></textarea>
                 </div>
                 
                 <div id="modal-error-message" class="error-message" style="display: none;"></div>
@@ -167,12 +164,25 @@
 .process-form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 15px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
+}
+
+.readonly-field {
+    background-color: #f8f9fa !important;
+    border-color: #e9ecef !important;
+    color: #6c757d !important;
+    cursor: not-allowed;
 }
 
 .form-group label {
@@ -291,6 +301,11 @@
     
     .test-details {
         grid-template-columns: 1fr;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
     }
     
     .modal-actions {
