@@ -1042,6 +1042,110 @@ app.get('/api/lab/recent-tests', async (req, res) => {
     }
 });
 
+app.put('/api/lab/update-test/:testId', upload.none(), async (req, res) => {
+    try {
+        const { testId } = req.params;
+        const { nadScore, technicianEmail, editReason, editNotes } = req.body;
+        
+        if (!testId) {
+            return res.status(400).json({ success: false, message: 'Test ID is required' });
+        }
+        
+        if (!nadScore || nadScore < 0 || nadScore > 100) {
+            return res.status(400).json({ success: false, message: 'Valid NAD+ score (0-100) is required' });
+        }
+        
+        if (!editReason || !editNotes) {
+            return res.status(400).json({ success: false, message: 'Edit reason and notes are required' });
+        }
+        
+        console.log('Updating test:', testId, 'with new score:', nadScore, 'by technician:', technicianEmail);
+        
+        // Start a transaction
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+        
+        try {
+            // Get the original score for audit
+            const [original] = await connection.execute(`
+                SELECT score FROM nad_test_scores WHERE test_id = ?
+            `, [testId]);
+            
+            const originalScore = original.length > 0 ? original[0].score : null;
+            
+            // Update the score in nad_test_scores
+            await connection.execute(`
+                UPDATE nad_test_scores 
+                SET score = ?, 
+                    technician_id = ?,
+                    updated_date = NOW()
+                WHERE test_id = ?
+            `, [parseFloat(nadScore), technicianEmail || 'lab-tech@example.com', testId]);
+            
+            // Create audit log entry
+            await connection.execute(`
+                INSERT INTO nad_test_score_edits (
+                    test_id, original_score, new_score, edit_reason, 
+                    edit_notes, edited_by, edited_date
+                ) VALUES (?, ?, ?, ?, ?, ?, NOW())
+            `, [testId, originalScore, parseFloat(nadScore), editReason, editNotes, technicianEmail || 'lab-tech@example.com']);
+            
+            await connection.commit();
+            res.json({ 
+                success: true, 
+                message: 'Test updated successfully',
+                data: {
+                    testId,
+                    newScore: nadScore,
+                    originalScore,
+                    editedBy: technicianEmail
+                }
+            });
+            
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+        
+    } catch (error) {
+        console.error('Error updating test:', error);
+        
+        // If the audit table doesn't exist, create it
+        if (error.message.includes('nad_test_score_edits')) {
+            try {
+                await db.execute(`
+                    CREATE TABLE IF NOT EXISTS nad_test_score_edits (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        test_id VARCHAR(255) NOT NULL,
+                        original_score DECIMAL(5,2),
+                        new_score DECIMAL(5,2) NOT NULL,
+                        edit_reason VARCHAR(100) NOT NULL,
+                        edit_notes TEXT NOT NULL,
+                        edited_by VARCHAR(255) NOT NULL,
+                        edited_date DATETIME NOT NULL,
+                        INDEX idx_test_id (test_id),
+                        INDEX idx_edited_date (edited_date)
+                    )
+                `);
+                console.log('Created nad_test_score_edits table');
+                
+                // Retry the request
+                return res.status(503).json({ 
+                    success: false, 
+                    message: 'Database table created. Please try again.',
+                    retry: true 
+                });
+            } catch (createError) {
+                console.error('Error creating audit table:', createError);
+            }
+        }
+        
+        res.status(500).json({ success: false, message: 'Error updating test', error: error.message });
+    }
+});
+
 app.post('/api/lab/submit-results', async (req, res) => {
     try {
         const { testId, nadScore, notes } = req.body;

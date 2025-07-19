@@ -58,6 +58,11 @@ window.NADLab = {
             await this.loadComponent('process-test-modal', '#modal-container');
             console.log('Process modal loaded');
             
+            // Load edit modal
+            console.log('Loading edit modal...');
+            await this.loadComponent('edit-test-modal', '#modal-container');
+            console.log('Edit modal loaded');
+            
             // Load pending tests once all components are loaded
             setTimeout(() => {
                 this.loadPendingTests();
@@ -211,6 +216,9 @@ window.NADLab = {
         const container = document.getElementById('recent-tests-list');
         if (!container) return;
         
+        // Store recent tests for edit functionality
+        this.recentTests = tests;
+        
         if (tests.length === 0) {
             container.innerHTML = '<p class="no-tests">No recent tests</p>';
             return;
@@ -228,8 +236,11 @@ window.NADLab = {
                         <p>Processed: ${new Date(test.processed_date).toLocaleDateString()}</p>
                         <p>Technician: ${test.technician_id || 'N/A'}</p>
                     </div>
-                    <div class="test-status">
+                    <div class="test-actions">
                         <span class="status-badge status-completed">✅ Completed</span>
+                        <button class="btn btn-secondary btn-sm" onclick="NADLab.openEditModal('${test.test_id}')">
+                            ✏️ Edit
+                        </button>
                     </div>
                 </div>
             `;
@@ -355,6 +366,67 @@ window.NADLab = {
         document.getElementById('process-test-modal').style.display = 'none';
         this.currentProcessingTest = null;
     },
+
+    openEditModal(testId) {
+        console.log('Opening edit modal for test:', testId);
+        
+        // Get the test data from recent tests
+        const testData = this.recentTests?.find(test => test.test_id === testId);
+        if (!testData) {
+            alert('Test data not found. Please refresh and try again.');
+            return;
+        }
+        
+        // Store current test data
+        this.currentEditingTest = testData;
+        
+        // Get technician email
+        const technicianEmail = this.getTechnicianEmail();
+        
+        // Get modal elements
+        const modalTestId = document.getElementById('edit-modal-test-id');
+        const modalBatchId = document.getElementById('edit-modal-batch-id');
+        const modalOriginalScore = document.getElementById('edit-modal-original-score');
+        const modalProcessedDate = document.getElementById('edit-modal-processed-date');
+        const editScoreField = document.getElementById('edit-nad-score');
+        const technicianEmailField = document.getElementById('edit-technician-email');
+        const editForm = document.getElementById('edit-test-form');
+        const errorMessage = document.getElementById('edit-modal-error-message');
+        const modal = document.getElementById('edit-test-modal');
+        
+        if (!modal) {
+            console.error('Edit modal not found!');
+            alert('Edit modal not loaded. Please refresh the page.');
+            return;
+        }
+        
+        // Populate modal with test information
+        if (modalTestId) modalTestId.textContent = testData.test_id;
+        if (modalBatchId) modalBatchId.textContent = testData.batch_id ? 
+            testData.batch_id.split('-').pop() : 'N/A';
+        if (modalOriginalScore) modalOriginalScore.textContent = testData.nad_score || 'N/A';
+        if (modalProcessedDate) modalProcessedDate.textContent = 
+            new Date(testData.processed_date).toLocaleDateString();
+        
+        // Set current score as default
+        if (editScoreField) editScoreField.value = testData.nad_score || '';
+        
+        // Reset form
+        if (editForm) editForm.reset();
+        if (errorMessage) errorMessage.style.display = 'none';
+        
+        // Re-populate fields after reset
+        if (editScoreField) editScoreField.value = testData.nad_score || '';
+        if (technicianEmailField) technicianEmailField.value = technicianEmail;
+        
+        // Show modal
+        modal.style.display = 'block';
+    },
+
+    closeEditModal() {
+        document.getElementById('edit-test-modal').style.display = 'none';
+        this.currentEditingTest = null;
+    },
     
     async processTest(formData) {
         try {
@@ -398,22 +470,36 @@ window.NADLab = {
     setupModalEventListeners() {
         console.log('Setting up modal event listeners...');
         
-        const form = document.getElementById('process-test-form');
-        if (form) {
-            console.log('Modal form found, adding event listener');
-            form.addEventListener('submit', (e) => {
+        const processForm = document.getElementById('process-test-form');
+        if (processForm) {
+            console.log('Process modal form found, adding event listener');
+            processForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 this.handleProcessFormSubmit();
             });
         } else {
-            console.error('Modal form not found!');
+            console.error('Process modal form not found!');
+        }
+        
+        const editForm = document.getElementById('edit-test-form');
+        if (editForm) {
+            console.log('Edit modal form found, adding event listener');
+            editForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleEditFormSubmit();
+            });
+        } else {
+            console.error('Edit modal form not found!');
         }
         
         // Close modal when clicking outside
         window.addEventListener('click', (e) => {
-            const modal = document.getElementById('process-test-modal');
-            if (e.target === modal) {
+            const processModal = document.getElementById('process-test-modal');
+            const editModal = document.getElementById('edit-test-modal');
+            if (e.target === processModal) {
                 this.closeProcessModal();
+            } else if (e.target === editModal) {
+                this.closeEditModal();
             }
         });
     },
@@ -446,6 +532,81 @@ window.NADLab = {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         });
+    },
+
+    handleEditFormSubmit() {
+        const form = document.getElementById('edit-test-form');
+        const formData = new FormData(form);
+        
+        // Validate required fields
+        const nadScore = formData.get('nadScore');
+        const editReason = formData.get('editReason');
+        const editNotes = formData.get('editNotes');
+        
+        if (!nadScore || nadScore < 0 || nadScore > 100) {
+            this.showEditModalError('Please enter a valid NAD+ score between 0 and 100.');
+            return;
+        }
+        
+        if (!editReason) {
+            this.showEditModalError('Please select a reason for the edit.');
+            return;
+        }
+        
+        if (!editNotes || editNotes.trim().length < 10) {
+            this.showEditModalError('Please provide a detailed explanation (at least 10 characters).');
+            return;
+        }
+        
+        // Ensure technician email is included
+        const technicianEmail = formData.get('technicianEmail') || this.getTechnicianEmail();
+        if (technicianEmail && technicianEmail !== 'lab-tech@example.com') {
+            formData.set('technicianEmail', technicianEmail);
+        }
+        
+        // Show loading state
+        const submitBtn = document.getElementById('submit-edit-btn');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Saving...';
+        submitBtn.disabled = true;
+        
+        // Update the test
+        this.updateTest(this.currentEditingTest.test_id, formData).finally(() => {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        });
+    },
+
+    async updateTest(testId, formData) {
+        try {
+            const response = await fetch(`/api/lab/update-test/${testId}`, {
+                method: 'PUT',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.closeEditModal();
+                await this.loadRecentTests(); // Refresh the list
+                
+                // Show success message
+                this.showSuccessMessage('Test updated successfully!');
+            } else {
+                throw new Error(data.message || 'Update failed');
+            }
+        } catch (error) {
+            console.error('Error updating test:', error);
+            this.showEditModalError(error.message || 'Error updating test. Please try again.');
+        }
+    },
+
+    showEditModalError(message) {
+        const errorDiv = document.getElementById('edit-modal-error-message');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
     },
     
     showModalError(message) {
