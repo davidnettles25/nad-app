@@ -62,10 +62,52 @@ async function initializeDatabase() {
         console.log('✅ Database connected successfully');
         const [rows] = await db.execute('SELECT 1 as test');
         console.log('✅ Database test query successful');
+        
+        // Run schema cleanup migration if needed
+        await cleanupTestScoresSchema();
+        
         return true;
     } catch (error) {
         console.error('❌ Database connection failed:', error);
         return false;
+    }
+}
+
+async function cleanupTestScoresSchema() {
+    try {
+        console.log('🔧 Checking nad_test_scores schema...');
+        
+        // Check if redundant columns still exist
+        const [columns] = await db.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'nad_test_scores' 
+            AND COLUMN_NAME IN ('status', 'is_activated', 'order_id', 'customer_id', 'activated_by', 'activated_date')
+        `);
+        
+        if (columns.length > 0) {
+            console.log('🔧 Found redundant columns in nad_test_scores, cleaning up...');
+            console.log('Columns to remove:', columns.map(c => c.COLUMN_NAME));
+            
+            // Remove redundant columns one by one (safer than all at once)
+            const columnsToRemove = ['status', 'is_activated', 'order_id', 'customer_id', 'activated_by', 'activated_date', 'label_received_date'];
+            
+            for (const column of columnsToRemove) {
+                try {
+                    await db.execute(`ALTER TABLE nad_test_scores DROP COLUMN IF EXISTS \`${column}\``);
+                    console.log(`✅ Removed column: ${column}`);
+                } catch (dropError) {
+                    console.log(`ℹ️  Column ${column} already removed or doesn't exist`);
+                }
+            }
+            
+            console.log('✅ nad_test_scores schema cleanup complete');
+        } else {
+            console.log('✅ nad_test_scores schema already clean');
+        }
+    } catch (error) {
+        console.warn('⚠️  Schema cleanup error (non-critical):', error.message);
     }
 }
 
