@@ -709,8 +709,8 @@ function renderTestsTable(tests) {
 function updateTestStats(tests) {
     const stats = {
         total: tests.length,
-        activated: tests.filter(t => t.is_activated).length,
-        pending: tests.filter(t => !t.is_activated).length,
+        activated: tests.filter(t => t.status === 'activated').length,
+        pending: tests.filter(t => t.status === 'pending').length,
         completed: tests.filter(t => t.score).length
     };
     
@@ -728,15 +728,15 @@ function updateTestStats(tests) {
 }
 
 function getTestStatus(test) {
-    if (test.score) return 'Completed';
-    if (test.is_activated) return 'Activated';
-    return 'Not Activated';
+    // Use status field directly from backend
+    if (test.status) {
+        return test.status.charAt(0).toUpperCase() + test.status.slice(1);
+    }
+    return 'Unknown';
 }
 
 function getStatusClass(test) {
-    if (test.score) return 'status-completed';
-    if (test.is_activated) return 'status-activated';
-    return 'status-not-activated';
+    return `status-${test.status || 'pending'}`;
 }
 
 // User Management Functions

@@ -91,10 +91,10 @@ function handleStatusFilter(status) {
     
     // Apply status filter
     if (status === 'activated') {
-        filtered = allTests.filter(test => test.is_activated === true || test.is_activated === 1);
+        filtered = allTests.filter(test => test.status === 'activated');
         console.log(`📊 Filtered to activated tests: ${filtered.length} of ${allTests.length}`);
     } else if (status === 'pending') {
-        filtered = allTests.filter(test => test.is_activated === false || test.is_activated === 0);
+        filtered = allTests.filter(test => test.status === 'pending');
         console.log(`📊 Filtered to pending tests: ${filtered.length} of ${allTests.length}`);
     } else {
         console.log(`📊 Showing all tests: ${filtered.length}`);
@@ -188,8 +188,8 @@ function updateTableDirectly(tests) {
         <tr>
             <td><strong>${test.test_id || 'N/A'}</strong></td>
             <td>
-                <span class="status-badge ${test.is_activated ? 'status-activated' : 'status-pending'}">
-                    ${test.is_activated ? 'Activated' : 'Pending'}
+                <span class="status-badge status-${test.status || 'pending'}">
+                    ${test.status ? test.status.charAt(0).toUpperCase() + test.status.slice(1) : 'Pending'}
                 </span>
             </td>
             <td>${test.customer_id || 'N/A'}</td>

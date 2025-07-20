@@ -25,9 +25,9 @@
         let filtered = tests;
         
         if (status === 'activated') {
-            filtered = tests.filter(t => t.is_activated);
+            filtered = tests.filter(t => t.status === 'activated');
         } else if (status === 'pending') {
-            filtered = tests.filter(t => !t.is_activated);
+            filtered = tests.filter(t => t.status === 'pending');
         }
         
         console.log(`Showing ${filtered.length} of ${tests.length} tests`);

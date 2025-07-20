@@ -164,9 +164,11 @@ const NAD_UTILS = {
     formatTestStatus(test) {
         if (!test) return 'Unknown';
         
-        if (test.score) return 'Completed';
-        if (test.is_activated) return 'Activated';
-        return 'Pending';
+        // Use status field directly from backend
+        if (test.status) {
+            return test.status.charAt(0).toUpperCase() + test.status.slice(1);
+        }
+        return 'Unknown';
     },
     
     // ============================================================================

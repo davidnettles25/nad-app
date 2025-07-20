@@ -992,15 +992,7 @@
                 if (result.success && result.tests) {
                     // Ensure all tests have a status field
                     result.tests = result.tests.map(test => {
-                        if (!test.status) {
-                            // Fallback logic for tests without status
-                            if (test.is_activated === 1 || test.is_activated === true) {
-                                test.status = 'activated';
-                            } else {
-                                test.status = 'pending';
-                            }
-                            console.log(`🔧 Fixed missing status for test ${test.test_id}: ${test.status}`);
-                        }
+                        // All tests should now have status from backend migration
                         return test;
                     });
                     
@@ -1108,7 +1100,7 @@
                     
                     // Debug problematic matches
                     if (statusFilter === 'activated' && test.status === 'completed') {
-                        console.warn(`⚠️ Test ${test.test_id} has status "${test.status}" but is_activated=${test.is_activated}`);
+                        console.warn(`⚠️ Test ${test.test_id} has status "${test.status}" instead of "${statusFilter}"`);
                     }
                     
                     return matches;
@@ -1234,7 +1226,7 @@
             const allBatches = window.allBatches || [];
         
             const total = allTests.length;
-            const activated = allTests.filter(t => t.is_activated).length;
+            const activated = allTests.filter(t => t.status === 'activated').length;
             const pending = total - activated;
             const batches = allBatches.length;
         
@@ -1260,7 +1252,7 @@
             if (test) {
                 const details = `
 Test ID: ${test.test_id}
-Status: ${test.is_activated ? 'Activated' : 'Pending'}
+Status: ${test.status ? test.status.charAt(0).toUpperCase() + test.status.slice(1) : 'Unknown'}
 Customer ID: ${test.customer_id || 'N/A'}
 Order ID: ${test.order_id || 'Manual'}
 Batch: ${test.batch_id || 'Individual'}
@@ -1830,9 +1822,9 @@ setTimeout(() => {
             let filtered = tests;
 
             if (status === 'activated') {
-                filtered = tests.filter(t => t.is_activated);
+                filtered = tests.filter(t => t.status === 'activated');
             } else if (status === 'pending') {
-                filtered = tests.filter(t => !t.is_activated);
+                filtered = tests.filter(t => t.status === 'pending');
             }
 
             if (window.renderTestsTable) {

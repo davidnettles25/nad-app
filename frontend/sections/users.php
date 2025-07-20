@@ -981,7 +981,7 @@ class UsersManager {
                     </div>
                     <div class="stat-item">
                         <label>Pending Tests:</label>
-                        <value>${user.tests?.filter(t => !t.score && t.is_activated).length || 0}</value>
+                        <value>${user.tests?.filter(t => t.status === 'activated' && !t.score).length || 0}</value>
                     </div>
                 </div>
             </div>
@@ -994,12 +994,10 @@ class UsersManager {
                             <div class="test-item">
                                 <div class="test-id">${test.test_id}</div>
                                 <div class="test-status">
-                                    ${test.score ? 
-                                        `<span class="status-badge status-completed">Completed (${test.score})</span>` :
-                                        test.is_activated ? 
-                                            `<span class="status-badge status-activated">Activated</span>` :
-                                            `<span class="status-badge status-pending">Pending</span>`
-                                    }
+                                    <span class="status-badge status-${test.status || 'pending'}">
+                                        ${test.status ? test.status.charAt(0).toUpperCase() + test.status.slice(1) : 'Pending'}
+                                        ${test.score ? ` (${test.score})` : ''}
+                                    </span>
                                 </div>
                                 <div class="test-date">${new Date(test.created_date).toLocaleDateString()}</div>
                             </div>

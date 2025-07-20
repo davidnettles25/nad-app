@@ -693,7 +693,7 @@ class TestsManager {
                     <td>${createdDate}</td>
                     <td>
                         <div class="action-buttons">
-                            ${!test.is_activated ? 
+                            ${test.status === 'pending' ? 
                                 `<button class="btn btn-sm btn-success" onclick="testsManager.activateTest('${test.test_id}')">⚡ Activate</button>` : 
                                 `<button class="btn btn-sm btn-danger" onclick="testsManager.deactivateTest('${test.test_id}')">❌ Deactivate</button>`}
                             <button class="btn btn-sm" onclick="testsManager.viewTest('${test.test_id}')">👁️ View</button>
@@ -707,9 +707,11 @@ class TestsManager {
     }
     
     getTestStatus(test) {
-        if (test.score) return 'Completed';
-        if (test.is_activated) return 'Activated';
-        return 'Not Activated';
+        // Use status field directly from backend
+        if (test.status) {
+            return test.status.charAt(0).toUpperCase() + test.status.slice(1);
+        }
+        return 'Unknown';
     }
     
     getTestStatusClass(status) {
@@ -790,8 +792,8 @@ class TestsManager {
                 this.allTests.find(t => t.test_id === testId)
             ).filter(Boolean);
             
-            const activatedCount = selectedTestData.filter(t => t.is_activated).length;
-            const notActivatedCount = selectedTestData.filter(t => !t.is_activated).length;
+            const activatedCount = selectedTestData.filter(t => t.status === 'activated').length;
+            const notActivatedCount = selectedTestData.filter(t => t.status === 'pending').length;
             
             if (activateBtn) {
                 activateBtn.disabled = notActivatedCount === 0;
@@ -1090,9 +1092,9 @@ Showing ${this.filteredTests.length} of ${this.allTests.length} tests
     
     calculateStats() {
         const total = this.allTests.length;
-        const activated = this.allTests.filter(t => t.is_activated).length;
+        const activated = this.allTests.filter(t => t.status === 'activated').length;
         const completed = this.allTests.filter(t => t.score).length;
-        const pending = total - activated;
+        const pending = this.allTests.filter(t => t.status === 'pending').length;
         
         return {
             total,

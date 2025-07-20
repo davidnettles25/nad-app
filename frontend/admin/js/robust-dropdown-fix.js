@@ -61,9 +61,9 @@ console.log('🔧 Loading ROBUST dropdown fix...');
             let filtered = [...allTests];
             
             if (selectedStatus === 'activated') {
-                filtered = allTests.filter(test => test.is_activated === true || test.is_activated === 1);
+                filtered = allTests.filter(test => test.status === 'activated');
             } else if (selectedStatus === 'pending') {
-                filtered = allTests.filter(test => test.is_activated === false || test.is_activated === 0);
+                filtered = allTests.filter(test => test.status === 'pending');
             }
             
             console.log(`📋 Filtered to ${filtered.length} tests`);
