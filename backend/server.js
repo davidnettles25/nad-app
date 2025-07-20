@@ -66,6 +66,9 @@ async function initializeDatabase() {
         // Run schema cleanup migration if needed
         await cleanupTestScoresSchema();
         
+        // Run status migration to ensure data integrity
+        await migrateTestStatusValues();
+        
         return true;
     } catch (error) {
         console.error('❌ Database connection failed:', error);
@@ -108,6 +111,102 @@ async function cleanupTestScoresSchema() {
         }
     } catch (error) {
         console.warn('⚠️  Schema cleanup error (non-critical):', error.message);
+    }
+}
+
+// Phase 1 - Migration helper to ensure all tests have proper status values
+async function migrateTestStatusValues() {
+    try {
+        console.log('🔄 Starting status migration check...');
+        
+        // First, get current state statistics
+        const [beforeStats] = await db.execute(`
+            SELECT 
+                COUNT(*) as total_tests,
+                COUNT(CASE WHEN status IS NULL THEN 1 END) as null_status,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                COUNT(CASE WHEN status = 'activated' THEN 1 END) as activated,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+                COUNT(CASE WHEN is_activated = 1 AND status != 'activated' AND status != 'completed' THEN 1 END) as mismatched
+            FROM nad_test_ids
+        `);
+        
+        console.log('📊 Before migration:', beforeStats[0]);
+        
+        // Step 1: Set status for NULL values based on is_activated
+        const [nullUpdate] = await db.execute(`
+            UPDATE nad_test_ids 
+            SET status = CASE 
+                WHEN is_activated = 1 THEN 'activated'
+                ELSE 'pending'
+            END
+            WHERE status IS NULL
+        `);
+        console.log(`✅ Updated ${nullUpdate.affectedRows} NULL status values`);
+        
+        // Step 2: Fix completed tests (those with scores)
+        const [completedUpdate] = await db.execute(`
+            UPDATE nad_test_ids ti
+            INNER JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            SET ti.status = 'completed'
+            WHERE ts.score IS NOT NULL 
+            AND ti.status != 'completed'
+        `);
+        console.log(`✅ Updated ${completedUpdate.affectedRows} tests to completed status`);
+        
+        // Step 3: Fix activated tests (is_activated=1 but no score)
+        const [activatedUpdate] = await db.execute(`
+            UPDATE nad_test_ids ti
+            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            SET ti.status = 'activated'
+            WHERE ti.is_activated = 1 
+            AND ts.score IS NULL
+            AND ti.status != 'activated'
+        `);
+        console.log(`✅ Updated ${activatedUpdate.affectedRows} tests to activated status`);
+        
+        // Step 4: Fix pending tests
+        const [pendingUpdate] = await db.execute(`
+            UPDATE nad_test_ids 
+            SET status = 'pending'
+            WHERE is_activated = 0 
+            AND status != 'pending'
+        `);
+        console.log(`✅ Updated ${pendingUpdate.affectedRows} tests to pending status`);
+        
+        // Get final statistics
+        const [afterStats] = await db.execute(`
+            SELECT 
+                COUNT(*) as total_tests,
+                COUNT(CASE WHEN status IS NULL THEN 1 END) as null_status,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                COUNT(CASE WHEN status = 'activated' THEN 1 END) as activated,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+                COUNT(CASE WHEN 
+                    (is_activated = 0 AND status != 'pending') OR
+                    (is_activated = 1 AND status = 'pending')
+                THEN 1 END) as still_mismatched
+            FROM nad_test_ids
+        `);
+        
+        console.log('📊 After migration:', afterStats[0]);
+        
+        if (afterStats[0].still_mismatched > 0) {
+            console.warn('⚠️  Some tests still have mismatched status values');
+        }
+        
+        return {
+            success: true,
+            before: beforeStats[0],
+            after: afterStats[0]
+        };
+        
+    } catch (error) {
+        console.error('❌ Status migration error:', error);
+        return {
+            success: false,
+            error: error.message
+        };
     }
 }
 
