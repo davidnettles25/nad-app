@@ -3,7 +3,6 @@
     {
       "test_id": "NAD-20241215-0001",
       "customer_id": 1001,
-      "order_id": 12345,
       "status": "completed",
       "score": 85,
       "created_date": "2024-12-15",
@@ -12,7 +11,6 @@
     {
       "test_id": "NAD-20241215-0002", 
       "customer_id": 1002,
-      "order_id": 12346,
       "status": "pending",
       "created_date": "2024-12-15"
     }

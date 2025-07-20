@@ -72,6 +72,9 @@ async function initializeDatabase() {
         // Run Phase 4 cleanup to remove is_activated column
         await cleanupIsActivatedColumn();
         
+        // Run order_id cleanup to remove order_id column
+        await cleanupOrderIdColumn();
+        
         return true;
     } catch (error) {
         console.error('❌ Database connection failed:', error);
@@ -89,7 +92,7 @@ async function cleanupTestScoresSchema() {
             FROM INFORMATION_SCHEMA.COLUMNS 
             WHERE TABLE_SCHEMA = DATABASE() 
             AND TABLE_NAME = 'nad_test_scores' 
-            AND COLUMN_NAME IN ('status', 'is_activated', 'order_id', 'customer_id', 'activated_by', 'activated_date')
+            AND COLUMN_NAME IN ('status', 'is_activated', 'customer_id', 'activated_by', 'activated_date')
         `);
         
         if (columns.length > 0) {
@@ -97,7 +100,7 @@ async function cleanupTestScoresSchema() {
             console.log('Columns to remove:', columns.map(c => c.COLUMN_NAME));
             
             // Remove redundant columns one by one (safer than all at once)
-            const columnsToRemove = ['status', 'is_activated', 'order_id', 'customer_id', 'activated_by', 'activated_date', 'label_received_date'];
+            const columnsToRemove = ['status', 'is_activated', 'customer_id', 'activated_by', 'activated_date', 'label_received_date'];
             
             for (const column of columnsToRemove) {
                 try {
@@ -309,6 +312,132 @@ async function cleanupIsActivatedColumn() {
 }
 
 // ============================================================================
+// ORDER ID CLEANUP FUNCTION (Phase 4: Order ID Removal Migration)
+// ============================================================================
+
+async function cleanupOrderIdColumn() {
+    try {
+        console.log('🧹 Starting order_id column removal cleanup...');
+        
+        // Step 1: Verify all data integrity before cleanup
+        console.log('✅ Validating data integrity before order_id removal...');
+        
+        // Check if order_id column exists
+        const [orderIdColumn] = await db.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'nad_test_ids' 
+            AND COLUMN_NAME = 'order_id'
+        `);
+        
+        if (orderIdColumn.length === 0) {
+            console.log('ℹ️  order_id column already removed from nad_test_ids');
+            return { 
+                success: true, 
+                action: 'already_removed',
+                message: 'order_id column does not exist in nad_test_ids'
+            };
+        }
+        
+        console.log('🔍 Found order_id column, proceeding with removal...');
+        
+        // Get current test count for validation
+        const [testCount] = await db.execute(`SELECT COUNT(*) as total FROM nad_test_ids`);
+        const totalTests = testCount[0].total;
+        console.log(`📊 Total tests before cleanup: ${totalTests}`);
+        
+        // Check order_id usage distribution
+        const [orderIdStats] = await db.execute(`
+            SELECT 
+                COUNT(CASE WHEN order_id IS NULL THEN 1 END) as null_order_id,
+                COUNT(CASE WHEN order_id IS NOT NULL THEN 1 END) as has_order_id,
+                COUNT(*) as total
+            FROM nad_test_ids
+        `);
+        console.log('📊 Order ID distribution:', orderIdStats[0]);
+        
+        // Step 2: Remove order_id index first (if exists)
+        console.log('🔧 Removing idx_order_id index...');
+        try {
+            await db.execute(`ALTER TABLE nad_test_ids DROP INDEX idx_order_id`);
+            console.log('✅ Removed idx_order_id index');
+        } catch (error) {
+            if (error.message.includes("check that column/key exists")) {
+                console.log('ℹ️  idx_order_id index does not exist, skipping...');
+            } else {
+                throw error;
+            }
+        }
+        
+        // Step 3: Remove order_id column from nad_test_ids
+        console.log('🗑️  Removing order_id column from nad_test_ids...');
+        await db.execute(`ALTER TABLE nad_test_ids DROP COLUMN order_id`);
+        console.log('✅ Successfully removed order_id column from nad_test_ids');
+        
+        // Step 4: Verify removal
+        const [afterColumns] = await db.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'nad_test_ids' 
+            AND COLUMN_NAME = 'order_id'
+        `);
+        
+        // Step 5: Verify data integrity after cleanup
+        const [afterTestCount] = await db.execute(`SELECT COUNT(*) as total FROM nad_test_ids`);
+        const afterTotal = afterTestCount[0].total;
+        
+        if (afterTotal !== totalTests) {
+            throw new Error(`Data loss detected: ${totalTests} tests before, ${afterTotal} tests after`);
+        }
+        
+        console.log(`✅ Data integrity verified: ${afterTotal} tests preserved`);
+        
+        // Step 6: Check nad_test_scores table for order_id
+        console.log('🔍 Checking nad_test_scores table for order_id column...');
+        const [scoresOrderIdColumn] = await db.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'nad_test_scores' 
+            AND COLUMN_NAME = 'order_id'
+        `);
+        
+        let scoresAction = 'not_found';
+        if (scoresOrderIdColumn.length > 0) {
+            console.log('⚠️  Found order_id column in nad_test_scores table');
+            console.log('ℹ️  Keeping nad_test_scores.order_id for now (can be removed separately if needed)');
+            scoresAction = 'kept';
+        } else {
+            console.log('ℹ️  nad_test_scores.order_id column does not exist');
+        }
+        
+        if (afterColumns.length === 0) {
+            console.log('✅ Order ID cleanup complete: order_id column successfully removed from nad_test_ids');
+            return { 
+                success: true, 
+                action: 'removed',
+                nad_test_ids: 'removed',
+                nad_test_scores: scoresAction,
+                tests_preserved: afterTotal,
+                message: 'order_id column successfully removed from nad_test_ids'
+            };
+        } else {
+            throw new Error('Column removal verification failed');
+        }
+        
+    } catch (error) {
+        console.error('❌ Order ID cleanup error:', error);
+        return {
+            success: false,
+            error: error.message,
+            action: 'failed'
+        };
+    }
+}
+
+// ============================================================================
 // FILE UPLOAD CONFIGURATION
 // ============================================================================
 
@@ -352,28 +481,6 @@ function generateTestId() {
     return `NAD-${year}${month}${day}-${random}`;
 }
 
-function verifyShopifyWebhook(data, hmacHeader) {
-    if (!process.env.SHOPIFY_WEBHOOK_SECRET) {
-        console.warn('⚠️ SHOPIFY_WEBHOOK_SECRET not set, skipping verification');
-        return true;
-    }
-    const calculated_hmac = crypto
-        .createHmac('sha256', process.env.SHOPIFY_WEBHOOK_SECRET)
-        .update(data, 'utf8')
-        .digest('base64');
-    return calculated_hmac === hmacHeader;
-}
-
-function isNADProduct(product) {
-    if (!product) return false;
-    const title = (product.title || '').toLowerCase();
-    const sku = (product.sku || '').toLowerCase();
-    const vendor = (product.vendor || '').toLowerCase();
-    const nadKeywords = ['nad', 'test', 'kit', 'cellular', 'energy'];
-    return nadKeywords.some(keyword => 
-        title.includes(keyword) || sku.includes(keyword) || vendor.includes(keyword)
-    );
-}
 
 // ============================================================================
 // SHOPIFY AUTHENTICATION MIDDLEWARE
@@ -476,102 +583,6 @@ app.get('/api/dashboard/stats', async (req, res) => {
 // SHOPIFY WEBHOOK ENDPOINTS
 // ============================================================================
 
-app.post('/api/webhooks/orders/create', express.raw({type: 'application/json'}), async (req, res) => {
-    try {
-        const hmacHeader = req.get('X-Shopify-Hmac-Sha256');
-        const body = req.body;
-        
-        if (process.env.NODE_ENV === 'production' && !verifyShopifyWebhook(body, hmacHeader)) {
-            return res.status(401).send('Unauthorized');
-        }
-        
-        const order = JSON.parse(body.toString());
-        console.log('📦 Order created webhook received:', order.id);
-        
-        const hasNADProducts = order.line_items.some(item => isNADProduct(item));
-        
-        if (hasNADProducts) {
-            for (const item of order.line_items) {
-                if (isNADProduct(item)) {
-                    for (let i = 0; i < item.quantity; i++) {
-                        const testId = generateTestId();
-                        await db.execute(`
-                            INSERT INTO nad_test_ids (
-                                test_id, generated_by, order_id, customer_id, shopify_order_number, 
-                                created_date, payment_status, shipping_status
-                            ) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)
-                        `, [
-                            testId,
-                            order.customer?.id || 0,
-                            order.id,
-                            order.customer?.id || 0,
-                            order.name,
-                            order.financial_status || 'pending',
-                            order.fulfillment_status || 'pending'
-                        ]);
-                        console.log(`✅ Generated test ID: ${testId} for order ${order.name}`);
-                    }
-                }
-            }
-        }
-        res.status(200).send('OK');
-    } catch (error) {
-        console.error('❌ Error processing order creation webhook:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});
-
-app.post('/api/webhooks/orders/paid', express.raw({type: 'application/json'}), async (req, res) => {
-    try {
-        const hmacHeader = req.get('X-Shopify-Hmac-Sha256');
-        const body = req.body;
-        
-        if (process.env.NODE_ENV === 'production' && !verifyShopifyWebhook(body, hmacHeader)) {
-            return res.status(401).send('Unauthorized');
-        }
-        
-        const order = JSON.parse(body.toString());
-        console.log('💳 Order paid webhook received:', order.id);
-        
-        await db.execute(`
-            UPDATE nad_test_ids 
-            SET status = 'activated', activated_date = NOW(), payment_status = 'paid', payment_date = NOW()
-            WHERE order_id = ?
-        `, [order.id]);
-        
-        console.log(`✅ Activated tests for paid order: ${order.name}`);
-        res.status(200).send('OK');
-    } catch (error) {
-        console.error('❌ Error processing order paid webhook:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});
-
-app.post('/api/webhooks/orders/fulfilled', express.raw({type: 'application/json'}), async (req, res) => {
-    try {
-        const hmacHeader = req.get('X-Shopify-Hmac-Sha256');
-        const body = req.body;
-        
-        if (process.env.NODE_ENV === 'production' && !verifyShopifyWebhook(body, hmacHeader)) {
-            return res.status(401).send('Unauthorized');
-        }
-        
-        const order = JSON.parse(body.toString());
-        console.log('📦 Order fulfilled webhook received:', order.id);
-        
-        await db.execute(`
-            UPDATE nad_test_ids 
-            SET shipping_status = 'fulfilled', shipped_date = NOW()
-            WHERE order_id = ?
-        `, [order.id]);
-        
-        console.log(`✅ Updated shipping status for order: ${order.name}`);
-        res.status(200).send('OK');
-    } catch (error) {
-        console.error('❌ Error processing order fulfilled webhook:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});
 
 // ============================================================================
 // TEST MANAGEMENT ENDPOINTS
@@ -611,7 +622,6 @@ app.post('/api/tests/verify', async (req, res) => {
             test: {
                 test_id: test.test_id,
                 customer_id: test.customer_id,
-                order_id: test.order_id,
                 status: status,
                 created_date: test.created_date,
                 activated_date: test.activated_date,
@@ -630,7 +640,7 @@ app.post('/api/tests/:testId/supplements', async (req, res) => {
         const { supplements, habits_notes } = req.body;
         
         const [testRows] = await db.execute(`
-            SELECT test_id, status, customer_id, order_id, batch_id, created_date, activated_date 
+            SELECT test_id, status, customer_id, batch_id, created_date, activated_date 
             FROM nad_test_ids WHERE test_id = ? AND status IN ('activated', 'completed')
         `, [testId]);
         
@@ -692,7 +702,6 @@ app.get('/api/tests/:testId/results', async (req, res) => {
                 status: 'completed',
                 technician_id: result.technician_id,
                 score_submission_date: result.score_submission_date,
-                order_id: result.order_id,
                 customer_id: result.customer_id,
                 notes: result.notes,
                 supplements_info: result.supplements_with_dose,
@@ -729,7 +738,7 @@ app.post('/api/tests/score', upload.single('image'), async (req, res) => {
         }
         
         const [testRows] = await db.execute(`
-            SELECT test_id, status, customer_id, order_id, batch_id, created_date, activated_date 
+            SELECT test_id, status, customer_id, batch_id, created_date, activated_date 
             FROM nad_test_ids WHERE test_id = ?
         `, [test_id]);
         
@@ -748,15 +757,15 @@ app.post('/api/tests/score', upload.single('image'), async (req, res) => {
         
         await db.execute(`
             INSERT INTO nad_test_scores (
-                order_id, customer_id, activated_by, technician_id, test_id, score, image, 
+                customer_id, activated_by, technician_id, test_id, score, image, 
                 status, score_submission_date, created_date, updated_date, notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', 1, CURDATE(), CURDATE(), CURDATE(), ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, 'completed', 1, CURDATE(), CURDATE(), CURDATE(), ?)
             ON DUPLICATE KEY UPDATE
             score = VALUES(score), technician_id = VALUES(technician_id), image = VALUES(image),
             status = VALUES(status), score_submission_date = VALUES(score_submission_date),
             updated_date = VALUES(updated_date), notes = VALUES(notes)
         `, [
-            test.order_id, test.customer_id, test.customer_id, technician_id,
+            test.customer_id, test.customer_id, technician_id,
             test_id, score, imagePath, notes || ''
         ]);
         
@@ -1465,7 +1474,6 @@ app.get('/api/admin/tests', async (req, res) => {
                 ti.batch_id, 
                 ti.batch_size, 
                 ti.generated_by, 
-                ti.order_id, 
                 ti.customer_id, 
                 ti.created_date, 
                 ti.status,
@@ -2301,7 +2309,7 @@ app.post('/api/customer/verify-test', async (req, res) => {
         
         // Check if test exists
         const [testRows] = await db.execute(`
-            SELECT test_id, status, activated_date, customer_id, order_id, batch_id
+            SELECT test_id, status, activated_date, customer_id, batch_id
             FROM nad_test_ids 
             WHERE test_id = ?
         `, [testId]);
@@ -2332,7 +2340,6 @@ app.post('/api/customer/verify-test', async (req, res) => {
             data: {
                 test_id: testId,
                 customer_id: test.customer_id,
-                order_id: test.order_id,
                 batch_id: test.batch_id,
                 verified_date: new Date().toISOString()
             }
@@ -2363,7 +2370,7 @@ app.post('/api/customer/activate-test', async (req, res) => {
         
         // Check if test exists and is not already activated
         const [testRows] = await db.execute(`
-            SELECT test_id, status, activated_date, customer_id, order_id, batch_id
+            SELECT test_id, status, activated_date, customer_id, batch_id
             FROM nad_test_ids 
             WHERE test_id = ?
         `, [testId]);
@@ -2426,7 +2433,6 @@ app.post('/api/customer/activate-test', async (req, res) => {
             data: {
                 test_id: testId,
                 customer_id: test.customer_id,
-                order_id: test.order_id,
                 batch_id: test.batch_id,
                 activated_date: new Date().toISOString(),
                 supplements_recorded: supplements ? true : false

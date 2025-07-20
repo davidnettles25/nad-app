@@ -124,7 +124,6 @@ function handleSearchFilter(searchTerm) {
             return (
                 (test.test_id && test.test_id.toLowerCase().includes(searchTerm)) ||
                 (test.customer_id && test.customer_id.toString().toLowerCase().includes(searchTerm)) ||
-                (test.order_id && test.order_id.toString().toLowerCase().includes(searchTerm)) ||
                 (test.batch_id && test.batch_id.toLowerCase().includes(searchTerm))
             );
         });
@@ -196,7 +195,6 @@ function updateTableDirectly(tests) {
                 </span>
             </td>
             <td>${test.customer_id || 'N/A'}</td>
-            <td>${test.order_id || 'N/A'}</td>
             <td>${test.batch_id || 'N/A'}</td>
             <td>${test.created_date ? new Date(test.created_date).toLocaleDateString() : 'N/A'}</td>
             <td>

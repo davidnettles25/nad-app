@@ -1073,7 +1073,6 @@
                 filtered = filtered.filter(test =>
                     test.test_id.toLowerCase().includes(searchTerm) ||
                     (test.customer_id && test.customer_id.toString().toLowerCase().includes(searchTerm)) ||
-                    (test.order_id && test.order_id.toString().toLowerCase().includes(searchTerm)) ||
                     (test.batch_id && test.batch_id.toLowerCase().includes(searchTerm))
                 );
             }
@@ -1253,7 +1252,6 @@
 Test ID: ${test.test_id}
 Status: ${test.status ? test.status.charAt(0).toUpperCase() + test.status.slice(1) : 'Unknown'}
 Customer ID: ${test.customer_id || 'N/A'}
-Order ID: ${test.order_id || 'Manual'}
 Batch: ${test.batch_id || 'Individual'}
 Created: ${new Date(test.created_date).toLocaleString()}
 ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleString()}` : ''}

@@ -108,9 +108,6 @@
                         <th class="sortable" data-sort="customer_id">
                             Customer ID <span class="sort-indicator">↕️</span>
                         </th>
-                        <th class="sortable" data-sort="order_id">
-                            Order ID <span class="sort-indicator">↕️</span>
-                        </th>
                         <th class="sortable" data-sort="created_date">
                             Created <span class="sort-indicator">↕️</span>
                         </th>
@@ -551,8 +548,7 @@ class TestsManager {
             const searchTerm = this.filters.search.toLowerCase();
             this.filteredTests = this.filteredTests.filter(test => 
                 test.test_id.toLowerCase().includes(searchTerm) ||
-                test.customer_id.toString().includes(searchTerm) ||
-                test.order_id.toString().includes(searchTerm)
+                test.customer_id.toString().includes(searchTerm)
             );
         }
         
@@ -689,7 +685,6 @@ class TestsManager {
                     <td><strong>${test.test_id}</strong></td>
                     <td><span class="status-badge ${statusClass}">${status}</span></td>
                     <td>${test.customer_id}</td>
-                    <td>#${test.order_id}</td>
                     <td>${createdDate}</td>
                     <td>
                         <div class="action-buttons">
@@ -1013,7 +1008,6 @@ class TestsManager {
 🧪 Test ID: ${test.test_id}
 📊 Status: ${status}
 👤 Customer ID: ${test.customer_id}
-🛒 Order ID: ${test.order_id}
 📅 Created: ${createdDate}
 ⚡ Activated: ${activatedDate}
 ${test.score ? `🎯 Score: ${test.score}` : ''}
