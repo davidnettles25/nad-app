@@ -69,6 +69,9 @@ async function initializeDatabase() {
         // Run status migration to ensure data integrity
         await migrateTestStatusValues();
         
+        // Run Phase 4 cleanup to remove is_activated column
+        await cleanupIsActivatedColumn();
+        
         return true;
     } catch (error) {
         console.error('❌ Database connection failed:', error);
@@ -203,6 +206,101 @@ async function migrateTestStatusValues() {
         
     } catch (error) {
         console.error('❌ Status migration error:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+// Phase 4 - Database schema cleanup (remove is_activated column)
+async function cleanupIsActivatedColumn() {
+    try {
+        console.log('🔄 Phase 4: Checking if is_activated column cleanup is needed...');
+        
+        // Check if is_activated column still exists
+        const [columns] = await db.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'nad_test_ids' 
+            AND COLUMN_NAME = 'is_activated'
+        `);
+        
+        if (columns.length === 0) {
+            console.log('✅ is_activated column already removed, skipping cleanup');
+            return { success: true, action: 'already_removed' };
+        }
+        
+        // Verify all tests have valid status before cleanup
+        const [statusCheck] = await db.execute(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN status IS NULL THEN 1 END) as null_status,
+                COUNT(CASE WHEN status NOT IN ('pending', 'activated', 'completed') THEN 1 END) as invalid_status
+            FROM nad_test_ids
+        `);
+        
+        console.log('📊 Pre-cleanup validation:', statusCheck[0]);
+        
+        if (statusCheck[0].null_status > 0 || statusCheck[0].invalid_status > 0) {
+            console.warn('⚠️  Found tests with NULL or invalid status, skipping cleanup');
+            return { 
+                success: false, 
+                error: 'Data validation failed - some tests have invalid status values',
+                details: statusCheck[0]
+            };
+        }
+        
+        // Get current distribution for logging
+        const [distribution] = await db.execute(`
+            SELECT status, COUNT(*) as count
+            FROM nad_test_ids 
+            GROUP BY status
+            ORDER BY count DESC
+        `);
+        console.log('📊 Status distribution before cleanup:', distribution);
+        
+        // Remove the is_activated column
+        console.log('🗑️  Removing is_activated column from nad_test_ids...');
+        await db.execute(`ALTER TABLE nad_test_ids DROP COLUMN is_activated`);
+        
+        // Add index on status column for better performance
+        console.log('🔧 Adding index on status column for better query performance...');
+        try {
+            await db.execute(`ALTER TABLE nad_test_ids ADD INDEX idx_status (status)`);
+            console.log('✅ Status index added successfully');
+        } catch (indexError) {
+            // Index might already exist, check for specific error
+            if (indexError.message.includes('Duplicate key name')) {
+                console.log('✅ Status index already exists');
+            } else {
+                console.warn('⚠️  Could not add status index:', indexError.message);
+            }
+        }
+        
+        // Verify removal
+        const [afterColumns] = await db.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'nad_test_ids' 
+            AND COLUMN_NAME = 'is_activated'
+        `);
+        
+        if (afterColumns.length === 0) {
+            console.log('✅ Phase 4 complete: is_activated column successfully removed');
+            return { 
+                success: true, 
+                action: 'removed',
+                distribution: distribution
+            };
+        } else {
+            throw new Error('Column removal verification failed');
+        }
+        
+    } catch (error) {
+        console.error('❌ Phase 4 cleanup error:', error);
         return {
             success: false,
             error: error.message
