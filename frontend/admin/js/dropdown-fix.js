@@ -96,6 +96,9 @@ function handleStatusFilter(status) {
     } else if (status === 'pending') {
         filtered = allTests.filter(test => test.status === 'pending');
         console.log(`📊 Filtered to pending tests: ${filtered.length} of ${allTests.length}`);
+    } else if (status === 'completed') {
+        filtered = allTests.filter(test => test.status === 'completed');
+        console.log(`📊 Filtered to completed tests: ${filtered.length} of ${allTests.length}`);
     } else {
         console.log(`📊 Showing all tests: ${filtered.length}`);
     }
