@@ -34,6 +34,8 @@ function applyFinalDropdownFix() {
             filtered = tests.filter(t => t.status === 'activated');
         } else if (status === 'pending') {
             filtered = tests.filter(t => t.status === 'pending');
+        } else if (status === 'completed') {
+            filtered = tests.filter(t => t.status === 'completed');
         }
         
         console.log(`FINAL: Showing ${filtered.length} of ${tests.length} tests`);
