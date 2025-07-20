@@ -630,7 +630,8 @@ app.post('/api/tests/:testId/supplements', async (req, res) => {
         const { supplements, habits_notes } = req.body;
         
         const [testRows] = await db.execute(`
-            SELECT * FROM nad_test_ids WHERE test_id = ? AND status IN ('activated', 'completed')
+            SELECT test_id, status, customer_id, order_id, batch_id, created_date, activated_date 
+            FROM nad_test_ids WHERE test_id = ? AND status IN ('activated', 'completed')
         `, [testId]);
         
         if (testRows.length === 0) {
@@ -728,7 +729,8 @@ app.post('/api/tests/score', upload.single('image'), async (req, res) => {
         }
         
         const [testRows] = await db.execute(`
-            SELECT * FROM nad_test_ids WHERE test_id = ?
+            SELECT test_id, status, customer_id, order_id, batch_id, created_date, activated_date 
+            FROM nad_test_ids WHERE test_id = ?
         `, [test_id]);
         
         if (testRows.length === 0) {
@@ -2484,7 +2486,7 @@ app.get('/api/notifications', async (req, res) => {
         
         // Check for pending tests
         const [pendingTests] = await db.execute(`
-            SELECT COUNT(*) as count FROM nad_test_ids WHERE is_activated = 1 
+            SELECT COUNT(*) as count FROM nad_test_ids WHERE status = 'activated' 
             AND test_id NOT IN (SELECT test_id FROM nad_test_scores)
         `);
         
