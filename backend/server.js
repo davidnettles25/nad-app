@@ -1455,24 +1455,27 @@ app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (re
 
 app.get('/api/admin/tests', async (req, res) => {
     try {
-        // First ensure all tests have proper status values
-        // Fix any inconsistencies between is_activated and status fields
-        await db.execute(`
-            UPDATE nad_test_ids ti
-            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-            SET ti.status = CASE 
-                WHEN ts.score IS NOT NULL THEN 'completed'
-                WHEN ts.score IS NULL AND ti.is_activated = 1 THEN 'activated'
-                ELSE 'pending'
-            END
-            WHERE ti.status IS NULL 
-               OR (ti.status = 'activated' AND ts.score IS NOT NULL)
-               OR (ti.status = 'completed' AND ts.score IS NULL)
-        `);
+        // Status field is now the single source of truth
+        // No migration needed as Phase 4 schema cleanup completed
         
         const [tests] = await db.execute(`
             SELECT 
-                ti.*, 
+                ti.id,
+                ti.test_id, 
+                ti.batch_id, 
+                ti.batch_size, 
+                ti.generated_by, 
+                ti.order_id, 
+                ti.customer_id, 
+                ti.created_date, 
+                ti.status,
+                ti.activated_date, 
+                ti.shipping_status, 
+                ti.shipped_date, 
+                ti.notes, 
+                ti.is_printed, 
+                ti.printed_date, 
+                ti.printed_by,
                 ts.score, 
                 ts.technician_id, 
                 ts.score_submission_date,
