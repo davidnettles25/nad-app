@@ -1797,47 +1797,6 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 <script src="admin/js/final-dropdown-fix.js"></script>
 </body>
 </html>
-<script>
-// INLINE FINAL FIX - This definitely runs last
-console.log('🔧 INLINE final fix...');
-
-// Wait a bit then apply fix
-setTimeout(() => {
-    console.log('🔧 INLINE applying fix...');
-
-    const statusFilter = document.getElementById('status-filter');
-    if (statusFilter) {
-        const parent = statusFilter.parentNode;
-        const newFilter = statusFilter.cloneNode(true);
-        newFilter.onchange = null;
-        newFilter.removeAttribute('onchange');
-        parent.replaceChild(newFilter, statusFilter);
-
-        newFilter.addEventListener('change', (e) => {
-            const status = e.target.value;
-            console.log('🔽 INLINE: Status:', status);
-
-            const tests = window.allTests || [];
-            let filtered = tests;
-
-            if (status === 'activated') {
-                filtered = tests.filter(t => t.status === 'activated');
-            } else if (status === 'pending') {
-                filtered = tests.filter(t => t.status === 'pending');
-            } else if (status === 'completed') {
-                filtered = tests.filter(t => t.status === 'completed');
-            }
-
-            if (window.renderTestsTable) {
-                window.renderTestsTable(filtered);
-            }
-            console.log(`INLINE: ${filtered.length} tests shown`);
-        });
-
-        console.log('✅ INLINE fix applied');
-    }
-}, 3000);
-</script>
 
 <!-- FINAL CSS OVERRIDE - Maximum specificity to hide test management -->
 <style>
