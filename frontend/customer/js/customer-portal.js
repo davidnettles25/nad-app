@@ -533,10 +533,10 @@ window.NADCustomer = {
 
     async loadCustomerStats() {
         try {
-            // For testing, we'll use a query parameter
+            // Use customer email from user data
             // In production, this would come from Multipass authentication
-            const testCustomerId = 'test@example.com';
-            const response = await fetch(`/api/customer/test-history?customer_id=${testCustomerId}`);
+            const customerId = this.userData.email;
+            const response = await fetch(`/api/customer/test-history?customer_id=${customerId}`);
             const data = await response.json();
             
             if (data.success) {
@@ -641,9 +641,9 @@ window.NADCustomer = {
             if (testsGrid) testsGrid.style.display = 'none';
             if (noTestsMessage) noTestsMessage.style.display = 'none';
 
-            // For testing, we'll use a query parameter
-            const testCustomerId = 'test@example.com';
-            const response = await fetch(`/api/customer/test-history?customer_id=${testCustomerId}`);
+            // Use customer email from user data
+            const customerId = this.userData.email;
+            const response = await fetch(`/api/customer/test-history?customer_id=${customerId}`);
             const data = await response.json();
             
             if (data.success) {
@@ -789,9 +789,9 @@ window.NADCustomer = {
             // Load modal component
             await this.loadTestDetailModal();
             
-            // For testing, we'll use a query parameter
-            const testCustomerId = 'test@example.com';
-            const response = await fetch(`/api/customer/test-detail/${testId}?customer_id=${testCustomerId}`);
+            // Use customer email from user data
+            const customerId = this.userData.email;
+            const response = await fetch(`/api/customer/test-detail/${testId}?customer_id=${customerId}`);
             const data = await response.json();
             
             if (data.success) {
