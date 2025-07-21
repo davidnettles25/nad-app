@@ -75,6 +75,9 @@ async function initializeDatabase() {
         // Run order_id cleanup to remove order_id column
         await cleanupOrderIdColumn();
         
+        // Run customer_id migration to VARCHAR
+        await migrateCustomerIdToVarchar();
+        
         return true;
     } catch (error) {
         console.error('❌ Database connection failed:', error);
@@ -438,6 +441,312 @@ async function cleanupOrderIdColumn() {
 }
 
 // ============================================================================
+// CUSTOMER ID MIGRATION FUNCTIONS
+// ============================================================================
+
+async function migrateCustomerIdToVarchar() {
+    try {
+        console.log('🔧 Starting customer_id migration from BIGINT to VARCHAR...');
+        
+        // Step 1: Create backup tables
+        console.log('🔧 Phase 3.1: Creating backup tables...');
+        await createCustomerIdBackupTables();
+        
+        // Step 2: Update schema for all tables
+        console.log('🔧 Phase 3.2: Updating database schema...');
+        await updateCustomerIdSchemas();
+        
+        // Step 3: Recreate indexes
+        console.log('🔧 Phase 3.3: Recreating indexes for VARCHAR performance...');
+        await recreateCustomerIdIndexes();
+        
+        // Step 4: Validate migration
+        console.log('🔧 Phase 3.4: Validating data integrity...');
+        const validation = await validateCustomerIdMigration();
+        
+        if (validation.success) {
+            console.log('✅ Customer ID migration to VARCHAR completed successfully!');
+            return { success: true, validation };
+        } else {
+            throw new Error('Migration validation failed: ' + validation.error);
+        }
+        
+    } catch (error) {
+        console.error('❌ Customer ID migration error:', error);
+        console.log('🚨 Consider running rollback procedures if needed');
+        return {
+            success: false,
+            error: error.message,
+            action: 'failed'
+        };
+    }
+}
+
+async function createCustomerIdBackupTables() {
+    try {
+        const tables = ['nad_test_ids', 'nad_test_scores', 'nad_user_roles', 'nad_user_supplements'];
+        
+        for (const table of tables) {
+            // Check if backup table already exists
+            const [existing] = await db.execute(`
+                SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLES 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = '${table}_backup_customer_varchar'
+            `);
+            
+            if (existing[0].count > 0) {
+                console.log(`ℹ️  Backup table ${table}_backup_customer_varchar already exists`);
+                continue;
+            }
+            
+            // Create backup table
+            console.log(`🔧 Creating backup for ${table}...`);
+            await db.execute(`
+                CREATE TABLE ${table}_backup_customer_varchar AS 
+                SELECT * FROM ${table}
+            `);
+            
+            // Verify backup
+            const [originalCount] = await db.execute(`SELECT COUNT(*) as count FROM ${table}`);
+            const [backupCount] = await db.execute(`SELECT COUNT(*) as count FROM ${table}_backup_customer_varchar`);
+            
+            if (originalCount[0].count !== backupCount[0].count) {
+                throw new Error(`Backup verification failed for ${table}: original=${originalCount[0].count}, backup=${backupCount[0].count}`);
+            }
+            
+            console.log(`✅ ${table} backup created successfully (${originalCount[0].count} records)`);
+        }
+        
+        console.log('✅ All backup tables created successfully');
+        return { success: true };
+        
+    } catch (error) {
+        console.error('❌ Backup creation failed:', error);
+        throw error;
+    }
+}
+
+async function updateCustomerIdSchemas() {
+    try {
+        const tableUpdates = [
+            {
+                table: 'nad_test_ids',
+                nullable: true,
+                constraint: 'DEFAULT NULL'
+            },
+            {
+                table: 'nad_test_scores', 
+                nullable: false,
+                constraint: 'NOT NULL'
+            },
+            {
+                table: 'nad_user_roles',
+                nullable: false, 
+                constraint: 'NOT NULL'
+            },
+            {
+                table: 'nad_user_supplements',
+                nullable: false,
+                constraint: 'NOT NULL'
+            }
+        ];
+        
+        for (const update of tableUpdates) {
+            console.log(`🔧 Updating ${update.table}.customer_id to VARCHAR(255)...`);
+            
+            // Check current column type
+            const [columnInfo] = await db.execute(`
+                SELECT DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = '${update.table}' 
+                AND COLUMN_NAME = 'customer_id'
+            `);
+            
+            if (columnInfo.length === 0) {
+                console.log(`ℹ️  ${update.table}.customer_id column does not exist, skipping...`);
+                continue;
+            }
+            
+            if (columnInfo[0].DATA_TYPE === 'varchar') {
+                console.log(`ℹ️  ${update.table}.customer_id is already VARCHAR, skipping...`);
+                continue;
+            }
+            
+            // Perform the schema update
+            await db.execute(`
+                ALTER TABLE ${update.table} 
+                MODIFY COLUMN customer_id VARCHAR(255) ${update.constraint}
+            `);
+            
+            // Verify the change
+            const [updatedColumnInfo] = await db.execute(`
+                SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = '${update.table}' 
+                AND COLUMN_NAME = 'customer_id'
+            `);
+            
+            if (updatedColumnInfo[0].DATA_TYPE !== 'varchar' || updatedColumnInfo[0].CHARACTER_MAXIMUM_LENGTH !== 255) {
+                throw new Error(`Schema update verification failed for ${update.table}.customer_id`);
+            }
+            
+            console.log(`✅ ${update.table}.customer_id updated to VARCHAR(255) successfully`);
+        }
+        
+        console.log('✅ All customer_id columns updated to VARCHAR(255)');
+        return { success: true };
+        
+    } catch (error) {
+        console.error('❌ Schema update failed:', error);
+        throw error;
+    }
+}
+
+async function recreateCustomerIdIndexes() {
+    try {
+        const indexUpdates = [
+            {
+                table: 'nad_test_ids',
+                indexName: 'idx_customer_id',
+                unique: false
+            },
+            {
+                table: 'nad_test_scores',
+                indexName: 'idx_customer_id', 
+                unique: false
+            },
+            {
+                table: 'nad_user_roles',
+                indexName: 'customer_id',
+                unique: true
+            },
+            {
+                table: 'nad_user_supplements',
+                indexName: 'idx_customer_id',
+                unique: false
+            }
+        ];
+        
+        for (const update of indexUpdates) {
+            console.log(`🔧 Recreating ${update.indexName} index on ${update.table}...`);
+            
+            // Drop existing index if it exists
+            try {
+                await db.execute(`ALTER TABLE ${update.table} DROP INDEX ${update.indexName}`);
+                console.log(`🗑️  Dropped existing ${update.indexName} index`);
+            } catch (dropError) {
+                console.log(`ℹ️  Index ${update.indexName} does not exist or already dropped`);
+            }
+            
+            // Create new index optimized for VARCHAR
+            const indexType = update.unique ? 'UNIQUE KEY' : 'KEY';
+            await db.execute(`
+                ALTER TABLE ${update.table} 
+                ADD ${indexType} ${update.indexName} (customer_id)
+            `);
+            
+            console.log(`✅ ${update.indexName} index recreated for VARCHAR on ${update.table}`);
+        }
+        
+        console.log('✅ All customer_id indexes recreated for VARCHAR performance');
+        return { success: true };
+        
+    } catch (error) {
+        console.error('❌ Index recreation failed:', error);
+        throw error;
+    }
+}
+
+async function validateCustomerIdMigration() {
+    try {
+        console.log('🔍 Validating customer_id migration...');
+        
+        // Step 1: Verify column types
+        const [columnTypes] = await db.execute(`
+            SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND COLUMN_NAME = 'customer_id'
+            ORDER BY TABLE_NAME
+        `);
+        
+        console.log('🔍 Column types after migration:');
+        for (const col of columnTypes) {
+            console.log(`  ${col.TABLE_NAME}.customer_id: ${col.DATA_TYPE}(${col.CHARACTER_MAXIMUM_LENGTH}) ${col.IS_NULLABLE === 'YES' ? 'NULL' : 'NOT NULL'}`);
+            
+            if (col.DATA_TYPE !== 'varchar' || col.CHARACTER_MAXIMUM_LENGTH !== 255) {
+                throw new Error(`Invalid column type for ${col.TABLE_NAME}.customer_id: expected varchar(255), got ${col.DATA_TYPE}(${col.CHARACTER_MAXIMUM_LENGTH})`);
+            }
+        }
+        
+        // Step 2: Verify record counts match backups
+        const tables = ['nad_test_ids', 'nad_test_scores', 'nad_user_roles', 'nad_user_supplements'];
+        const recordCounts = {};
+        
+        for (const table of tables) {
+            const [originalCount] = await db.execute(`SELECT COUNT(*) as count FROM ${table}`);
+            const [backupCount] = await db.execute(`SELECT COUNT(*) as count FROM ${table}_backup_customer_varchar`);
+            
+            recordCounts[table] = {
+                original: originalCount[0].count,
+                backup: backupCount[0].count,
+                match: originalCount[0].count === backupCount[0].count
+            };
+            
+            if (!recordCounts[table].match) {
+                throw new Error(`Record count mismatch for ${table}: original=${originalCount[0].count}, backup=${backupCount[0].count}`);
+            }
+        }
+        
+        console.log('✅ Record counts verified against backups');
+        
+        // Step 3: Verify indexes exist
+        const [indexes] = await db.execute(`
+            SELECT TABLE_NAME, INDEX_NAME, COLUMN_NAME, NON_UNIQUE
+            FROM INFORMATION_SCHEMA.STATISTICS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND COLUMN_NAME = 'customer_id'
+            ORDER BY TABLE_NAME, INDEX_NAME
+        `);
+        
+        console.log('🔍 Customer_id indexes after migration:');
+        for (const idx of indexes) {
+            const indexType = idx.NON_UNIQUE === 0 ? 'UNIQUE' : 'INDEX';
+            console.log(`  ${idx.TABLE_NAME}.${idx.INDEX_NAME}: ${indexType}`);
+        }
+        
+        // Step 4: Test sample queries
+        console.log('🔍 Testing sample queries with VARCHAR customer_id...');
+        
+        // Test string-based query
+        const [testQuery] = await db.execute(`
+            SELECT COUNT(*) as count FROM nad_test_ids 
+            WHERE customer_id IS NOT NULL 
+            LIMIT 1
+        `);
+        
+        console.log(`✅ Sample query successful: found ${testQuery[0].count} tests with customer_id`);
+        
+        return {
+            success: true,
+            columnTypes,
+            recordCounts,
+            indexCount: indexes.length,
+            message: 'Customer ID migration validation passed'
+        };
+        
+    } catch (error) {
+        console.error('❌ Migration validation failed:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+// ============================================================================
 // FILE UPLOAD CONFIGURATION
 // ============================================================================
 
@@ -472,6 +781,30 @@ const upload = multer({
 // UTILITY FUNCTIONS
 // ============================================================================
 
+// Validate email format for customer_id
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// Normalize customer_id (handle both legacy numeric and new email format)
+function normalizeCustomerId(customerId) {
+    if (!customerId) return null;
+    
+    // If it's a number or numeric string, keep as-is for backward compatibility
+    if (typeof customerId === 'number' || /^\d+$/.test(customerId)) {
+        return customerId.toString();
+    }
+    
+    // If it's an email, normalize to lowercase
+    if (isValidEmail(customerId)) {
+        return customerId.toLowerCase();
+    }
+    
+    // Otherwise return as-is
+    return customerId;
+}
+
 function generateTestId() {
     const now = new Date();
     const year = now.getFullYear();
@@ -487,10 +820,8 @@ function generateTestId() {
 // ============================================================================
 
 function validateShopifyAuth(req, res, next) {
-    // TODO: Implement Shopify Multipass validation
-    // Check for valid Shopify authentication token
-    // Verify user role from Shopify
-    // Set req.user with role information
+    // Shopify Multipass authentication validation
+    // Extracts email from Multipass token to use as customer_id
     
     const shopifyToken = req.headers['x-shopify-token'] || req.query.token;
     const userRole = req.headers['x-shopify-role'] || req.query.role;
@@ -503,9 +834,24 @@ function validateShopifyAuth(req, res, next) {
         });
     }
     
-    // Set user context for role-based access
+    // TODO: Implement actual Multipass token decryption
+    // For now, extract email from token payload (placeholder)
+    let customerEmail = null;
+    
+    // In production, this would decrypt the Multipass token and extract email
+    // Example: const decodedToken = decryptMultipassToken(shopifyToken);
+    // customerEmail = decodedToken.email;
+    
+    // For development/testing, accept email from headers
+    if (req.headers['x-customer-email']) {
+        customerEmail = req.headers['x-customer-email'].toLowerCase();
+    }
+    
+    // Set user context with email as customer_id
     req.user = {
-        role: userRole,
+        customer_id: customerEmail, // Email will be the customer_id
+        email: customerEmail,
+        role: userRole || 'customer',
         shopifyToken: shopifyToken,
         authenticated: true
     };
@@ -2366,6 +2712,14 @@ app.post('/api/customer/activate-test', async (req, res) => {
             });
         }
         
+        // Normalize customer_id (use email from request or authentication)
+        let customerId = null;
+        if (email) {
+            customerId = normalizeCustomerId(email);
+        } else if (req.user && req.user.customer_id) {
+            customerId = req.user.customer_id; // From Multipass authentication
+        }
+        
         console.log(`🔍 Customer activation attempt for test ID: ${testId}`);
         
         // Check if test exists and is not already activated
@@ -2392,12 +2746,21 @@ app.post('/api/customer/activate-test', async (req, res) => {
             });
         }
         
-        // Activate the test
-        const [result] = await db.execute(`
+        // Activate the test and update customer_id if provided
+        let updateQuery = `
             UPDATE nad_test_ids 
-            SET status = 'activated', activated_date = NOW()
-            WHERE test_id = ?
-        `, [testId]);
+            SET status = 'activated', activated_date = NOW()`;
+        let updateParams = [];
+        
+        if (customerId) {
+            updateQuery += `, customer_id = ?`;
+            updateParams.push(customerId);
+        }
+        
+        updateQuery += ` WHERE test_id = ?`;
+        updateParams.push(testId);
+        
+        const [result] = await db.execute(updateQuery, updateParams);
         
         if (result.affectedRows === 0) {
             return res.status(500).json({
@@ -2415,7 +2778,7 @@ app.post('/api/customer/activate-test', async (req, res) => {
                     ) VALUES (?, ?, ?, NOW())
                     ON DUPLICATE KEY UPDATE
                     supplement_data = VALUES(supplement_data), updated_at = NOW()
-                `, [testId, test.customer_id, JSON.stringify(supplements)]);
+                `, [testId, customerId || test.customer_id, JSON.stringify(supplements)]);
                 
                 console.log(`✅ Supplement data stored for test ${testId}`);
             } catch (supplementError) {
@@ -2432,7 +2795,7 @@ app.post('/api/customer/activate-test', async (req, res) => {
             message: 'Test activated successfully with supplement information!',
             data: {
                 test_id: testId,
-                customer_id: test.customer_id,
+                customer_id: customerId || test.customer_id,
                 batch_id: test.batch_id,
                 activated_date: new Date().toISOString(),
                 supplements_recorded: supplements ? true : false
@@ -2525,7 +2888,7 @@ app.get('/api/notifications', async (req, res) => {
         // Check for unactivated tests older than 7 days
         const [oldTests] = await db.execute(`
             SELECT COUNT(*) as count FROM nad_test_ids 
-            WHERE is_activated = 0 AND created_date < DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            WHERE status = 'pending' AND created_date < DATE_SUB(CURDATE(), INTERVAL 7 DAY)
         `);
         
         if (oldTests[0].count > 0) {
