@@ -33,9 +33,23 @@
             <span class="label">Results Date:</span>
             <span class="value" id="modal-score-date">-</span>
           </div>
-          <div class="info-item" id="technician-info">
-            <span class="label">Technician:</span>
-            <span class="value" id="modal-technician">-</span>
+        </div>
+      </div>
+      
+      <div class="attachments-section" id="attachments-section" style="display: none;">
+        <h4>Result Attachments</h4>
+        <div id="attachment-item" class="attachment-item">
+          <div class="attachment-info">
+            <span class="attachment-icon">📎</span>
+            <div class="attachment-details">
+              <div class="attachment-name" id="attachment-name">Lab Result File</div>
+              <div class="attachment-meta" id="attachment-meta">Uploaded by lab technician</div>
+            </div>
+          </div>
+          <div class="attachment-actions">
+            <button class="btn-download" id="view-attachment" onclick="NADCustomer.viewAttachment()">
+              View File
+            </button>
           </div>
         </div>
       </div>
@@ -243,11 +257,11 @@
   margin-top: 5px;
 }
 
-.timeline-section, .supplements-section, .notes-section {
+.timeline-section, .supplements-section, .notes-section, .attachments-section {
   margin-bottom: 30px;
 }
 
-.timeline-section h4, .supplements-section h4, .notes-section h4 {
+.timeline-section h4, .supplements-section h4, .notes-section h4, .attachments-section h4 {
   color: #2c3e50;
   margin-bottom: 15px;
   font-size: 16px;
@@ -362,6 +376,71 @@
   background: #f8f9fa;
   padding: 10px;
   border-radius: 4px;
+}
+
+.attachment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 2px solid #e8e8e8;
+  transition: border-color 0.3s ease;
+}
+
+.attachment-item:hover {
+  border-color: #3498db;
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.attachment-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3498db;
+  border-radius: 50%;
+  color: white;
+}
+
+.attachment-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.attachment-name {
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 3px;
+}
+
+.attachment-meta {
+  font-size: 13px;
+  color: #7f8c8d;
+}
+
+.btn-download {
+  padding: 8px 16px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.btn-download:hover {
+  background: #2980b9;
 }
 
 .modal-footer {

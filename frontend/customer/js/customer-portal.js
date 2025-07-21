@@ -854,16 +854,17 @@ window.NADCustomer = {
         const scoreSection = document.getElementById('score-section');
         const scoreEl = document.getElementById('modal-score');
         const scoreDateEl = document.getElementById('modal-score-date');
-        const technicianEl = document.getElementById('modal-technician');
         
         if (test.score) {
             if (scoreSection) scoreSection.style.display = 'block';
             if (scoreEl) scoreEl.textContent = test.score;
             if (scoreDateEl) scoreDateEl.textContent = test.score_date ? new Date(test.score_date).toLocaleDateString() : 'N/A';
-            if (technicianEl) technicianEl.textContent = test.technician_id || 'N/A';
         } else {
             if (scoreSection) scoreSection.style.display = 'none';
         }
+
+        // Attachments
+        this.populateAttachments(test.image);
 
         // Timeline
         this.populateTimeline(test.timeline || []);
@@ -956,6 +957,59 @@ window.NADCustomer = {
         // Show/hide entire notes section
         if (notesSection) {
             notesSection.style.display = hasNotes ? 'block' : 'none';
+        }
+    },
+
+    populateAttachments(imagePath) {
+        const attachmentsSection = document.getElementById('attachments-section');
+        const attachmentName = document.getElementById('attachment-name');
+        const attachmentMeta = document.getElementById('attachment-meta');
+        
+        if (imagePath && imagePath.trim()) {
+            // Show attachments section
+            if (attachmentsSection) attachmentsSection.style.display = 'block';
+            
+            // Store the image path for viewing
+            this.currentAttachmentPath = imagePath;
+            
+            // Extract filename from path
+            const filename = imagePath.split('/').pop() || 'Lab Result File';
+            const fileExtension = filename.split('.').pop()?.toLowerCase() || '';
+            
+            // Update display
+            if (attachmentName) {
+                // Show a user-friendly name based on file type
+                const displayName = this.getAttachmentDisplayName(fileExtension);
+                attachmentName.textContent = displayName;
+            }
+            
+            if (attachmentMeta) {
+                attachmentMeta.textContent = `Uploaded by lab technician • ${fileExtension.toUpperCase()} file`;
+            }
+            
+        } else {
+            // Hide attachments section if no attachment
+            if (attachmentsSection) attachmentsSection.style.display = 'none';
+        }
+    },
+
+    getAttachmentDisplayName(fileExtension) {
+        const typeMap = {
+            'pdf': 'Lab Report (PDF)',
+            'jpg': 'Test Result Image',
+            'jpeg': 'Test Result Image', 
+            'png': 'Test Result Image',
+            'doc': 'Lab Document',
+            'docx': 'Lab Document'
+        };
+        return typeMap[fileExtension] || 'Lab Result File';
+    },
+
+    viewAttachment() {
+        if (this.currentAttachmentPath) {
+            // Open attachment in new window/tab
+            const attachmentUrl = `${window.location.origin}${this.currentAttachmentPath}`;
+            window.open(attachmentUrl, '_blank');
         }
     },
 
