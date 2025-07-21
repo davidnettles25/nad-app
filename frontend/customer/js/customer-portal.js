@@ -691,8 +691,11 @@ window.NADCustomer = {
             'completed': 'Completed'
         }[test.status] || test.status;
 
+        // Get border color based on status
+        const borderColor = this.getStatusBorderColor(test.status);
+
         return `
-            <div class="test-card" data-test-id="${test.test_id}" data-status="${test.status}">
+            <div class="test-card" data-test-id="${test.test_id}" data-status="${test.status}" style="border-left: 6px solid ${borderColor};">
                 <div class="test-card-header">
                     <div class="test-id-section">
                         <div class="test-id">${test.test_id}</div>
@@ -782,6 +785,15 @@ window.NADCustomer = {
 
     searchTests() {
         this.filterTests();
+    },
+
+    getStatusBorderColor(status) {
+        switch (status) {
+            case 'pending': return '#ffc107';      // Yellow
+            case 'activated': return '#007bff';    // Blue  
+            case 'completed': return '#28a745';    // Green
+            default: return '#dee2e6';             // Light gray
+        }
     },
 
     // Test detail modal functionality
@@ -1042,8 +1054,11 @@ window.NADCustomer = {
             'completed': 'Completed'
         }[test.status] || test.status;
 
+        // Get border color based on status
+        const borderColor = this.getStatusBorderColor(test.status);
+
         return `
-            <div class="test-card" onclick="NADCustomer.viewTestDetails('${test.test_id}')">
+            <div class="test-card" onclick="NADCustomer.viewTestDetails('${test.test_id}')" style="border-left: 6px solid ${borderColor};">
                 <div class="test-card-header">
                     <div class="test-info">
                         <div class="test-id">${test.test_id}</div>
