@@ -509,9 +509,12 @@ window.NADCustomer = {
             await this.loadSection('dashboard', '#content-container');
             // Ensure DOM elements are available before loading data
             await new Promise(resolve => {
-                // Check if elements are loaded
+                // Check if key elements are loaded
                 const checkElements = () => {
-                    if (document.getElementById('total-tests') && document.getElementById('customer-name')) {
+                    const statsElements = document.getElementById('total-tests') && document.getElementById('customer-name');
+                    const sectionElements = document.getElementById('recent-tests-section') && document.getElementById('no-tests-section');
+                    
+                    if (statsElements && sectionElements) {
                         resolve();
                     } else {
                         setTimeout(checkElements, 50);
@@ -572,6 +575,13 @@ window.NADCustomer = {
             const recentTests = this.customerData.tests.slice(0, 3);
             const recentSection = document.getElementById('recent-tests-section');
             const noTestsSection = document.getElementById('no-tests-section');
+            const recentTestsList = document.getElementById('recent-tests-list');
+
+            // Check if elements exist before manipulating them
+            if (!recentSection || !noTestsSection) {
+                console.warn('Recent tests sections not found in DOM');
+                return;
+            }
 
             if (recentTests.length === 0) {
                 recentSection.style.display = 'none';
@@ -582,8 +592,9 @@ window.NADCustomer = {
             recentSection.style.display = 'block';
             noTestsSection.style.display = 'none';
 
-            const recentTestsList = document.getElementById('recent-tests-list');
-            recentTestsList.innerHTML = recentTests.map(test => this.createRecentTestItem(test)).join('');
+            if (recentTestsList) {
+                recentTestsList.innerHTML = recentTests.map(test => this.createRecentTestItem(test)).join('');
+            }
 
         } catch (error) {
             console.error('Error loading recent tests:', error);
