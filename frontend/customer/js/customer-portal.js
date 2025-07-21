@@ -699,7 +699,6 @@ window.NADCustomer = {
                 <div class="test-card-header">
                     <div class="test-id-section">
                         <div class="test-id">${test.test_id}</div>
-                        <div class="batch-id">Batch: ${test.batch_id || 'Individual'}</div>
                     </div>
                     <div class="test-status status-${test.status}">${statusDisplay}</div>
                 </div>
@@ -844,14 +843,12 @@ window.NADCustomer = {
         // Basic test info
         const testIdEl = document.getElementById('modal-test-id');
         const statusEl = document.getElementById('modal-status');
-        const batchEl = document.getElementById('modal-batch');
         
         if (testIdEl) testIdEl.textContent = test.test_id;
         if (statusEl) {
             statusEl.textContent = test.status.charAt(0).toUpperCase() + test.status.slice(1);
             statusEl.className = `value status-badge status-${test.status}`;
         }
-        if (batchEl) batchEl.textContent = test.batch_id || 'Individual';
 
         // Score section
         const scoreSection = document.getElementById('score-section');
@@ -1062,7 +1059,6 @@ window.NADCustomer = {
                 <div class="test-card-header">
                     <div class="test-info">
                         <div class="test-id">${test.test_id}</div>
-                        <div class="batch-id">Batch: ${test.batch_id || 'Individual'}</div>
                     </div>
                     <div class="test-status status-${test.status}">${statusDisplay}</div>
                 </div>
