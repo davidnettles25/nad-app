@@ -2774,11 +2774,11 @@ app.post('/api/customer/activate-test', async (req, res) => {
             try {
                 await db.execute(`
                     INSERT INTO nad_user_supplements (
-                        test_id, customer_id, supplement_data, created_at
-                    ) VALUES (?, ?, ?, NOW())
+                        test_id, customer_id, supplements_with_dose, habits_notes, created_at
+                    ) VALUES (?, ?, ?, ?, NOW())
                     ON DUPLICATE KEY UPDATE
-                    supplement_data = VALUES(supplement_data), updated_at = NOW()
-                `, [testId, customerId || test.customer_id, JSON.stringify(supplements)]);
+                    supplements_with_dose = VALUES(supplements_with_dose), updated_at = NOW()
+                `, [testId, customerId || test.customer_id, JSON.stringify(supplements), '']);
                 
                 console.log(`✅ Supplement data stored for test ${testId}`);
             } catch (supplementError) {
@@ -2845,9 +2845,9 @@ app.get('/api/customer/test-history', async (req, res) => {
                 ts.score,
                 ts.score_submission_date as score_date,
                 ts.technician_id,
-                us.supplement_data,
+                us.supplements_with_dose,
                 (ts.score IS NOT NULL) as has_score,
-                (us.supplement_data IS NOT NULL) as has_supplements
+                (us.supplements_with_dose IS NOT NULL) as has_supplements
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id  
             LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id
@@ -2858,15 +2858,33 @@ app.get('/api/customer/test-history', async (req, res) => {
         // Parse supplement data and create response
         const testsWithSupplements = tests.map(test => {
             let supplements = [];
-            if (test.supplement_data) {
+            if (test.supplements_with_dose) {
                 try {
-                    const supplementData = JSON.parse(test.supplement_data);
-                    if (supplementData.selected && Array.isArray(supplementData.selected)) {
-                        supplements = supplementData.selected.map(s => ({
-                            name: s.name,
-                            amount: s.amount,
-                            unit: s.unit
-                        }));
+                    // Handle both JSON format and string format
+                    if (test.supplements_with_dose.startsWith('{')) {
+                        // JSON format from new customer portal
+                        const supplementData = JSON.parse(test.supplements_with_dose);
+                        if (supplementData.selected && Array.isArray(supplementData.selected)) {
+                            supplements = supplementData.selected.map(s => ({
+                                name: s.name,
+                                amount: s.amount,
+                                unit: s.unit
+                            }));
+                        }
+                    } else {
+                        // String format from existing system (e.g., "NAD+ Precursor: 250 mg; Vitamin D3: 2000 IU")
+                        const supplementEntries = test.supplements_with_dose.split(';').map(s => s.trim());
+                        supplements = supplementEntries.map(entry => {
+                            const parts = entry.split(':').map(p => p.trim());
+                            if (parts.length === 2) {
+                                const name = parts[0];
+                                const amountParts = parts[1].split(' ');
+                                const amount = parseFloat(amountParts[0]) || 0;
+                                const unit = amountParts.slice(1).join(' ') || 'unit';
+                                return { name, amount, unit };
+                            }
+                            return { name: entry, amount: 0, unit: 'unit' };
+                        });
                     }
                 } catch (e) {
                     console.warn('Error parsing supplement data for test', test.test_id, e);
@@ -2957,7 +2975,7 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
                 ts.technician_id,
                 ts.notes as technician_notes,
                 ts.image,
-                us.supplement_data,
+                us.supplements_with_dose,
                 us.habits_notes
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
@@ -2977,13 +2995,31 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
         // Parse supplement data
         let supplements = [];
         let healthConditions = '';
-        if (test.supplement_data) {
+        if (test.supplements_with_dose) {
             try {
-                const supplementData = JSON.parse(test.supplement_data);
-                if (supplementData.selected && Array.isArray(supplementData.selected)) {
-                    supplements = supplementData.selected;
+                // Handle both JSON format and string format
+                if (test.supplements_with_dose.startsWith('{')) {
+                    // JSON format from new customer portal
+                    const supplementData = JSON.parse(test.supplements_with_dose);
+                    if (supplementData.selected && Array.isArray(supplementData.selected)) {
+                        supplements = supplementData.selected;
+                    }
+                    healthConditions = supplementData.health_conditions || '';
+                } else {
+                    // String format from existing system (e.g., "NAD+ Precursor: 250 mg; Vitamin D3: 2000 IU")
+                    const supplementEntries = test.supplements_with_dose.split(';').map(s => s.trim());
+                    supplements = supplementEntries.map(entry => {
+                        const parts = entry.split(':').map(p => p.trim());
+                        if (parts.length === 2) {
+                            const name = parts[0];
+                            const amountParts = parts[1].split(' ');
+                            const amount = parseFloat(amountParts[0]) || 0;
+                            const unit = amountParts.slice(1).join(' ') || 'unit';
+                            return { name, amount, unit };
+                        }
+                        return { name: entry, amount: 0, unit: 'unit' };
+                    });
                 }
-                healthConditions = supplementData.health_conditions || '';
             } catch (e) {
                 console.warn('Error parsing supplement data for test', testId, e);
             }
