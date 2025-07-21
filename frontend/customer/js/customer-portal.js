@@ -991,7 +991,16 @@ window.NADCustomer = {
     viewAttachment() {
         if (this.currentAttachmentPath) {
             // Open attachment in new window/tab
-            const attachmentUrl = `${window.location.origin}${this.currentAttachmentPath}`;
+            // In production, add /nad-app prefix if not already present
+            let attachmentUrl = this.currentAttachmentPath;
+            
+            // If path starts with /uploads, prepend the app path in production
+            if (attachmentUrl.startsWith('/uploads/') && window.location.pathname.includes('/nad-app')) {
+                attachmentUrl = '/nad-app' + attachmentUrl;
+            }
+            
+            // Create full URL
+            attachmentUrl = `${window.location.origin}${attachmentUrl}`;
             window.open(attachmentUrl, '_blank');
         }
     },

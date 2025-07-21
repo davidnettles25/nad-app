@@ -28,14 +28,28 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-// In production, serve from /opt/nad-apps/uploads, otherwise use local uploads directory
-const uploadsPath = process.env.NODE_ENV === 'production' || fs.existsSync('/opt/nad-apps/uploads') 
-    ? '/opt/nad-apps/uploads' 
-    : path.join(__dirname, 'uploads');
-app.use('/uploads', express.static(uploadsPath));
+// Note: In production, uploads are served directly by the web server from htdocs/nad-app/uploads
+// This static middleware is only used in development
+if (process.env.NODE_ENV !== 'production') {
+    app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+}
+
+// Safe logging functions
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+const safeLog = (...args) => {
+    if (isDevelopment) {
+        console.log(...args);
+    }
+};
+
+const safeError = (...args) => {
+    // Always log errors, but sanitize sensitive data in production
+    console.error(...args);
+};
 
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    safeLog(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
 });
 
@@ -47,7 +61,7 @@ const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'mynadtes_mynadtest_nad_user',
-    password: process.env.DB_PASSWORD || 'mynadtest_nad_user#2025',
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || 'mynadtes_mynadtest_nad_cycle',
     waitForConnections: true,
     connectionLimit: 10,
@@ -754,9 +768,10 @@ async function validateCustomerIdMigration() {
 // FILE UPLOAD CONFIGURATION
 // ============================================================================
 
-// Use production upload directory if available, otherwise use local
-const uploadDir = process.env.NODE_ENV === 'production' || fs.existsSync('/opt/nad-apps/uploads')
-    ? '/opt/nad-apps/uploads'
+// In production, save to htdocs directory where files are web-accessible
+// Otherwise use local backend uploads directory for development
+const uploadDir = process.env.NODE_ENV === 'production'
+    ? '/home/bitnami/htdocs/nad-app/uploads'
     : path.join(__dirname, 'uploads');
 fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
 
@@ -1905,7 +1920,7 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
     console.log('🔧 Test ID type:', typeof testId);
     console.log('🔧 Test ID length:', testId ? testId.length : 'undefined');
     console.log('🔧 Request method:', req.method);
-    console.log('🔧 Request headers:', JSON.stringify(req.headers, null, 2));
+    safeLog('🔧 Request received for test activation');
     console.log('🔧 Request body:', req.body);
     console.log('🔧 Request query:', req.query);
     console.log('🔧 Request params:', req.params);
@@ -2022,7 +2037,7 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
     console.log('🔧 Test ID type:', typeof testId);
     console.log('🔧 Test ID length:', testId ? testId.length : 'undefined');
     console.log('🔧 Request method:', req.method);
-    console.log('🔧 Request headers:', JSON.stringify(req.headers, null, 2));
+    safeLog('🔧 Request received for test activation');
     console.log('🔧 Request body:', req.body);
     console.log('🔧 Request query:', req.query);
     console.log('🔧 Request params:', req.params);
