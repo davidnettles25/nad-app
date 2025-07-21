@@ -98,6 +98,9 @@ window.NADCustomer = {
                 this.showHelp();
             }
         });
+        
+        // Load test history below the form
+        this.loadTestHistorySection();
     },
     
     async handleVerification() {
@@ -973,13 +976,111 @@ window.NADCustomer = {
         this.loadTestHistory();
     },
 
-    // Updated init method to show dashboard by default
+    // Test history section loading
+    async loadTestHistorySection() {
+        try {
+            const testHistorySection = document.getElementById('test-history-section');
+            const loadingMessage = document.getElementById('loading-tests');
+            
+            if (!testHistorySection) return;
+            
+            // Show loading
+            if (loadingMessage) loadingMessage.style.display = 'block';
+            
+            // Load customer test history
+            const customerId = this.userData.email;
+            const response = await fetch(`/api/customer/test-history?customer_id=${customerId}`);
+            const data = await response.json();
+            
+            if (data.success && data.tests.length > 0) {
+                // Show the test history section
+                testHistorySection.style.display = 'block';
+                
+                // Update stats
+                const totalTestsEl = document.getElementById('total-tests');
+                const activatedTestsEl = document.getElementById('activated-tests');
+                const completedTestsEl = document.getElementById('completed-tests');
+                
+                if (totalTestsEl) totalTestsEl.textContent = data.summary.total_tests;
+                if (activatedTestsEl) activatedTestsEl.textContent = data.summary.activated_tests;
+                if (completedTestsEl) completedTestsEl.textContent = data.summary.completed_tests;
+                
+                // Render test cards
+                this.renderVerificationTestCards(data.tests);
+                
+                // Hide no tests message
+                const noTestsMessage = document.getElementById('no-tests-message');
+                if (noTestsMessage) noTestsMessage.style.display = 'none';
+                
+            } else {
+                // Show no tests message but keep section hidden
+                const noTestsMessage = document.getElementById('no-tests-message');
+                if (noTestsMessage) noTestsMessage.style.display = 'block';
+            }
+            
+        } catch (error) {
+            console.error('Error loading test history section:', error);
+        } finally {
+            // Hide loading
+            const loadingMessage = document.getElementById('loading-tests');
+            if (loadingMessage) loadingMessage.style.display = 'none';
+        }
+    },
+
+    renderVerificationTestCards(tests) {
+        const container = document.getElementById('test-cards-container');
+        if (!container) return;
+        
+        const cardsHtml = tests.map(test => this.createVerificationTestCard(test)).join('');
+        container.innerHTML = cardsHtml;
+    },
+
+    createVerificationTestCard(test) {
+        const statusDisplay = {
+            'pending': 'Pending',
+            'activated': 'Activated', 
+            'completed': 'Completed'
+        }[test.status] || test.status;
+
+        return `
+            <div class="test-card" onclick="NADCustomer.viewTestDetails('${test.test_id}')">
+                <div class="test-card-header">
+                    <div class="test-info">
+                        <div class="test-id">${test.test_id}</div>
+                        <div class="batch-id">Batch: ${test.batch_id || 'Individual'}</div>
+                    </div>
+                    <div class="test-status status-${test.status}">${statusDisplay}</div>
+                </div>
+                
+                <div class="test-timeline">
+                    <div class="timeline-item">
+                        <span class="timeline-label">Created:</span>
+                        <span class="timeline-date">${new Date(test.created_date).toLocaleDateString()}</span>
+                    </div>
+                    ${test.activated_date ? `
+                        <div class="timeline-item">
+                            <span class="timeline-label">Activated:</span>
+                            <span class="timeline-date">${new Date(test.activated_date).toLocaleDateString()}</span>
+                        </div>
+                    ` : ''}
+                    ${test.score_date ? `
+                        <div class="timeline-item">
+                            <span class="timeline-label">Results:</span>
+                            <span class="timeline-date">${new Date(test.score_date).toLocaleDateString()}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    },
+
+    // Revert to original init method
     init() {
         console.log('Initializing NAD Customer Portal');
         this.loadComponents();
         this.setupEventListeners();
-        // Show dashboard instead of verification step
-        this.loadDashboard();
+        // Show verification step (original behavior)
+        this.showStep(1);
     }
 };
 
