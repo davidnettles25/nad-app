@@ -123,7 +123,7 @@ function handleSearchFilter(searchTerm) {
         filtered = allTests.filter(test => {
             return (
                 (test.test_id && test.test_id.toLowerCase().includes(searchTerm)) ||
-                (test.customer_id && test.customer_id.toString().toLowerCase().includes(searchTerm)) ||
+                (test.customer_id && test.customer_id.toLowerCase().includes(searchTerm)) ||
                 (test.batch_id && test.batch_id.toLowerCase().includes(searchTerm))
             );
         });

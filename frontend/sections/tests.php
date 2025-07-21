@@ -548,7 +548,7 @@ class TestsManager {
             const searchTerm = this.filters.search.toLowerCase();
             this.filteredTests = this.filteredTests.filter(test => 
                 test.test_id.toLowerCase().includes(searchTerm) ||
-                test.customer_id.toString().includes(searchTerm)
+                test.customer_id.toLowerCase().includes(searchTerm)
             );
         }
         

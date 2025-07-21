@@ -675,7 +675,7 @@ class UsersManager {
     filterUsers(searchTerm, roleFilter) {
         this.filteredUsers = this.allUsers.filter(user => {
             const matchesSearch = !searchTerm || 
-                user.customer_id.toString().includes(searchTerm.toLowerCase()) ||
+                user.customer_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 user.role.toLowerCase().includes(searchTerm.toLowerCase());
             
             const matchesRole = !roleFilter || user.role === roleFilter;
