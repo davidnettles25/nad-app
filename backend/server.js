@@ -3057,6 +3057,7 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
             technician_id: test.technician_id,
             technician_notes: test.technician_notes,
             test_notes: test.test_notes,
+            image: test.image,
             supplements: supplements,
             health_conditions: healthConditions,
             habits_notes: test.habits_notes,
