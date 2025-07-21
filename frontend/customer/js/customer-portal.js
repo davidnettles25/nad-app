@@ -507,6 +507,19 @@ window.NADCustomer = {
     async loadDashboard() {
         try {
             await this.loadSection('dashboard', '#content-container');
+            // Ensure DOM elements are available before loading data
+            await new Promise(resolve => {
+                // Check if elements are loaded
+                const checkElements = () => {
+                    if (document.getElementById('total-tests') && document.getElementById('customer-name')) {
+                        resolve();
+                    } else {
+                        setTimeout(checkElements, 50);
+                    }
+                };
+                checkElements();
+            });
+            
             await this.loadCustomerStats();
             await this.loadRecentTests();
         } catch (error) {
@@ -524,20 +537,27 @@ window.NADCustomer = {
             const data = await response.json();
             
             if (data.success) {
-                document.getElementById('total-tests').textContent = data.summary.total_tests;
-                document.getElementById('completed-tests').textContent = data.summary.completed_tests;
-                document.getElementById('pending-tests').textContent = data.summary.pending_tests;
-                document.getElementById('activated-tests').textContent = data.summary.activated_tests;
-                
-                document.getElementById('customer-name').textContent = data.customer_name || 'Customer';
-                document.getElementById('customer-email').textContent = data.customer_id;
+                // Check if elements exist before setting content
+                const totalTestsEl = document.getElementById('total-tests');
+                const completedTestsEl = document.getElementById('completed-tests');
+                const pendingTestsEl = document.getElementById('pending-tests');
+                const activatedTestsEl = document.getElementById('activated-tests');
+                const customerNameEl = document.getElementById('customer-name');
+                const customerEmailEl = document.getElementById('customer-email');
+
+                if (totalTestsEl) totalTestsEl.textContent = data.summary.total_tests;
+                if (completedTestsEl) completedTestsEl.textContent = data.summary.completed_tests;
+                if (pendingTestsEl) pendingTestsEl.textContent = data.summary.pending_tests;
+                if (activatedTestsEl) activatedTestsEl.textContent = data.summary.activated_tests;
+                if (customerNameEl) customerNameEl.textContent = data.customer_name || 'Customer';
+                if (customerEmailEl) customerEmailEl.textContent = data.customer_id;
 
                 // Store customer data
                 this.customerData = data;
             }
         } catch (error) {
             console.error('Error loading customer stats:', error);
-            // Set default values
+            // Set default values safely
             ['total-tests', 'completed-tests', 'pending-tests', 'activated-tests'].forEach(id => {
                 const element = document.getElementById(id);
                 if (element) element.textContent = '0';
