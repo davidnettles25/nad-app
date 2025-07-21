@@ -873,7 +873,7 @@ window.NADCustomer = {
         this.populateSupplements(test.supplements || [], test.health_conditions);
 
         // Notes
-        this.populateNotes(test.technician_notes, test.test_notes);
+        this.populateNotes(test.technician_notes);
     },
 
     populateTimeline(timeline) {
@@ -927,36 +927,19 @@ window.NADCustomer = {
         }
     },
 
-    populateNotes(technicianNotes, testNotes) {
+    populateNotes(technicianNotes) {
         const notesSection = document.getElementById('notes-section');
         const techNotesDiv = document.getElementById('technician-notes');
         const techNotesText = document.getElementById('technician-notes-text');
-        const testNotesDiv = document.getElementById('test-notes');
-        const testNotesText = document.getElementById('test-notes-text');
-
-        let hasNotes = false;
 
         // Technician notes
         if (technicianNotes && technicianNotes.trim() && techNotesDiv && techNotesText) {
             techNotesDiv.style.display = 'block';
             techNotesText.textContent = technicianNotes;
-            hasNotes = true;
-        } else if (techNotesDiv) {
-            techNotesDiv.style.display = 'none';
-        }
-
-        // Test notes
-        if (testNotes && testNotes.trim() && testNotesDiv && testNotesText) {
-            testNotesDiv.style.display = 'block';
-            testNotesText.textContent = testNotes;
-            hasNotes = true;
-        } else if (testNotesDiv) {
-            testNotesDiv.style.display = 'none';
-        }
-
-        // Show/hide entire notes section
-        if (notesSection) {
-            notesSection.style.display = hasNotes ? 'block' : 'none';
+            if (notesSection) notesSection.style.display = 'block';
+        } else {
+            if (techNotesDiv) techNotesDiv.style.display = 'none';
+            if (notesSection) notesSection.style.display = 'none';
         }
     },
 
