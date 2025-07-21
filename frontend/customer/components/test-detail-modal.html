@@ -1,0 +1,417 @@
+<div id="test-detail-modal" class="modal-overlay" onclick="NADCustomer.closeTestModal()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Test Details</h3>
+      <button class="modal-close" onclick="NADCustomer.closeTestModal()">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="test-info-grid">
+        <div class="info-section">
+          <h4>Test Information</h4>
+          <div class="info-item">
+            <span class="label">Test ID:</span>
+            <span class="value test-id-value" id="modal-test-id">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Status:</span>
+            <span class="value status-badge" id="modal-status">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Batch:</span>
+            <span class="value" id="modal-batch">-</span>
+          </div>
+          <div class="info-item" id="shipping-info" style="display: none;">
+            <span class="label">Shipping:</span>
+            <span class="value" id="modal-shipping">-</span>
+          </div>
+        </div>
+        
+        <div class="info-section" id="score-section" style="display: none;">
+          <h4>Results</h4>
+          <div class="score-display-large">
+            <div class="score-number" id="modal-score">-</div>
+            <div class="score-text">NAD+ Level</div>
+          </div>
+          <div class="info-item">
+            <span class="label">Results Date:</span>
+            <span class="value" id="modal-score-date">-</span>
+          </div>
+          <div class="info-item" id="technician-info">
+            <span class="label">Technician:</span>
+            <span class="value" id="modal-technician">-</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="timeline-section">
+        <h4>Test Timeline</h4>
+        <div id="modal-timeline" class="timeline-display">
+          <!-- Timeline items populated by JavaScript -->
+        </div>
+      </div>
+      
+      <div class="supplements-section" id="supplements-section" style="display: none;">
+        <h4>Supplements Recorded</h4>
+        <div id="modal-supplements" class="supplements-list">
+          <!-- Supplements populated by JavaScript -->
+        </div>
+        <div id="health-conditions" class="health-conditions" style="display: none;">
+          <h5>Health Conditions Noted:</h5>
+          <p id="health-conditions-text"></p>
+        </div>
+      </div>
+      
+      <div class="notes-section" id="notes-section" style="display: none;">
+        <h4>Notes</h4>
+        <div id="technician-notes" style="display: none;">
+          <h5>Technician Notes:</h5>
+          <p id="technician-notes-text"></p>
+        </div>
+        <div id="test-notes" style="display: none;">
+          <h5>Test Notes:</h5>
+          <p id="test-notes-text"></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="NADCustomer.closeTestModal()">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 30px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #f8f9fa;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 20px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #7f8c8d;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+}
+
+.test-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.info-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.info-section h4 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 16px;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 5px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item .label {
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.info-item .value {
+  color: #7f8c8d;
+  font-size: 14px;
+  text-align: right;
+}
+
+.test-id-value {
+  font-family: monospace;
+  font-weight: bold;
+  color: #3498db !important;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-activated {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.score-display-large {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.score-number {
+  font-size: 48px;
+  font-weight: bold;
+  color: #27ae60;
+  line-height: 1;
+}
+
+.score-text {
+  font-size: 14px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 5px;
+}
+
+.timeline-section, .supplements-section, .notes-section {
+  margin-bottom: 30px;
+}
+
+.timeline-section h4, .supplements-section h4, .notes-section h4 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 16px;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 5px;
+}
+
+.timeline-display {
+  position: relative;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 0;
+  position: relative;
+}
+
+.timeline-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 50px;
+  width: 2px;
+  height: 30px;
+  background: #e8e8e8;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #3498db;
+  margin-right: 20px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-event {
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 3px;
+}
+
+.timeline-date {
+  color: #7f8c8d;
+  font-size: 13px;
+}
+
+.supplements-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.supplement-item {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  border-left: 4px solid #3498db;
+}
+
+.supplement-name {
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
+.supplement-amount {
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+.health-conditions {
+  margin-top: 20px;
+  padding: 15px;
+  background: #fff3cd;
+  border-radius: 6px;
+  border-left: 4px solid #ffc107;
+}
+
+.health-conditions h5 {
+  margin: 0 0 10px 0;
+  color: #856404;
+}
+
+.health-conditions p {
+  margin: 0;
+  color: #856404;
+}
+
+.notes-section div {
+  margin-bottom: 15px;
+}
+
+.notes-section h5 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.notes-section p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 14px;
+  line-height: 1.5;
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.modal-footer {
+  padding: 20px 30px;
+  border-top: 1px solid #e8e8e8;
+  background: #f8f9fa;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-secondary {
+  padding: 10px 20px;
+  background: white;
+  color: #3498db;
+  border: 2px solid #3498db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #3498db;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    margin: 10px;
+    max-height: 95vh;
+  }
+  
+  .modal-header, .modal-body, .modal-footer {
+    padding: 20px;
+  }
+  
+  .test-info-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .score-number {
+    font-size: 36px;
+  }
+  
+  .supplements-list {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

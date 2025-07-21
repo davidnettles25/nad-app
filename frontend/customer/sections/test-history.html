@@ -1,0 +1,369 @@
+<div class="test-history-page">
+  <div class="page-header">
+    <h2>Your Test History</h2>
+    <div class="header-actions">
+      <button class="btn-secondary" onclick="NADCustomer.loadDashboard()">
+        ← Back to Dashboard
+      </button>
+      <button class="btn-primary" onclick="NADCustomer.startNewTest()">
+        Start New Test
+      </button>
+    </div>
+  </div>
+  
+  <div class="filters-section">
+    <div class="filter-group">
+      <label for="status-filter">Status:</label>
+      <select id="status-filter" onchange="NADCustomer.filterTests()">
+        <option value="all">All Tests</option>
+        <option value="pending">Pending</option>
+        <option value="activated">Activated</option>
+        <option value="completed">Completed</option>
+      </select>
+    </div>
+    
+    <div class="search-group">
+      <input type="text" id="test-search" placeholder="Search by Test ID..." 
+             onkeyup="NADCustomer.searchTests()">
+    </div>
+  </div>
+  
+  <div class="tests-container">
+    <div id="loading-message" class="loading-message">
+      <div class="loading-spinner"></div>
+      <p>Loading your tests...</p>
+    </div>
+    
+    <div id="tests-grid" class="tests-grid" style="display: none;">
+      <!-- Test cards populated by JavaScript -->
+    </div>
+    
+    <div id="no-tests-message" class="no-tests" style="display: none;">
+      <h3>No tests found</h3>
+      <p>You haven't activated any tests yet, or no tests match your current filters.</p>
+      <button class="btn-primary" onclick="NADCustomer.startNewTest()">
+        Start Your First Test
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.test-history-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.page-header h2 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+}
+
+.btn-secondary {
+  background: white;
+  color: #3498db;
+  border: 2px solid #3498db;
+}
+
+.btn-secondary:hover {
+  background: #3498db;
+  color: white;
+}
+
+.filters-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  margin-bottom: 25px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-group, .search-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-group label {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.filter-group select, .search-group input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 150px;
+}
+
+.tests-container {
+  position: relative;
+  min-height: 200px;
+}
+
+.loading-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: #7f8c8d;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.tests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.test-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border: 1px solid #e8e8e8;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.test-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.test-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 20px 10px 20px;
+}
+
+.test-id-section {
+  flex: 1;
+}
+
+.test-id {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
+.batch-id {
+  font-size: 12px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.test-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-activated {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.test-card-body {
+  padding: 10px 20px;
+}
+
+.test-timeline {
+  margin-bottom: 15px;
+}
+
+.timeline-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.timeline-item:last-child {
+  border-bottom: none;
+}
+
+.timeline-label {
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 13px;
+}
+
+.timeline-date {
+  color: #7f8c8d;
+  font-size: 13px;
+}
+
+.test-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.score-display {
+  text-align: center;
+}
+
+.score-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #27ae60;
+  line-height: 1;
+}
+
+.score-label {
+  font-size: 11px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.supplements-summary {
+  font-size: 12px;
+  color: #7f8c8d;
+  background: #f8f9fa;
+  padding: 5px 10px;
+  border-radius: 15px;
+}
+
+.test-card-actions {
+  padding: 0 20px 20px 20px;
+}
+
+.btn-outline {
+  width: 100%;
+  padding: 10px;
+  background: white;
+  color: #3498db;
+  border: 2px solid #3498db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.btn-outline:hover {
+  background: #3498db;
+  color: white;
+}
+
+.no-tests {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.no-tests h3 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.no-tests p {
+  color: #7f8c8d;
+  margin-bottom: 25px;
+}
+
+@media (max-width: 768px) {
+  .test-history-page {
+    padding: 15px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .header-actions {
+    justify-content: space-between;
+  }
+  
+  .filters-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-group, .search-group {
+    justify-content: space-between;
+  }
+  
+  .filter-group select, .search-group input {
+    min-width: auto;
+    flex: 1;
+  }
+  
+  .tests-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

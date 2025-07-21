@@ -497,6 +497,458 @@ window.NADCustomer = {
                 </div>
             `;
         }
+    },
+
+    // ============================================================================
+    // CUSTOMER PORTAL NEW FEATURES
+    // ============================================================================
+
+    // Dashboard functionality
+    async loadDashboard() {
+        try {
+            await this.loadSection('dashboard', '#content-container');
+            await this.loadCustomerStats();
+            await this.loadRecentTests();
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+            this.showError('Failed to load dashboard');
+        }
+    },
+
+    async loadCustomerStats() {
+        try {
+            // For testing, we'll use a query parameter
+            // In production, this would come from Multipass authentication
+            const testCustomerId = 'test@example.com';
+            const response = await fetch(`/api/customer/test-history?customer_id=${testCustomerId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('total-tests').textContent = data.summary.total_tests;
+                document.getElementById('completed-tests').textContent = data.summary.completed_tests;
+                document.getElementById('pending-tests').textContent = data.summary.pending_tests;
+                document.getElementById('activated-tests').textContent = data.summary.activated_tests;
+                
+                document.getElementById('customer-name').textContent = data.customer_name || 'Customer';
+                document.getElementById('customer-email').textContent = data.customer_id;
+
+                // Store customer data
+                this.customerData = data;
+            }
+        } catch (error) {
+            console.error('Error loading customer stats:', error);
+            // Set default values
+            ['total-tests', 'completed-tests', 'pending-tests', 'activated-tests'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = '0';
+            });
+        }
+    },
+
+    async loadRecentTests() {
+        try {
+            if (!this.customerData || !this.customerData.tests) return;
+
+            const recentTests = this.customerData.tests.slice(0, 3);
+            const recentSection = document.getElementById('recent-tests-section');
+            const noTestsSection = document.getElementById('no-tests-section');
+
+            if (recentTests.length === 0) {
+                recentSection.style.display = 'none';
+                noTestsSection.style.display = 'block';
+                return;
+            }
+
+            recentSection.style.display = 'block';
+            noTestsSection.style.display = 'none';
+
+            const recentTestsList = document.getElementById('recent-tests-list');
+            recentTestsList.innerHTML = recentTests.map(test => this.createRecentTestItem(test)).join('');
+
+        } catch (error) {
+            console.error('Error loading recent tests:', error);
+        }
+    },
+
+    createRecentTestItem(test) {
+        const statusDisplay = {
+            'pending': 'Pending',
+            'activated': 'Activated', 
+            'completed': 'Completed'
+        }[test.status] || test.status;
+
+        return `
+            <div class="recent-test-item" onclick="NADCustomer.viewTestDetails('${test.test_id}')">
+                <div class="test-info">
+                    <h4>${test.test_id}</h4>
+                    <p>Created: ${new Date(test.created_date).toLocaleDateString()}</p>
+                </div>
+                <div class="test-status status-${test.status}">${statusDisplay}</div>
+            </div>
+        `;
+    },
+
+    // Test History functionality
+    async loadTestHistory() {
+        try {
+            await this.loadSection('test-history', '#content-container');
+            await this.loadAllTests();
+        } catch (error) {
+            console.error('Error loading test history:', error);
+            this.showError('Failed to load test history');
+        }
+    },
+
+    async loadAllTests() {
+        try {
+            const loadingMessage = document.getElementById('loading-message');
+            const testsGrid = document.getElementById('tests-grid');
+            const noTestsMessage = document.getElementById('no-tests-message');
+
+            // Show loading
+            if (loadingMessage) loadingMessage.style.display = 'block';
+            if (testsGrid) testsGrid.style.display = 'none';
+            if (noTestsMessage) noTestsMessage.style.display = 'none';
+
+            // For testing, we'll use a query parameter
+            const testCustomerId = 'test@example.com';
+            const response = await fetch(`/api/customer/test-history?customer_id=${testCustomerId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                this.allTests = data.tests;
+                this.filteredTests = data.tests;
+                this.renderTestCards(data.tests);
+            } else {
+                throw new Error(data.error || 'Failed to load tests');
+            }
+        } catch (error) {
+            console.error('Error loading all tests:', error);
+            this.showNoTestsMessage();
+        } finally {
+            const loadingMessage = document.getElementById('loading-message');
+            if (loadingMessage) loadingMessage.style.display = 'none';
+        }
+    },
+
+    renderTestCards(tests) {
+        const container = document.getElementById('tests-grid');
+        const noTestsMessage = document.getElementById('no-tests-message');
+        
+        if (!container) return;
+
+        if (tests.length === 0) {
+            container.style.display = 'none';
+            if (noTestsMessage) noTestsMessage.style.display = 'block';
+            return;
+        }
+
+        container.style.display = 'grid';
+        if (noTestsMessage) noTestsMessage.style.display = 'none';
+        
+        const cardsHtml = tests.map(test => this.createTestCard(test)).join('');
+        container.innerHTML = cardsHtml;
+    },
+
+    createTestCard(test) {
+        const statusDisplay = {
+            'pending': 'Pending',
+            'activated': 'Activated', 
+            'completed': 'Completed'
+        }[test.status] || test.status;
+
+        return `
+            <div class="test-card" data-test-id="${test.test_id}" data-status="${test.status}">
+                <div class="test-card-header">
+                    <div class="test-id-section">
+                        <div class="test-id">${test.test_id}</div>
+                        <div class="batch-id">Batch: ${test.batch_id || 'Individual'}</div>
+                    </div>
+                    <div class="test-status status-${test.status}">${statusDisplay}</div>
+                </div>
+                
+                <div class="test-card-body">
+                    <div class="test-timeline">
+                        <div class="timeline-item">
+                            <span class="timeline-label">Created:</span>
+                            <span class="timeline-date">${new Date(test.created_date).toLocaleDateString()}</span>
+                        </div>
+                        ${test.activated_date ? `
+                            <div class="timeline-item">
+                                <span class="timeline-label">Activated:</span>
+                                <span class="timeline-date">${new Date(test.activated_date).toLocaleDateString()}</span>
+                            </div>
+                        ` : ''}
+                        ${test.score_date ? `
+                            <div class="timeline-item">
+                                <span class="timeline-label">Results:</span>
+                                <span class="timeline-date">${new Date(test.score_date).toLocaleDateString()}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="test-summary">
+                        ${test.has_score ? `
+                            <div class="score-display">
+                                <div class="score-value">${test.score}</div>
+                                <div class="score-label">NAD+ Score</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${test.supplements && test.supplements.length > 0 ? `
+                            <div class="supplements-summary">
+                                ${test.supplements.length} supplements recorded
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="test-card-actions">
+                    <button class="btn-outline" onclick="NADCustomer.viewTestDetails('${test.test_id}')">
+                        View Details
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    showNoTestsMessage() {
+        const container = document.getElementById('tests-grid');
+        const noTestsMessage = document.getElementById('no-tests-message');
+        
+        if (container) container.style.display = 'none';
+        if (noTestsMessage) noTestsMessage.style.display = 'block';
+    },
+
+    // Filter and search functionality
+    filterTests() {
+        const statusFilter = document.getElementById('status-filter');
+        const searchInput = document.getElementById('test-search');
+        
+        if (!this.allTests) return;
+
+        let filtered = [...this.allTests];
+
+        // Apply status filter
+        if (statusFilter && statusFilter.value !== 'all') {
+            filtered = filtered.filter(test => test.status === statusFilter.value);
+        }
+
+        // Apply search filter
+        if (searchInput && searchInput.value.trim()) {
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            filtered = filtered.filter(test => 
+                test.test_id.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        this.filteredTests = filtered;
+        this.renderTestCards(filtered);
+    },
+
+    searchTests() {
+        this.filterTests();
+    },
+
+    // Test detail modal functionality
+    async viewTestDetails(testId) {
+        try {
+            console.log('Loading test details for:', testId);
+            
+            // Load modal component
+            await this.loadTestDetailModal();
+            
+            // For testing, we'll use a query parameter
+            const testCustomerId = 'test@example.com';
+            const response = await fetch(`/api/customer/test-detail/${testId}?customer_id=${testCustomerId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                this.populateTestModal(data.test);
+                this.showTestModal();
+            } else {
+                throw new Error(data.error || 'Failed to load test details');
+            }
+        } catch (error) {
+            console.error('Error loading test details:', error);
+            alert('Failed to load test details. Please try again.');
+        }
+    },
+
+    async loadTestDetailModal() {
+        try {
+            const response = await fetch('customer/components/test-detail-modal.html');
+            if (!response.ok) throw new Error('Failed to load modal');
+            
+            const html = await response.text();
+            
+            // Remove existing modal if present
+            const existingModal = document.getElementById('test-detail-modal');
+            if (existingModal) existingModal.remove();
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', html);
+        } catch (error) {
+            console.error('Error loading modal:', error);
+            throw error;
+        }
+    },
+
+    populateTestModal(test) {
+        // Basic test info
+        const testIdEl = document.getElementById('modal-test-id');
+        const statusEl = document.getElementById('modal-status');
+        const batchEl = document.getElementById('modal-batch');
+        
+        if (testIdEl) testIdEl.textContent = test.test_id;
+        if (statusEl) {
+            statusEl.textContent = test.status.charAt(0).toUpperCase() + test.status.slice(1);
+            statusEl.className = `value status-badge status-${test.status}`;
+        }
+        if (batchEl) batchEl.textContent = test.batch_id || 'Individual';
+
+        // Score section
+        const scoreSection = document.getElementById('score-section');
+        const scoreEl = document.getElementById('modal-score');
+        const scoreDateEl = document.getElementById('modal-score-date');
+        const technicianEl = document.getElementById('modal-technician');
+        
+        if (test.score) {
+            if (scoreSection) scoreSection.style.display = 'block';
+            if (scoreEl) scoreEl.textContent = test.score;
+            if (scoreDateEl) scoreDateEl.textContent = test.score_date ? new Date(test.score_date).toLocaleDateString() : 'N/A';
+            if (technicianEl) technicianEl.textContent = test.technician_id || 'N/A';
+        } else {
+            if (scoreSection) scoreSection.style.display = 'none';
+        }
+
+        // Timeline
+        this.populateTimeline(test.timeline || []);
+
+        // Supplements
+        this.populateSupplements(test.supplements || [], test.health_conditions);
+
+        // Notes
+        this.populateNotes(test.technician_notes, test.test_notes);
+    },
+
+    populateTimeline(timeline) {
+        const container = document.getElementById('modal-timeline');
+        if (!container) return;
+
+        if (timeline.length === 0) {
+            container.innerHTML = '<p>No timeline events available.</p>';
+            return;
+        }
+
+        container.innerHTML = timeline.map(event => `
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="timeline-event">${event.event}</div>
+                    <div class="timeline-date">${new Date(event.date).toLocaleDateString()}</div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    populateSupplements(supplements, healthConditions) {
+        const section = document.getElementById('supplements-section');
+        const container = document.getElementById('modal-supplements');
+        const healthSection = document.getElementById('health-conditions');
+        const healthText = document.getElementById('health-conditions-text');
+
+        if (!supplements || supplements.length === 0) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+
+        if (section) section.style.display = 'block';
+        
+        if (container) {
+            container.innerHTML = supplements.map(supplement => `
+                <div class="supplement-item">
+                    <div class="supplement-name">${supplement.name}</div>
+                    <div class="supplement-amount">${supplement.amount} ${supplement.unit}</div>
+                </div>
+            `).join('');
+        }
+
+        // Health conditions
+        if (healthConditions && healthConditions.trim() && healthSection && healthText) {
+            healthSection.style.display = 'block';
+            healthText.textContent = healthConditions;
+        } else if (healthSection) {
+            healthSection.style.display = 'none';
+        }
+    },
+
+    populateNotes(technicianNotes, testNotes) {
+        const notesSection = document.getElementById('notes-section');
+        const techNotesDiv = document.getElementById('technician-notes');
+        const techNotesText = document.getElementById('technician-notes-text');
+        const testNotesDiv = document.getElementById('test-notes');
+        const testNotesText = document.getElementById('test-notes-text');
+
+        let hasNotes = false;
+
+        // Technician notes
+        if (technicianNotes && technicianNotes.trim() && techNotesDiv && techNotesText) {
+            techNotesDiv.style.display = 'block';
+            techNotesText.textContent = technicianNotes;
+            hasNotes = true;
+        } else if (techNotesDiv) {
+            techNotesDiv.style.display = 'none';
+        }
+
+        // Test notes
+        if (testNotes && testNotes.trim() && testNotesDiv && testNotesText) {
+            testNotesDiv.style.display = 'block';
+            testNotesText.textContent = testNotes;
+            hasNotes = true;
+        } else if (testNotesDiv) {
+            testNotesDiv.style.display = 'none';
+        }
+
+        // Show/hide entire notes section
+        if (notesSection) {
+            notesSection.style.display = hasNotes ? 'block' : 'none';
+        }
+    },
+
+    showTestModal() {
+        const modal = document.getElementById('test-detail-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    },
+
+    closeTestModal() {
+        const modal = document.getElementById('test-detail-modal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    },
+
+    // Navigation methods
+    startNewTest() {
+        this.currentStep = 1;
+        this.showStep(1); // Go to existing test verification flow
+    },
+
+    viewAllTests() {
+        this.loadTestHistory();
+    },
+
+    // Updated init method to show dashboard by default
+    init() {
+        console.log('Initializing NAD Customer Portal');
+        this.loadComponents();
+        this.setupEventListeners();
+        // Show dashboard instead of verification step
+        this.loadDashboard();
     }
 };
 

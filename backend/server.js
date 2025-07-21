@@ -2812,6 +2812,240 @@ app.post('/api/customer/activate-test', async (req, res) => {
     }
 });
 
+// ============================================================================
+// CUSTOMER PORTAL ENDPOINTS  
+// ============================================================================
+
+app.get('/api/customer/test-history', async (req, res) => {
+    try {
+        // Extract customer_id from Multipass authentication or request
+        let customerId = null;
+        if (req.user && req.user.customer_id) {
+            customerId = req.user.customer_id; // From Multipass authentication
+        } else if (req.query.customer_id) {
+            customerId = normalizeCustomerId(req.query.customer_id);
+        } else {
+            return res.status(400).json({
+                success: false,
+                error: 'Customer authentication required'
+            });
+        }
+
+        console.log(`🔍 Loading test history for customer: ${customerId}`);
+
+        // Get all tests for this customer with related data
+        const [tests] = await db.execute(`
+            SELECT 
+                ti.test_id,
+                ti.status,
+                ti.batch_id,
+                ti.created_date,
+                ti.activated_date,
+                ti.customer_id,
+                ts.score,
+                ts.score_submission_date as score_date,
+                ts.technician_id,
+                us.supplement_data,
+                (ts.score IS NOT NULL) as has_score,
+                (us.supplement_data IS NOT NULL) as has_supplements
+            FROM nad_test_ids ti
+            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id  
+            LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id
+            WHERE ti.customer_id = ? 
+            ORDER BY ti.created_date DESC
+        `, [customerId]);
+
+        // Parse supplement data and create response
+        const testsWithSupplements = tests.map(test => {
+            let supplements = [];
+            if (test.supplement_data) {
+                try {
+                    const supplementData = JSON.parse(test.supplement_data);
+                    if (supplementData.selected && Array.isArray(supplementData.selected)) {
+                        supplements = supplementData.selected.map(s => ({
+                            name: s.name,
+                            amount: s.amount,
+                            unit: s.unit
+                        }));
+                    }
+                } catch (e) {
+                    console.warn('Error parsing supplement data for test', test.test_id, e);
+                }
+            }
+
+            return {
+                test_id: test.test_id,
+                status: test.status,
+                batch_id: test.batch_id,
+                created_date: test.created_date,
+                activated_date: test.activated_date,
+                score: test.score,
+                score_date: test.score_date,
+                supplements: supplements,
+                has_score: Boolean(test.has_score),
+                has_supplements: Boolean(test.has_supplements)
+            };
+        });
+
+        // Calculate summary statistics
+        const summary = {
+            total_tests: tests.length,
+            completed_tests: tests.filter(t => t.status === 'completed').length,
+            activated_tests: tests.filter(t => t.status === 'activated').length,
+            pending_tests: tests.filter(t => t.status === 'pending').length
+        };
+
+        // Extract customer name from email (simple approach)
+        const customerName = customerId.includes('@') 
+            ? customerId.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+            : 'Customer';
+
+        console.log(`✅ Found ${tests.length} tests for customer ${customerId}`);
+
+        res.json({
+            success: true,
+            customer_id: customerId,
+            customer_name: customerName,
+            tests: testsWithSupplements,
+            summary: summary
+        });
+
+    } catch (error) {
+        console.error('Error fetching customer test history:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load test history',
+            details: error.message
+        });
+    }
+});
+
+app.get('/api/customer/test-detail/:testId', async (req, res) => {
+    try {
+        const { testId } = req.params;
+        
+        // Extract customer_id from Multipass authentication
+        let customerId = null;
+        if (req.user && req.user.customer_id) {
+            customerId = req.user.customer_id;
+        } else if (req.query.customer_id) {
+            customerId = normalizeCustomerId(req.query.customer_id);
+        } else {
+            return res.status(400).json({
+                success: false,
+                error: 'Customer authentication required'
+            });
+        }
+
+        console.log(`🔍 Loading test detail for ${testId}, customer: ${customerId}`);
+
+        // Get detailed test information
+        const [testRows] = await db.execute(`
+            SELECT 
+                ti.test_id,
+                ti.customer_id,
+                ti.status,
+                ti.batch_id,
+                ti.batch_size,
+                ti.created_date,
+                ti.activated_date,
+                ti.shipping_status,
+                ti.shipped_date,
+                ti.notes as test_notes,
+                ts.score,
+                ts.score_submission_date,
+                ts.technician_id,
+                ts.notes as technician_notes,
+                ts.image,
+                us.supplement_data,
+                us.habits_notes
+            FROM nad_test_ids ti
+            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id  
+            WHERE ti.test_id = ? AND ti.customer_id = ?
+        `, [testId, customerId]);
+
+        if (testRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Test not found or access denied'
+            });
+        }
+
+        const test = testRows[0];
+
+        // Parse supplement data
+        let supplements = [];
+        let healthConditions = '';
+        if (test.supplement_data) {
+            try {
+                const supplementData = JSON.parse(test.supplement_data);
+                if (supplementData.selected && Array.isArray(supplementData.selected)) {
+                    supplements = supplementData.selected;
+                }
+                healthConditions = supplementData.health_conditions || '';
+            } catch (e) {
+                console.warn('Error parsing supplement data for test', testId, e);
+            }
+        }
+
+        // Create timeline events
+        const timeline = [];
+        if (test.created_date) {
+            timeline.push({ event: 'Test Created', date: test.created_date });
+        }
+        if (test.activated_date) {
+            timeline.push({ event: 'Test Activated', date: test.activated_date });
+        }
+        if (test.shipped_date) {
+            timeline.push({ event: 'Test Shipped', date: test.shipped_date });
+        }
+        if (test.score_submission_date) {
+            timeline.push({ event: 'Lab Processing', date: test.score_submission_date });
+            timeline.push({ event: 'Results Available', date: test.score_submission_date });
+        }
+
+        // Sort timeline by date
+        timeline.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const detailedTest = {
+            test_id: test.test_id,
+            customer_id: test.customer_id,
+            status: test.status,
+            batch_id: test.batch_id,
+            batch_size: test.batch_size,
+            created_date: test.created_date,
+            activated_date: test.activated_date,
+            score: test.score,
+            score_date: test.score_submission_date,
+            technician_id: test.technician_id,
+            technician_notes: test.technician_notes,
+            test_notes: test.test_notes,
+            supplements: supplements,
+            health_conditions: healthConditions,
+            habits_notes: test.habits_notes,
+            shipping_status: test.shipping_status,
+            shipped_date: test.shipped_date,
+            timeline: timeline
+        };
+
+        console.log(`✅ Test detail loaded for ${testId}`);
+
+        res.json({
+            success: true,
+            test: detailedTest
+        });
+
+    } catch (error) {
+        console.error('Error fetching test detail:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load test details',
+            details: error.message
+        });
+    }
+});
+
 app.post('/api/batch/activate-tests', async (req, res) => {
     try {
         const { customer_ids, test_ids } = req.body;
