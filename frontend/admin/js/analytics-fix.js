@@ -276,11 +276,11 @@ function generateTestDetailsCSV(testData, reportDate, period) {
     let csv = '';
     
     // Report Header
-    csv += 'NAD+ Test Details Export\\n';
-    csv += `Generated: ${reportDate.toLocaleString()}\\n`;
-    csv += `Time Period: ${getPeriodLabel(period)}\\n`;
-    csv += `Total Records: ${testData.length}\\n`;
-    csv += '\\n';
+    csv += 'NAD+ Test Details Export\n';
+    csv += `Generated: ${reportDate.toLocaleString()}\n`;
+    csv += `Time Period: ${getPeriodLabel(period)}\n`;
+    csv += `Total Records: ${testData.length}\n`;
+    csv += '\n';
     
     // Analyze supplement data to determine columns needed
     const supplementColumns = analyzeSupplementData(testData);
@@ -303,7 +303,7 @@ function generateTestDetailsCSV(testData, reportDate, period) {
         headers.push(col);
     });
     
-    csv += headers.map(h => `"${h}"`).join(',') + '\\n';
+    csv += headers.map(h => `"${h}"`).join(',') + '\n';
     
     // Data rows
     testData.forEach(test => {
@@ -326,19 +326,19 @@ function generateTestDetailsCSV(testData, reportDate, period) {
             row.push(supplementData[colName] || '');
         });
         
-        csv += row.map(cell => `"${cell}"`).join(',') + '\\n';
+        csv += row.map(cell => `"${cell}"`).join(',') + '\n';
     });
     
     // Report Summary
-    csv += '\\n';
-    csv += 'EXPORT SUMMARY\\n';
-    csv += 'Field,Information\\n';
-    csv += `"Export Period","${getPeriodLabel(period)}"\\n`;
-    csv += `"Total Test Records","${testData.length}"\\n`;
-    csv += `"Data Source","NAD+ Lab Interface Database"\\n`;
-    csv += `"Export Format","CSV (Comma Separated Values)"\\n`;
-    csv += `"Report Generated","${reportDate.toISOString()}"\\n`;
-    csv += `"Supplement Columns","${supplementColumns.length}"\\n`;
+    csv += '\n';
+    csv += 'EXPORT SUMMARY\n';
+    csv += 'Field,Information\n';
+    csv += `"Export Period","${getPeriodLabel(period)}"\n`;
+    csv += `"Total Test Records","${testData.length}"\n`;
+    csv += `"Data Source","NAD+ Lab Interface Database"\n`;
+    csv += `"Export Format","CSV (Comma Separated Values)"\n`;
+    csv += `"Report Generated","${reportDate.toISOString()}"\n`;
+    csv += `"Supplement Columns","${supplementColumns.length}"\n`;
     
     return csv;
 }
@@ -426,7 +426,7 @@ function formatDate(dateString) {
  */
 function cleanText(text) {
     if (!text) return '';
-    return String(text).replace(/"/g, '""').replace(/\\n/g, ' ').replace(/\\r/g, ' ');
+    return String(text).replace(/"/g, '""').replace(/\n/g, ' ').replace(/\r/g, ' ');
 }
 
 /**
