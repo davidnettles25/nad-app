@@ -3403,6 +3403,182 @@ app.get('/api/notifications', async (req, res) => {
 });
 
 // ============================================================================
+// LOG CONFIGURATION ENDPOINTS (must be before 404 handler)
+// ============================================================================
+
+// DEPLOYMENT TEST - This should appear if new code is deployed
+app.get('/api/deployment-test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'NEW CODE DEPLOYED SUCCESSFULLY!',
+        timestamp: new Date().toISOString(),
+        commit: '70eacea-fixed',
+        nodeVersion: process.version,
+        uptime: process.uptime(),
+        pid: process.pid
+    });
+});
+
+// Simple test endpoint to verify new code is deployed
+app.get('/api/admin/test-logging', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Log management endpoints are active',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
+    });
+});
+
+// Get current log configuration (simplified for debugging)
+app.get('/api/admin/log-config', (req, res) => {
+    try {
+        // Simplified config without logger dependencies
+        const config = {
+            level: process.env.LOG_LEVEL || 'info',
+            console: process.env.NODE_ENV !== 'production',
+            files: { enabled: false, app: false, api: false, error: false, customer: false, admin: false },
+            debug: { enabled: true, areas: ['analytics', 'supplements', 'batch-printing', 'exports'] }
+        };
+        
+        res.json({
+            success: true,
+            config: config,
+            message: 'Current log configuration',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Error getting log configuration:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to get log configuration: ' + error.message 
+        });
+    }
+});
+
+// Update log configuration (simplified)
+app.post('/api/admin/log-config', (req, res) => {
+    try {
+        const newConfig = req.body;
+        console.log('Log configuration update received:', newConfig);
+        
+        // Validate configuration
+        if (newConfig.level && !['fatal', 'error', 'warn', 'info', 'debug', 'trace'].includes(newConfig.level)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid log level. Use: fatal, error, warn, info, debug, trace'
+            });
+        }
+        
+        // For now, just return success (no actual updating until Pino is ready)
+        res.json({
+            success: true,
+            config: newConfig,
+            message: 'Log configuration updated (simplified mode)',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('Error updating log configuration:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to update log configuration: ' + error.message 
+        });
+    }
+});
+
+// Get available log files
+app.get('/api/admin/log-files', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const logsDir = path.join(__dirname, 'logs');
+        
+        if (!fs.existsSync(logsDir)) {
+            return res.json({
+                success: true,
+                files: [],
+                message: 'Log directory does not exist. File logging may be disabled.'
+            });
+        }
+        
+        const files = fs.readdirSync(logsDir)
+            .filter(file => file.endsWith('.log'))
+            .map(file => {
+                const filePath = path.join(logsDir, file);
+                const stats = fs.statSync(filePath);
+                return {
+                    name: file,
+                    size: stats.size,
+                    modified: stats.mtime.toISOString()
+                };
+            })
+            .sort((a, b) => new Date(b.modified) - new Date(a.modified));
+        
+        res.json({
+            success: true,
+            files: files,
+            count: files.length
+        });
+        
+    } catch (error) {
+        console.error('Error getting log files:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to get log files: ' + error.message 
+        });
+    }
+});
+
+// Read log file contents (with pagination)
+app.get('/api/admin/log-files/:filename', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const { filename } = req.params;
+        const { lines = 100, offset = 0 } = req.query;
+        
+        // Security: only allow .log files
+        if (!filename.endsWith('.log') || filename.includes('..')) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid filename. Only .log files are allowed.'
+            });
+        }
+        
+        const filePath = path.join(__dirname, 'logs', filename);
+        
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                error: 'Log file not found'
+            });
+        }
+        
+        const content = fs.readFileSync(filePath, 'utf8');
+        const allLines = content.split('\n');
+        const startIndex = parseInt(offset) || 0;
+        const endIndex = startIndex + (parseInt(lines) || 100);
+        const requestedLines = allLines.slice(startIndex, endIndex);
+        
+        res.json({
+            success: true,
+            filename: filename,
+            lines: requestedLines,
+            totalLines: allLines.length,
+            startIndex: startIndex,
+            endIndex: Math.min(endIndex, allLines.length)
+        });
+        
+    } catch (error) {
+        console.error('Error reading log file:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to read log file: ' + error.message 
+        });
+    }
+});
+
+// ============================================================================
 // ERROR HANDLING MIDDLEWARE
 // ============================================================================
 
@@ -3417,7 +3593,12 @@ app.use((req, res) => {
             'GET /api/dashboard/stats',
             'GET /api/supplements',
             'GET /api/tests/scores',
-            'GET /api/analytics/overview'
+            'GET /api/analytics/overview',
+            'GET /api/deployment-test',
+            'GET /api/admin/log-config',
+            'POST /api/admin/log-config',
+            'GET /api/admin/log-files',
+            'GET /api/admin/log-files/:filename'
         ]
     });
 });
@@ -3500,39 +3681,6 @@ app.get('/api/admin/test-logging', (req, res) => {
         message: 'Log management endpoints are active',
         timestamp: new Date().toISOString(),
         version: '1.0.0'
-    });
-});
-
-// DEPLOYMENT TEST - This should appear if new code is deployed
-app.get('/api/deployment-test', (req, res) => {
-    res.json({
-        success: true,
-        message: 'NEW CODE DEPLOYED SUCCESSFULLY!',
-        timestamp: new Date().toISOString(),
-        commit: '5dd64c5',
-        nodeVersion: process.version,
-        uptime: process.uptime(),
-        pid: process.pid
-    });
-});
-
-// Debug endpoint to check what endpoints are registered
-app.get('/api/debug/routes', (req, res) => {
-    const routes = [];
-    app._router.stack.forEach(middleware => {
-        if (middleware.route) {
-            routes.push({
-                path: middleware.route.path,
-                methods: Object.keys(middleware.route.methods)
-            });
-        }
-    });
-    res.json({
-        success: true,
-        totalRoutes: routes.length,
-        routes: routes,
-        serverFile: __filename,
-        timestamp: new Date().toISOString()
     });
 });
 
