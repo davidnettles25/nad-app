@@ -3268,6 +3268,52 @@ app.use((error, req, res, next) => {
     });
 });
 
+// Debug endpoint to check supplement data in database
+app.get('/api/debug/supplements/:testId', async (req, res) => {
+    try {
+        const { testId } = req.params;
+        
+        console.log(`🔍 Debug: Checking supplement data for test ${testId}`);
+        
+        // Check nad_user_supplements table
+        const [supplementRows] = await db.execute(`
+            SELECT test_id, customer_id, supplements_with_dose, habits_notes, created_at, updated_at
+            FROM nad_user_supplements 
+            WHERE test_id = ?
+        `, [testId]);
+        
+        // Check nad_test_ids table
+        const [testRows] = await db.execute(`
+            SELECT test_id, customer_id, status, created_date, activated_date
+            FROM nad_test_ids 
+            WHERE test_id = ?
+        `, [testId]);
+        
+        console.log(`📊 Debug results for ${testId}:`, {
+            supplement_records: supplementRows.length,
+            test_records: testRows.length
+        });
+        
+        res.json({
+            success: true,
+            testId: testId,
+            supplement_records: supplementRows,
+            test_records: testRows,
+            debug_info: {
+                supplement_count: supplementRows.length,
+                test_count: testRows.length,
+                has_supplement_data: supplementRows.length > 0 && supplementRows[0]?.supplements_with_dose !== null
+            }
+        });
+    } catch (error) {
+        console.error('Debug supplements error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // ============================================================================
 // SERVER STARTUP AND SHUTDOWN
 // ============================================================================
