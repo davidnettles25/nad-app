@@ -8,6 +8,9 @@ const path = require('path');
 const fs = require('fs').promises;
 require('dotenv').config();
 
+// Initialize Pino logger
+const { createLogger, requestLoggingMiddleware } = require('./logger');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -34,24 +37,11 @@ if (process.env.NODE_ENV !== 'production') {
     app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 }
 
-// Safe logging functions
-const isDevelopment = process.env.NODE_ENV !== 'production';
+// Create application logger
+const appLogger = createLogger({ module: 'app' });
 
-const safeLog = (...args) => {
-    if (isDevelopment) {
-        console.log(...args);
-    }
-};
-
-const safeError = (...args) => {
-    // Always log errors, but sanitize sensitive data in production
-    console.error(...args);
-};
-
-app.use((req, res, next) => {
-    safeLog(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-    next();
-});
+// Request logging middleware (replaces the manual logging)
+app.use(requestLoggingMiddleware);
 
 // ============================================================================
 // DATABASE CONNECTION
@@ -77,9 +67,9 @@ let db;
 async function initializeDatabase() {
     try {
         db = await mysql.createPool(dbConfig);
-        console.log('✅ Database connected successfully');
+        appLogger.info('Database connected successfully');
         const [rows] = await db.execute('SELECT 1 as test');
-        console.log('✅ Database test query successful');
+        appLogger.info('Database test query successful');
         
         // Run schema cleanup migration if needed
         await cleanupTestScoresSchema();
@@ -3418,61 +3408,207 @@ app.get('/api/debug/supplements/:testId', async (req, res) => {
 // ============================================================================
 // SERVER STARTUP AND SHUTDOWN
 // ============================================================================
+// LOG CONFIGURATION ENDPOINTS
+// ============================================================================
+
+// Get current log configuration
+app.get('/api/admin/log-config', (req, res) => {
+    try {
+        const { getLogConfig } = require('./logger');
+        const config = getLogConfig();
+        
+        res.json({
+            success: true,
+            config: config
+        });
+    } catch (error) {
+        console.error('Error getting log configuration:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to get log configuration: ' + error.message 
+        });
+    }
+});
+
+// Update log configuration
+app.post('/api/admin/log-config', (req, res) => {
+    try {
+        const { updateLogConfig } = require('./logger');
+        const newConfig = req.body;
+        
+        // Validate configuration
+        if (newConfig.level && !['fatal', 'error', 'warn', 'info', 'debug', 'trace'].includes(newConfig.level)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid log level. Use: fatal, error, warn, info, debug, trace'
+            });
+        }
+        
+        const updatedConfig = updateLogConfig(newConfig);
+        
+        console.log('📋 Log configuration updated:', updatedConfig);
+        
+        res.json({
+            success: true,
+            config: updatedConfig,
+            message: 'Log configuration updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating log configuration:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to update log configuration: ' + error.message 
+        });
+    }
+});
+
+// Get available log files
+app.get('/api/admin/log-files', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const logsDir = path.join(__dirname, 'logs');
+        
+        if (!fs.existsSync(logsDir)) {
+            return res.json({
+                success: true,
+                files: []
+            });
+        }
+        
+        const files = fs.readdirSync(logsDir)
+            .filter(file => file.endsWith('.log'))
+            .map(file => {
+                const filePath = path.join(logsDir, file);
+                const stats = fs.statSync(filePath);
+                return {
+                    name: file,
+                    size: stats.size,
+                    modified: stats.mtime.toISOString()
+                };
+            })
+            .sort((a, b) => new Date(b.modified) - new Date(a.modified));
+            
+        res.json({
+            success: true,
+            files: files
+        });
+    } catch (error) {
+        console.error('Error getting log files:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to get log files: ' + error.message 
+        });
+    }
+});
+
+// Read log file contents (with pagination)
+app.get('/api/admin/log-files/:filename', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const { filename } = req.params;
+        const { lines = 100, offset = 0 } = req.query;
+        
+        // Security: only allow .log files
+        if (!filename.endsWith('.log') || filename.includes('..')) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid filename'
+            });
+        }
+        
+        const filePath = path.join(__dirname, 'logs', filename);
+        
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                error: 'Log file not found'
+            });
+        }
+        
+        const content = fs.readFileSync(filePath, 'utf8');
+        const allLines = content.split('\n');
+        const startIndex = Math.max(0, allLines.length - parseInt(lines) - parseInt(offset));
+        const endIndex = allLines.length - parseInt(offset);
+        const logLines = allLines.slice(startIndex, endIndex);
+        
+        res.json({
+            success: true,
+            filename: filename,
+            lines: logLines,
+            totalLines: allLines.length
+        });
+    } catch (error) {
+        console.error('Error reading log file:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to read log file: ' + error.message 
+        });
+    }
+});
+
+// ============================================================================
 
 async function startServer() {
     try {
         const dbConnected = await initializeDatabase();
         if (!dbConnected) {
-            console.error('❌ Failed to connect to database. Exiting...');
+            appLogger.fatal('Failed to connect to database. Exiting...');
             process.exit(1);
         }
         
         app.listen(PORT, () => {
-            console.log('🚀 NAD Test Cycle API Server Started - USER MANAGEMENT REMOVED');
-            console.log(`📡 Server running on port ${PORT}`);
-            console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`🔗 Health: http://localhost:${PORT}/health`);
-            console.log(`📊 Stats: http://localhost:${PORT}/api/dashboard/stats`);
-            console.log(`🧪 Tests: http://localhost:${PORT}/api/tests/scores`);
-            console.log(`💊 Supplements: http://localhost:${PORT}/api/supplements`);
-            console.log(`📈 Analytics: http://localhost:${PORT}/api/analytics/overview`);
-            console.log('✅ User Management removed from backend');
-            console.log('🔐 Shopify authentication middleware added');
-            console.log('📊 Analytics updated to remove user statistics');
-            console.log('📤 Export functionality updated to remove users');
+            appLogger.info('NAD Test Cycle API Server Started - USER MANAGEMENT REMOVED', {
+                port: PORT,
+                environment: process.env.NODE_ENV || 'development',
+                endpoints: {
+                    health: `http://localhost:${PORT}/health`,
+                    stats: `http://localhost:${PORT}/api/dashboard/stats`,
+                    tests: `http://localhost:${PORT}/api/tests/scores`,
+                    supplements: `http://localhost:${PORT}/api/supplements`,
+                    analytics: `http://localhost:${PORT}/api/analytics/overview`
+                },
+                features: [
+                    'User Management removed from backend',
+                    'Shopify authentication middleware added',
+                    'Analytics updated to remove user statistics',
+                    'Export functionality updated to remove users'
+                ]
+            });
         });
         
     } catch (error) {
-        console.error('❌ Failed to start server:', error);
+        appLogger.fatal('Failed to start server', { error: error.message, stack: error.stack });
         process.exit(1);
     }
 }
 
 process.on('SIGTERM', async () => {
-    console.log('🛑 SIGTERM received, shutting down gracefully...');
+    appLogger.info('SIGTERM received, shutting down gracefully...');
     if (db) {
         await db.end();
-        console.log('✅ Database connection closed');
+        appLogger.info('Database connection closed');
     }
     process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-    console.log('🛑 SIGINT received, shutting down gracefully...');
+    appLogger.info('SIGINT received, shutting down gracefully...');
     if (db) {
         await db.end();
-        console.log('✅ Database connection closed');
+        appLogger.info('Database connection closed');
     }
     process.exit(0);
 });
 
 process.on('uncaughtException', (error) => {
-    console.error('❌ Uncaught Exception:', error);
+    appLogger.fatal('Uncaught Exception', { error: error.message, stack: error.stack });
     process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    appLogger.fatal('Unhandled Rejection', { reason, promise });
     process.exit(1);
 });
 
