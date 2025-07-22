@@ -1462,8 +1462,7 @@ app.get('/api/supplements', async (req, res) => {
 // Create new supplement
 app.post('/api/supplements', async (req, res) => {
     try {
-        console.log('📡 POST /api/supplements - Creating supplement');
-        console.log('📝 Request body:', req.body);
+        req.logger.admin('supplement_create', 'admin', { action: 'create_supplement' });
         
         const {
             name,
@@ -1770,8 +1769,7 @@ app.get('/api/supplements/:id', async (req, res) => {
     }
 });
 
-console.log('✅ Supplements API endpoints loaded');
-console.log('✅ Supplement CRUD endpoints loaded (GET, POST, PUT, DELETE)');
+// Supplements API endpoints loaded with structured logging
 
 // ============================================================================
 // APPLY AUTHENTICATION TO PROTECTED ROUTES
@@ -2168,27 +2166,16 @@ app.post('/api/admin/tests/bulk-activate', async (req, res) => {
 
 // Replace your existing individual test activation/deactivation endpoints with these enhanced versions:
 
-// Single test activation with enhanced logging
+// Single test activation with structured logging
 app.post('/api/admin/tests/:testId/activate', async (req, res) => {
     const startTime = Date.now();
     const testId = req.params.testId;
     
-    console.log('🔧 ====================================');
-    console.log('🔧 ACTIVATE ENDPOINT CALLED');
-    console.log('🔧 ====================================');
-    console.log('🔧 Timestamp:', new Date().toISOString());
-    console.log('🔧 Test ID from params:', testId);
-    console.log('🔧 Test ID type:', typeof testId);
-    console.log('🔧 Test ID length:', testId ? testId.length : 'undefined');
-    console.log('🔧 Request method:', req.method);
-    safeLog('🔧 Request received for test activation');
-    console.log('🔧 Request body:', req.body);
-    console.log('🔧 Request query:', req.query);
-    console.log('🔧 Request params:', req.params);
+    req.logger.admin('test_activation_request', 'admin', { testId });
     
     try {
         if (!testId || testId.trim() === '') {
-            console.log('❌ Test ID is empty or undefined');
+            req.logger.warn('Test activation failed: missing test ID', { testId });
             return res.status(400).json({ 
                 success: false, 
                 error: 'Test ID is required',
@@ -2197,14 +2184,11 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
             });
         }
         
-        console.log('📊 Checking if test exists in database...');
+        req.logger.debugArea('analytics', 'Checking test existence', { testId });
         const [existing] = await db.execute(`SELECT test_id, status FROM nad_test_ids WHERE test_id = ?`, [testId]);
         
-        console.log('📊 Database query result:', existing);
-        console.log('📊 Found tests:', existing.length);
-        
         if (existing.length === 0) {
-            console.log('❌ Test not found in database');
+            req.logger.warn('Test activation failed: test not found', { testId });
             return res.status(404).json({ 
                 success: false, 
                 error: 'Test not found',
@@ -2214,11 +2198,12 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
         }
         
         const currentTest = existing[0];
-        console.log('📊 Current test data:', currentTest);
-        console.log('📊 Current status:', currentTest.status);
         
         if (currentTest.status !== 'pending') {
-            console.log(`⚠️ Test is already ${currentTest.status}`);
+            req.logger.info('Test activation skipped: already activated', {
+                testId,
+                currentStatus: currentTest.status
+            });
             return res.json({ 
                 success: true, 
                 message: `Test is already ${currentTest.status}`,
@@ -2227,19 +2212,17 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
             });
         }
         
-        console.log('📊 Updating test activation status...');
         const [updateResult] = await db.execute(`
             UPDATE nad_test_ids 
             SET status = 'activated', activated_date = NOW()
             WHERE test_id = ?
         `, [testId]);
         
-        console.log('📊 Update result:', updateResult);
-        console.log('📊 Affected rows:', updateResult.affectedRows);
-        console.log('📊 Changed rows:', updateResult.changedRows);
-        
         if (updateResult.affectedRows === 0) {
-            console.log('❌ No rows were updated');
+            req.logger.error('Test activation failed: no rows updated', {
+                testId,
+                affectedRows: updateResult.affectedRows
+            });
             return res.status(500).json({ 
                 success: false, 
                 error: 'Failed to update test - no rows affected',
@@ -2248,12 +2231,14 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
         }
         
         // Verify the update
-        console.log('📊 Verifying update...');
         const [verifyResult] = await db.execute(`SELECT test_id, status, activated_date FROM nad_test_ids WHERE test_id = ?`, [testId]);
-        console.log('📊 Verification result:', verifyResult);
         
         const processingTime = Date.now() - startTime;
-        console.log(`✅ Test ${testId} activated successfully in ${processingTime}ms`);
+        req.logger.info('Test activated successfully', {
+            testId,
+            processingTime: `${processingTime}ms`,
+            newStatus: verifyResult[0]?.status
+        });
         
         res.json({ 
             success: true, 
@@ -2265,14 +2250,12 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
         
     } catch (error) {
         const processingTime = Date.now() - startTime;
-        console.log('❌ ====================================');
-        console.log('❌ ACTIVATION ERROR');
-        console.log('❌ ====================================');
-        console.error('❌ Error activating test:', error);
-        console.log('❌ Error name:', error.name);
-        console.log('❌ Error message:', error.message);
-        console.log('❌ Error stack:', error.stack);
-        console.log('❌ Processing time:', processingTime + 'ms');
+        req.logger.error('Test activation failed', {
+            testId,
+            processingTime: `${processingTime}ms`,
+            error: error.message,
+            stack: error.stack
+        });
         
         res.status(500).json({ 
             success: false, 
@@ -2285,27 +2268,16 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
     }
 });
 
-// Single test deactivation with enhanced logging
+// Single test deactivation with structured logging
 app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
     const startTime = Date.now();
     const testId = req.params.testId;
     
-    console.log('🔧 ====================================');
-    console.log('🔧 DEACTIVATE ENDPOINT CALLED');
-    console.log('🔧 ====================================');
-    console.log('🔧 Timestamp:', new Date().toISOString());
-    console.log('🔧 Test ID from params:', testId);
-    console.log('🔧 Test ID type:', typeof testId);
-    console.log('🔧 Test ID length:', testId ? testId.length : 'undefined');
-    console.log('🔧 Request method:', req.method);
-    safeLog('🔧 Request received for test activation');
-    console.log('🔧 Request body:', req.body);
-    console.log('🔧 Request query:', req.query);
-    console.log('🔧 Request params:', req.params);
+    req.logger.admin('test_deactivation_request', 'admin', { testId });
     
     try {
         if (!testId || testId.trim() === '') {
-            console.log('❌ Test ID is empty or undefined');
+            req.logger.warn('Test deactivation failed: missing test ID', { testId });
             return res.status(400).json({ 
                 success: false, 
                 error: 'Test ID is required',
@@ -2314,14 +2286,11 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
             });
         }
         
-        console.log('📊 Checking if test exists in database...');
+        req.logger.debugArea('analytics', 'Checking test existence for deactivation', { testId });
         const [existing] = await db.execute(`SELECT test_id, status FROM nad_test_ids WHERE test_id = ?`, [testId]);
         
-        console.log('📊 Database query result:', existing);
-        console.log('📊 Found tests:', existing.length);
-        
         if (existing.length === 0) {
-            console.log('❌ Test not found in database');
+            req.logger.warn('Test deactivation failed: test not found', { testId });
             return res.status(404).json({ 
                 success: false, 
                 error: 'Test not found',
@@ -2331,11 +2300,12 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
         }
         
         const currentTest = existing[0];
-        console.log('📊 Current test data:', currentTest);
-        console.log('📊 Current status:', currentTest.status);
         
         if (currentTest.status === 'pending') {
-            console.log('⚠️ Test is already pending');
+            req.logger.info('Test deactivation skipped: already deactivated', {
+                testId,
+                currentStatus: currentTest.status
+            });
             return res.json({ 
                 success: true, 
                 message: 'Test is already deactivated',
@@ -2344,19 +2314,17 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
             });
         }
         
-        console.log('📊 Updating test deactivation status...');
         const [updateResult] = await db.execute(`
             UPDATE nad_test_ids 
             SET status = 'pending', activated_date = NULL
             WHERE test_id = ?
         `, [testId]);
         
-        console.log('📊 Update result:', updateResult);
-        console.log('📊 Affected rows:', updateResult.affectedRows);
-        console.log('📊 Changed rows:', updateResult.changedRows);
-        
         if (updateResult.affectedRows === 0) {
-            console.log('❌ No rows were updated');
+            req.logger.error('Test deactivation failed: no rows updated', {
+                testId,
+                affectedRows: updateResult.affectedRows
+            });
             return res.status(500).json({ 
                 success: false, 
                 error: 'Failed to update test - no rows affected',
@@ -2365,12 +2333,14 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
         }
         
         // Verify the update
-        console.log('📊 Verifying update...');
         const [verifyResult] = await db.execute(`SELECT test_id, status, activated_date FROM nad_test_ids WHERE test_id = ?`, [testId]);
-        console.log('📊 Verification result:', verifyResult);
         
         const processingTime = Date.now() - startTime;
-        console.log(`✅ Test ${testId} deactivated successfully in ${processingTime}ms`);
+        req.logger.info('Test deactivated successfully', {
+            testId,
+            processingTime: `${processingTime}ms`,
+            newStatus: verifyResult[0]?.status
+        });
         
         res.json({ 
             success: true, 
@@ -2382,14 +2352,12 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
         
     } catch (error) {
         const processingTime = Date.now() - startTime;
-        console.log('❌ ====================================');
-        console.log('❌ DEACTIVATION ERROR');
-        console.log('❌ ====================================');
-        console.error('❌ Error deactivating test:', error);
-        console.log('❌ Error name:', error.name);
-        console.log('❌ Error message:', error.message);
-        console.log('❌ Error stack:', error.stack);
-        console.log('❌ Processing time:', processingTime + 'ms');
+        req.logger.error('Test deactivation failed', {
+            testId,
+            processingTime: `${processingTime}ms`,
+            error: error.message,
+            stack: error.stack
+        });
         
         res.status(500).json({ 
             success: false, 

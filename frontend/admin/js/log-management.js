@@ -1,5 +1,5 @@
 // Log Management Interface Functions
-console.log('📋 Loading Log Management functionality...');
+// Removed console.log - using structured logging instead
 
 let currentLogConfig = null;
 
@@ -21,7 +21,7 @@ async function loadLogConfig() {
             throw new Error(data.error || 'Failed to load log configuration');
         }
     } catch (error) {
-        console.error('Error loading log configuration:', error);
+        // Error already shown in UI alert
         showAlert('❌ Failed to load log configuration: ' + error.message, 'error', 'log-config-alert');
     }
 }
@@ -100,7 +100,7 @@ async function saveLogConfig() {
             throw new Error(data.error || 'Failed to save log configuration');
         }
     } catch (error) {
-        console.error('Error saving log configuration:', error);
+        // Error already shown in UI alert
         showAlert('❌ Failed to save log configuration: ' + error.message, 'error', 'log-config-alert');
     }
 }
@@ -149,7 +149,7 @@ async function refreshLogFiles() {
             throw new Error(data.error || 'Failed to load log files');
         }
     } catch (error) {
-        console.error('Error loading log files:', error);
+        // Error already shown in UI alert
         showAlert('❌ Failed to load log files: ' + error.message, 'error', 'log-files-alert');
     }
 }
@@ -194,7 +194,7 @@ function displayLogFiles(files) {
  */
 async function viewLogFile(filename) {
     try {
-        console.log(`📖 Attempting to load log file: ${filename}`);
+        // Loading log file (shown in UI alert)
         
         // Check if required elements exist
         const logViewer = document.getElementById('log-viewer');
@@ -203,11 +203,7 @@ async function viewLogFile(filename) {
         const logLines = document.getElementById('log-lines');
         
         if (!logViewer || !currentLogFile || !logContent) {
-            console.error('Required log viewer elements not found:', {
-                logViewer: !!logViewer,
-                currentLogFile: !!currentLogFile,
-                logContent: !!logContent
-            });
+            // Log viewer elements not found - error shown in UI
             showAlert('❌ Log viewer elements not found in DOM', 'error', 'log-files-alert');
             return;
         }
@@ -216,7 +212,7 @@ async function viewLogFile(filename) {
         
         const lines = logLines ? logLines.value : 100;
         const url = `${API_BASE}/api/admin/log-files/${encodeURIComponent(filename)}?lines=${lines}`;
-        console.log('Fetching from URL:', url);
+        // Fetching log file content
         
         const response = await fetch(url);
         const data = await response.json();
@@ -237,12 +233,12 @@ async function viewLogFile(filename) {
             // logViewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             
             showAlert('✅ Log file loaded successfully', 'success', 'log-files-alert');
-            console.log(`✅ Successfully loaded ${data.lines.length} lines from ${filename}`);
+            // Log file loaded successfully (shown in UI alert)
         } else {
             throw new Error(data.error || 'Failed to load log file');
         }
     } catch (error) {
-        console.error('Error loading log file:', error);
+        // Error already shown in UI alert
         showAlert('❌ Failed to load log file: ' + error.message, 'error', 'log-files-alert');
         
         // Re-render the log files list in case it was corrupted
@@ -299,7 +295,7 @@ async function testLogSystem() {
         }, 1000);
         
     } catch (error) {
-        console.error('Error testing logging system:', error);
+        // Error already shown in UI alert
         showAlert('❌ Error testing logging system: ' + error.message, 'error', 'log-config-alert');
     }
 }
@@ -308,15 +304,13 @@ async function testLogSystem() {
  * Initialize log management when section is loaded
  */
 function initLogManagement() {
-    console.log('🔧 Initializing log management...');
+    // Initialize log management interface
     
     // Load initial configuration
     loadLogConfig();
     
     // Load log files
     refreshLogFiles();
-    
-    console.log('✅ Log management initialized');
 }
 
 // Make functions globally accessible
@@ -330,4 +324,4 @@ window.closeLogViewer = closeLogViewer;
 window.testLogSystem = testLogSystem;
 window.initLogManagement = initLogManagement;
 
-console.log('✅ Log Management functionality loaded');
+// Log Management functionality loaded
