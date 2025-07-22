@@ -3596,6 +3596,31 @@ app.get('/api/deployment-test', (req, res) => {
     });
 });
 
+// ERROR LOGGING TEST - This should force an error for testing
+app.get('/api/test-error-logging', (req, res) => {
+    try {
+        req.logger.info('Testing error logging endpoint');
+        
+        // Force an error
+        throw new Error('This is a test error for logging verification');
+        
+    } catch (error) {
+        req.logger.error('Test error logged successfully', {
+            endpoint: '/api/test-error-logging',
+            error: error.message,
+            stack: error.stack,
+            testingPhase: 'error-logging-verification'
+        });
+        
+        res.status(500).json({
+            success: false,
+            error: 'Test error created successfully',
+            message: 'Check error.log for this entry',
+            requestId: req.requestId
+        });
+    }
+});
+
 // Simple test endpoint to verify new code is deployed
 app.get('/api/admin/test-logging', (req, res) => {
     res.json({
