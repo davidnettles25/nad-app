@@ -2794,17 +2794,44 @@ app.post('/api/customer/activate-test', async (req, res) => {
         // Store supplement data if provided
         if (supplements) {
             try {
+                const supplementsJson = JSON.stringify(supplements);
+                const customerIdToUse = customerId || test.customer_id;
+                
+                console.log(`💾 Storing supplement data for ${testId}:`, {
+                    testId,
+                    customerId: customerIdToUse,
+                    supplementsJson: supplementsJson.substring(0, 200), // First 200 chars
+                    supplementsLength: supplementsJson.length
+                });
+                
                 await db.execute(`
                     INSERT INTO nad_user_supplements (
                         test_id, customer_id, supplements_with_dose, habits_notes, created_at
                     ) VALUES (?, ?, ?, ?, NOW())
                     ON DUPLICATE KEY UPDATE
                     supplements_with_dose = VALUES(supplements_with_dose), updated_at = NOW()
-                `, [testId, customerId || test.customer_id, JSON.stringify(supplements), '']);
+                `, [testId, customerIdToUse, supplementsJson, '']);
                 
-                console.log(`✅ Supplement data stored for test ${testId}`);
+                console.log(`✅ Supplement data stored successfully for test ${testId}`);
+                
+                // Verify the data was stored
+                const [verifyRows] = await db.execute(`
+                    SELECT test_id, customer_id, supplements_with_dose 
+                    FROM nad_user_supplements 
+                    WHERE test_id = ? AND customer_id = ?
+                `, [testId, customerIdToUse]);
+                
+                console.log(`🔍 Verification query result for ${testId}:`, {
+                    rowCount: verifyRows.length,
+                    data: verifyRows[0] ? {
+                        test_id: verifyRows[0].test_id,
+                        customer_id: verifyRows[0].customer_id,
+                        supplements_length: verifyRows[0].supplements_with_dose?.length || 0
+                    } : null
+                });
+                
             } catch (supplementError) {
-                console.error('Error storing supplement data:', supplementError);
+                console.error(`❌ Error storing supplement data for ${testId}:`, supplementError);
                 // Don't fail the activation if supplement storage fails
             }
         }
