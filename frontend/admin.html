@@ -502,6 +502,7 @@
                 <a href="#batch-printing" class="nav-link" data-section="batch-printing">🖨️ Batch Printing</a>
                 <a href="#supplements" class="nav-link" data-section="supplements">💊 Supplements</a>
                 <a href="#analytics" class="nav-link" data-section="analytics">📈 Analytics</a>
+                <a href="#logs" class="nav-link" data-section="logs">📋 Log Management</a>
                 <a href="#system" class="nav-link" data-section="system">⚙️ System Health</a>
             </div>
         </nav>
@@ -906,14 +907,214 @@
                 </div>
             </div>
 
+            <!-- Log Management Section -->
+            <div id="logs" class="content-section">
+                <div class="section-header">
+                    <h2>📋 Log Management</h2>
+                    <p>Configure logging levels, debug areas, and view log files</p>
+                </div>
+
+                <!-- Log Configuration -->
+                <div class="card">
+                    <h3>⚙️ Log Configuration</h3>
+                    <div id="log-config-alert"></div>
+                    
+                    <div class="filter-grid">
+                        <div class="form-group">
+                            <label for="log-level">Log Level</label>
+                            <select id="log-level">
+                                <option value="fatal">Fatal</option>
+                                <option value="error">Error</option>
+                                <option value="warn">Warning</option>
+                                <option value="info">Info</option>
+                                <option value="debug">Debug</option>
+                                <option value="trace">Trace</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="console-logging"> Console Logging
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="visual-debug"> Visual Debug Messages
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- File Logging Configuration -->
+                    <h4>File Logging</h4>
+                    <div class="filter-grid">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="file-app"> App Logs (app.log)
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="file-api"> API Logs (api.log)
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="file-error"> Error Logs (error.log)
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="file-customer"> Customer Logs (customer.log)
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="file-admin"> Admin Logs (admin.log)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Debug Areas -->
+                    <h4>Debug Areas</h4>
+                    <div class="filter-grid">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="debug-analytics" value="analytics"> Analytics
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="debug-supplements" value="supplements"> Supplements
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="debug-batch-printing" value="batch-printing"> Batch Printing
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="debug-exports" value="exports"> Exports
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="section-controls">
+                        <button class="btn btn-primary" onclick="loadLogConfig()">🔄 Reload Config</button>
+                        <button class="btn btn-success" onclick="saveLogConfig()">💾 Save Configuration</button>
+                        <button class="btn btn-secondary" onclick="resetLogConfig()">🔧 Reset to Defaults</button>
+                    </div>
+                </div>
+
+                <!-- Log Files Viewer -->
+                <div class="card">
+                    <h3>📂 Log Files</h3>
+                    <div id="log-files-alert"></div>
+                    
+                    <div class="section-controls">
+                        <button class="btn btn-primary" onclick="refreshLogFiles()">🔄 Refresh Files</button>
+                    </div>
+
+                    <div id="log-files-list">
+                        <div style="text-align: center; padding: 20px; color: #666;">
+                            Loading log files...
+                        </div>
+                    </div>
+
+                    <!-- Log Viewer -->
+                    <div id="log-viewer" style="display: none;">
+                        <h4>Log Viewer: <span id="current-log-file"></span></h4>
+                        <div class="section-controls">
+                            <input type="number" id="log-lines" value="100" min="10" max="1000" style="width: 80px;">
+                            <label for="log-lines">lines</label>
+                            <button class="btn btn-sm" onclick="refreshLogContent()">🔄 Refresh</button>
+                            <button class="btn btn-sm btn-secondary" onclick="closeLogViewer()">✖ Close</button>
+                        </div>
+                        <pre id="log-content" style="background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px;"></pre>
+                    </div>
+                </div>
+            </div>
+
             <!-- System Health Section -->
             <div id="system" class="content-section">
-                <h2 style="margin-bottom: 20px;">⚙️ System Health</h2>
-                <div class="section-controls">
-                    <button class="btn btn-primary" onclick="testSystemHealth()">🔍 Test System Health</button>
-                    <button class="btn btn-secondary" onclick="testAPIEndpoints()">🌐 Test API Endpoints</button>
+                <h2 style="margin-bottom: 20px;">⚙️ System Health & Logs</h2>
+                
+                <!-- System Health Controls -->
+                <div class="card">
+                    <h3>System Health</h3>
+                    <div class="section-controls">
+                        <button class="btn btn-primary" onclick="testSystemHealth()">🔍 Test System Health</button>
+                        <button class="btn btn-secondary" onclick="testAPIEndpoints()">🌐 Test API Endpoints</button>
+                    </div>
+                    <div id="system-test-results"></div>
                 </div>
-                <div id="system-test-results"></div>
+
+                <!-- Log Management Controls -->
+                <div class="card">
+                    <h3>📋 Log Management</h3>
+                    <div id="log-config-alert"></div>
+                    
+                    <div class="filter-grid">
+                        <div class="form-group">
+                            <label for="log-level">Log Level</label>
+                            <select id="log-level">
+                                <option value="fatal">Fatal</option>
+                                <option value="error">Error</option>
+                                <option value="warn">Warning</option>
+                                <option value="info">Info</option>
+                                <option value="debug">Debug</option>
+                                <option value="trace">Trace</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="console-logging"> Console Logging
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="visual-debug"> Visual Debug Messages
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="section-controls">
+                        <button class="btn btn-primary" onclick="loadLogConfig()">🔄 Reload Config</button>
+                        <button class="btn btn-success" onclick="saveLogConfig()">💾 Save Configuration</button>
+                        <button class="btn btn-secondary" onclick="testLogSystem()">🧪 Test Logging</button>
+                    </div>
+                </div>
+
+                <!-- Log Files Viewer -->
+                <div class="card">
+                    <h3>📂 Log Files</h3>
+                    <div id="log-files-alert"></div>
+                    
+                    <div class="section-controls">
+                        <button class="btn btn-primary" onclick="refreshLogFiles()">🔄 Refresh Files</button>
+                    </div>
+
+                    <div id="log-files-list">
+                        <div style="text-align: center; padding: 20px; color: #666;">
+                            Click "Refresh Files" to load log files
+                        </div>
+                    </div>
+
+                    <!-- Log Viewer -->
+                    <div id="log-viewer" style="display: none;">
+                        <h4>Log Viewer: <span id="current-log-file"></span></h4>
+                        <div class="section-controls">
+                            <input type="number" id="log-lines" value="100" min="10" max="1000" style="width: 80px;">
+                            <label for="log-lines">lines</label>
+                            <button class="btn btn-sm" onclick="refreshLogContent()">🔄 Refresh</button>
+                            <button class="btn btn-sm btn-secondary" onclick="closeLogViewer()">✖ Close</button>
+                        </div>
+                        <pre id="log-content" style="background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px;"></pre>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -1698,8 +1899,16 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                         console.log('🔄 Auto-loading analytics');
                         loadAnalytics();
                         break;
+                    case 'logs':
+                        console.log('🔄 Auto-loading log management');
+                        initLogManagement();
+                        break;
                     case 'system':
                         testSystemHealth();
+                        // Also initialize log management since it's in the system section
+                        if (typeof initLogManagement === 'function') {
+                            initLogManagement();
+                        }
                         break;
                     }
                 }, 200);
@@ -1898,6 +2107,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
     <script src="admin/js/filter-helpers.js"></script>
     <script src="admin/js/sections/batch-printing.js"></script>
     <script src="admin/js/analytics-fix.js"></script>
+    <script src="admin/js/log-management.js"></script>
 
 <script src="admin/js/final-dropdown-fix.js"></script>
 </body>
