@@ -2169,60 +2169,8 @@ app.post('/api/admin/tests/bulk-deactivate', async (req, res) => {
     }
 });
 
-app.get('/api/admin/export/:type', async (req, res) => {
-    try {
-        const { type } = req.params;
-        let data = [];
-        let filename = '';
-        
-        switch(type) {
-            case 'tests':
-                [data] = await db.execute(`
-                    SELECT ti.*, ts.score, ts.score_submission_date, ts.technician_id
-                    FROM nad_test_ids ti
-                    LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-                    ORDER BY ti.created_date DESC
-                `);
-                filename = `nad_tests_export_${new Date().toISOString().split('T')[0]}.json`;
-                break;
-                
-            case 'supplements':
-                [data] = await db.execute(`
-                    SELECT * FROM nad_user_supplements ORDER BY created_at DESC
-                `);
-                filename = `nad_supplements_export_${new Date().toISOString().split('T')[0]}.json`;
-                break;
-                
-            // REMOVED: users export case
-            // case 'users':
-            //     [data] = await db.execute(`
-            //         SELECT * FROM nad_user_roles ORDER BY customer_id
-            //     `);
-            //     filename = `nad_users_export_${new Date().toISOString().split('T')[0]}.json`;
-            //     break;
-                
-            default:
-                return res.status(400).json({ 
-                    success: false, 
-                    error: 'Invalid export type. Use: tests or supplements'
-                });
-        }
-        
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.json({
-            export_type: type,
-            export_date: new Date().toISOString(),
-            total_records: data.length,
-            data: data
-        });
-    } catch (error) {
-        console.error('Error exporting data:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// Export Test Details with Date Filtering (for CSV export)
+// Export Test Details with Date Filtering (for CSV export) 
+// NOTE: This MUST come BEFORE the generic /api/admin/export/:type route
 app.get('/api/admin/export/test-details', async (req, res) => {
     try {
         const { period } = req.query;
@@ -2280,6 +2228,60 @@ app.get('/api/admin/export/test-details', async (req, res) => {
         });
     }
 });
+
+app.get('/api/admin/export/:type', async (req, res) => {
+    try {
+        const { type } = req.params;
+        let data = [];
+        let filename = '';
+        
+        switch(type) {
+            case 'tests':
+                [data] = await db.execute(`
+                    SELECT ti.*, ts.score, ts.score_submission_date, ts.technician_id
+                    FROM nad_test_ids ti
+                    LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+                    ORDER BY ti.created_date DESC
+                `);
+                filename = `nad_tests_export_${new Date().toISOString().split('T')[0]}.json`;
+                break;
+                
+            case 'supplements':
+                [data] = await db.execute(`
+                    SELECT * FROM nad_user_supplements ORDER BY created_at DESC
+                `);
+                filename = `nad_supplements_export_${new Date().toISOString().split('T')[0]}.json`;
+                break;
+                
+            // REMOVED: users export case
+            // case 'users':
+            //     [data] = await db.execute(`
+            //         SELECT * FROM nad_user_roles ORDER BY customer_id
+            //     `);
+            //     filename = `nad_users_export_${new Date().toISOString().split('T')[0]}.json`;
+            //     break;
+                
+            default:
+                return res.status(400).json({ 
+                    success: false, 
+                    error: 'Invalid export type. Use: tests or supplements'
+                });
+        }
+        
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.json({
+            export_type: type,
+            export_date: new Date().toISOString(),
+            total_records: data.length,
+            data: data
+        });
+    } catch (error) {
+        console.error('Error exporting data:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 
 // ============================================================================
 // ANALYTICS ENDPOINTS
