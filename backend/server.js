@@ -2978,6 +2978,9 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
         }
 
         console.log(`🔍 Loading test detail for ${testId}, customer: ${customerId}`);
+        
+        // Debug: Log database query parameters
+        console.log('📊 Query params:', { testId, customerId });
 
         // Get detailed test information
         const [testRows] = await db.execute(`
@@ -3013,6 +3016,13 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
         }
 
         const test = testRows[0];
+        
+        // Debug: Log what we retrieved from database
+        console.log(`📋 Raw database result for ${testId}:`, {
+            supplements_with_dose: test.supplements_with_dose,
+            habits_notes: test.habits_notes,
+            status: test.status
+        });
 
         // Parse supplement data - return complete structure
         let supplementsData = {
@@ -3102,6 +3112,12 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
         });
 
         console.log(`✅ Test detail loaded for ${testId}`);
+        
+        // Debug: Log what we're sending in the response
+        console.log(`📤 API Response for ${testId}:`, {
+            supplements_structure: typeof detailedTest.supplements,
+            supplements_content: detailedTest.supplements
+        });
 
         res.json({
             success: true,
