@@ -981,7 +981,15 @@ app.get('/health', async (req, res) => {
 // ============================================================================
 
 app.get('/api/dashboard/stats', async (req, res) => {
+    const startTime = Date.now();
+    
     try {
+        req.logger.info('Dashboard stats request started', {
+            endpoint: '/api/dashboard/stats',
+            userAgent: req.get('User-Agent'),
+            ip: req.ip
+        });
+
         const [testStats] = await db.execute(`
             SELECT 
                 COUNT(*) as total_tests,
@@ -1000,20 +1008,40 @@ app.get('/api/dashboard/stats', async (req, res) => {
         // const [userStats] = await db.execute(`
         //     SELECT COUNT(*) as active_users FROM nad_user_roles
         // `);
+
+        const stats = {
+            total_tests: testStats[0].total_tests,
+            activated_tests: testStats[0].activated_tests,
+            pending_tests: testStats[0].pending_tests,
+            completed_tests: completedTests[0].completed_tests
+            // REMOVED: active_users: userStats[0].active_users
+        };
+        
+        const duration = Date.now() - startTime;
+        req.logger.info('Dashboard stats request completed', {
+            endpoint: '/api/dashboard/stats',
+            duration: `${duration}ms`,
+            stats: stats
+        });
         
         res.json({
             success: true,
-            stats: {
-                total_tests: testStats[0].total_tests,
-                activated_tests: testStats[0].activated_tests,
-                pending_tests: testStats[0].pending_tests,
-                completed_tests: completedTests[0].completed_tests
-                // REMOVED: active_users: userStats[0].active_users
-            }
+            stats: stats,
+            requestId: req.requestId // Include request ID in response
         });
     } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-        res.status(500).json({ success: false, error: error.message });
+        const duration = Date.now() - startTime;
+        req.logger.error('Dashboard stats request failed', {
+            endpoint: '/api/dashboard/stats',
+            duration: `${duration}ms`,
+            error: error.message,
+            stack: error.stack
+        });
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            requestId: req.requestId
+        });
     }
 });
 
@@ -1027,13 +1055,32 @@ app.get('/api/dashboard/stats', async (req, res) => {
 // ============================================================================
 
 app.post('/api/tests/verify', async (req, res) => {
+    const startTime = Date.now();
+    
     try {
         const { test_id, email } = req.body;
         
+        // Create customer-specific logger with email as customer ID
+        const customerLogger = req.logger.child({
+            customerId: email,
+            testId: test_id
+        });
+        
+        customerLogger.info('Test verification request started', {
+            endpoint: '/api/tests/verify',
+            testId: test_id,
+            email: email // Note: In production, consider hashing emails for privacy
+        });
+        
         if (!test_id || !email) {
+            customerLogger.warn('Test verification failed: missing required fields', {
+                hasTestId: !!test_id,
+                hasEmail: !!email
+            });
             return res.status(400).json({
                 success: false,
-                error: 'Test ID and email are required'
+                error: 'Test ID and email are required',
+                requestId: req.requestId
             });
         }
         
@@ -1045,15 +1092,34 @@ app.post('/api/tests/verify', async (req, res) => {
         `, [test_id]);
         
         if (testRows.length === 0) {
+            customerLogger.warn('Test verification failed: test not found', {
+                testId: test_id,
+                queryResultCount: testRows.length
+            });
             return res.status(404).json({
                 success: false,
-                error: 'Test ID not found'
+                error: 'Test ID not found',
+                requestId: req.requestId
             });
         }
         
         const test = testRows[0];
-        // Use the status field directly from the database
         const status = test.status || 'pending';
+        
+        // Log customer activity
+        customerLogger.customer('test_verification', email, test_id, {
+            status: status,
+            hasScore: !!test.score,
+            customerId: test.customer_id
+        });
+        
+        const duration = Date.now() - startTime;
+        customerLogger.info('Test verification completed successfully', {
+            endpoint: '/api/tests/verify',
+            duration: `${duration}ms`,
+            testStatus: status,
+            hasExistingScore: !!test.score
+        });
         
         res.json({
             success: true,
@@ -1064,11 +1130,28 @@ app.post('/api/tests/verify', async (req, res) => {
                 created_date: test.created_date,
                 activated_date: test.activated_date,
                 score: test.score
-            }
+            },
+            requestId: req.requestId
         });
     } catch (error) {
-        console.error('Error verifying test:', error);
-        res.status(500).json({ success: false, error: error.message });
+        const duration = Date.now() - startTime;
+        const customerLogger = req.logger.child({
+            customerId: req.body?.email,
+            testId: req.body?.test_id
+        });
+        
+        customerLogger.error('Test verification request failed', {
+            endpoint: '/api/tests/verify',
+            duration: `${duration}ms`,
+            error: error.message,
+            stack: error.stack
+        });
+        
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            requestId: req.requestId
+        });
     }
 });
 
@@ -1226,8 +1309,16 @@ app.post('/api/tests/score', upload.single('image'), async (req, res) => {
 
 // Supplements API endpoints
 app.get('/api/supplements', async (req, res) => {
+    const startTime = Date.now();
+    
     try {
-        console.log('📡 GET /api/supplements - Loading all supplements');
+        req.logger.info('Supplements list request started', {
+            endpoint: '/api/supplements'
+        });
+
+        req.logger.debugArea('supplements', 'Loading supplements from database', {
+            query: 'SELECT all supplements with ordering by name'
+        });
         
         const query = `
             SELECT 
@@ -1250,20 +1341,46 @@ app.get('/api/supplements', async (req, res) => {
         
         const [supplements] = await db.execute(query);
         
-        console.log(`✅ Found ${supplements.length} supplements`);
+        req.logger.debugArea('supplements', 'Supplements query completed', {
+            supplementCount: supplements.length,
+            activeCount: supplements.filter(s => s.is_active).length,
+            featuredCount: supplements.filter(s => s.is_featured).length,
+            categories: [...new Set(supplements.map(s => s.category))]
+        });
+
+        const duration = Date.now() - startTime;
+        req.logger.info('Supplements list request completed', {
+            endpoint: '/api/supplements',
+            duration: `${duration}ms`,
+            supplementCount: supplements.length
+        });
         
         res.json({
             success: true,
             supplements: supplements,
-            count: supplements.length
+            count: supplements.length,
+            requestId: req.requestId
         });
         
     } catch (error) {
-        console.error('❌ Error loading supplements:', error);
+        const duration = Date.now() - startTime;
+        req.logger.error('Supplements list request failed', {
+            endpoint: '/api/supplements',
+            duration: `${duration}ms`,
+            error: error.message,
+            stack: error.stack
+        });
+
+        req.logger.debugArea('supplements', 'Supplements loading failed', {
+            error: error.message,
+            duration: `${duration}ms`
+        });
+        
         res.status(500).json({
             success: false,
             error: 'Failed to load supplements',
-            message: error.message
+            message: error.message,
+            requestId: req.requestId
         });
     }
 });
@@ -2358,7 +2475,18 @@ app.get('/api/admin/export/:type', async (req, res) => {
 // ============================================================================
 
 app.get('/api/analytics/overview', async (req, res) => {
+    const startTime = Date.now();
+    
     try {
+        req.logger.info('Analytics overview request started', {
+            endpoint: '/api/analytics/overview'
+        });
+
+        // Debug logging for analytics module
+        req.logger.debugArea('analytics', 'Starting analytics data collection', {
+            queries: ['basic_stats', 'score_distribution', 'daily_stats']
+        });
+
         const [basicStats] = await db.execute(`
             SELECT 
                 COUNT(DISTINCT ti.test_id) as total_tests,
@@ -2368,6 +2496,13 @@ app.get('/api/analytics/overview', async (req, res) => {
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
         `);
+        
+        req.logger.debugArea('analytics', 'Basic stats query completed', {
+            totalTests: basicStats[0].total_tests,
+            activatedTests: basicStats[0].activated_tests,
+            completedTests: basicStats[0].completed_tests,
+            averageScore: basicStats[0].average_score
+        });
         
         const [scoreDistribution] = await db.execute(`
             SELECT 
@@ -2383,6 +2518,11 @@ app.get('/api/analytics/overview', async (req, res) => {
             GROUP BY score_range
         `);
         
+        req.logger.debugArea('analytics', 'Score distribution query completed', {
+            distributionCount: scoreDistribution.length,
+            ranges: scoreDistribution.map(d => ({ range: d.score_range, count: d.count }))
+        });
+        
         const [dailyStats] = await db.execute(`
             SELECT 
                 DATE(score_submission_date) as date,
@@ -2393,6 +2533,15 @@ app.get('/api/analytics/overview', async (req, res) => {
             ORDER BY date ASC
         `);
         
+        req.logger.debugArea('analytics', 'Daily stats query completed', {
+            daysWithData: dailyStats.length,
+            totalCompletions: dailyStats.reduce((sum, day) => sum + day.completions, 0),
+            dateRange: dailyStats.length > 0 ? {
+                from: dailyStats[0].date,
+                to: dailyStats[dailyStats.length - 1].date
+            } : null
+        });
+        
         // REMOVED: User role statistics
         // const [roleStats] = await db.execute(`
         //     SELECT role, COUNT(*) as count
@@ -2400,19 +2549,49 @@ app.get('/api/analytics/overview', async (req, res) => {
         //     WHERE customer_id != 0
         //     GROUP BY role
         // `);
+
+        const analytics = {
+            basic_stats: basicStats[0],
+            score_distribution: scoreDistribution,
+            daily_completions: dailyStats
+            // REMOVED: user_roles: roleStats
+        };
+        
+        const duration = Date.now() - startTime;
+        req.logger.info('Analytics overview request completed', {
+            endpoint: '/api/analytics/overview',
+            duration: `${duration}ms`,
+            dataPoints: {
+                basicStats: 1,
+                scoreDistribution: scoreDistribution.length,
+                dailyCompletions: dailyStats.length
+            }
+        });
         
         res.json({
             success: true,
-            analytics: {
-                basic_stats: basicStats[0],
-                score_distribution: scoreDistribution,
-                daily_completions: dailyStats
-                // REMOVED: user_roles: roleStats
-            }
+            analytics: analytics,
+            requestId: req.requestId
         });
     } catch (error) {
-        console.error('Error fetching analytics:', error);
-        res.status(500).json({ success: false, error: error.message });
+        const duration = Date.now() - startTime;
+        req.logger.error('Analytics overview request failed', {
+            endpoint: '/api/analytics/overview',
+            duration: `${duration}ms`,
+            error: error.message,
+            stack: error.stack
+        });
+        
+        req.logger.debugArea('analytics', 'Analytics data collection failed', {
+            error: error.message,
+            duration: `${duration}ms`
+        });
+        
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            requestId: req.requestId
+        });
     }
 });
 
