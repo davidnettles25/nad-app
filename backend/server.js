@@ -8,24 +8,22 @@ const path = require('path');
 const fs = require('fs').promises;
 require('dotenv').config();
 
-// Initialize logger (temporarily simplified for debugging)
-let logger = null;
-let createLogger = () => ({ info: console.log, error: console.error, warn: console.warn, debug: console.log });
-let requestLoggingMiddleware = (req, res, next) => { 
-    req.requestId = Date.now().toString(); 
-    req.logger = createLogger(); 
-    next(); 
-};
+// Initialize logger
+let logger;
+let createLogger;
+let requestLoggingMiddleware;
+let updateLogConfig;
+let getLogConfig;
 
-// Commented out for debugging - may be causing server startup issues
-// try {
-//     logger = require('./logger');
-//     console.log('✅ Pino logger loaded successfully');
-// } catch (error) {
-//     console.warn('⚠️ Pino logger failed to load, using fallback:', error.message);
-//     logger = require('./logger-fallback');
-// }
-// const { createLogger, requestLoggingMiddleware } = logger;
+try {
+    logger = require('./logger');
+    console.log('✅ Pino logger loaded successfully');
+    ({ createLogger, requestLoggingMiddleware, updateLogConfig, getLogConfig } = logger);
+} catch (error) {
+    console.warn('⚠️ Pino logger failed to load, using fallback:', error.message);
+    logger = require('./logger-fallback');
+    ({ createLogger, requestLoggingMiddleware, updateLogConfig, getLogConfig } = logger);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -3429,16 +3427,10 @@ app.get('/api/admin/test-logging', (req, res) => {
     });
 });
 
-// Get current log configuration (simplified for debugging)
+// Get current log configuration
 app.get('/api/admin/log-config', (req, res) => {
     try {
-        // Simplified config without logger dependencies
-        const config = {
-            level: process.env.LOG_LEVEL || 'info',
-            console: process.env.NODE_ENV !== 'production',
-            files: { enabled: false, app: false, api: false, error: false, customer: false, admin: false },
-            debug: { enabled: true, areas: ['analytics', 'supplements', 'batch-printing', 'exports'] }
-        };
+        const config = getLogConfig();
         
         res.json({
             success: true,
@@ -3447,7 +3439,7 @@ app.get('/api/admin/log-config', (req, res) => {
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        console.error('Error getting log configuration:', error);
+        req.logger.error('Error getting log configuration', { error: error.message });
         res.status(500).json({ 
             success: false, 
             error: 'Failed to get log configuration: ' + error.message 
@@ -3455,11 +3447,11 @@ app.get('/api/admin/log-config', (req, res) => {
     }
 });
 
-// Update log configuration (simplified)
+// Update log configuration
 app.post('/api/admin/log-config', (req, res) => {
     try {
         const newConfig = req.body;
-        console.log('Log configuration update received:', newConfig);
+        req.logger.info('Log configuration update received', { config: newConfig });
         
         // Validate configuration
         if (newConfig.level && !['fatal', 'error', 'warn', 'info', 'debug', 'trace'].includes(newConfig.level)) {
@@ -3469,16 +3461,18 @@ app.post('/api/admin/log-config', (req, res) => {
             });
         }
         
-        // For now, just return success (no actual updating until Pino is ready)
+        // Update the configuration
+        const updatedConfig = updateLogConfig(newConfig);
+        
         res.json({
             success: true,
-            config: newConfig,
-            message: 'Log configuration updated (simplified mode)',
+            config: updatedConfig,
+            message: 'Log configuration updated successfully',
             timestamp: new Date().toISOString()
         });
         
     } catch (error) {
-        console.error('Error updating log configuration:', error);
+        req.logger.error('Error updating log configuration', { error: error.message });
         res.status(500).json({ 
             success: false, 
             error: 'Failed to update log configuration: ' + error.message 
