@@ -1096,34 +1096,151 @@ window.NADCustomer = {
         console.log('🔍 populateDetailedSupplements called');
         console.log('🧬 Current testData:', this.testData);
         
-        // Wait for DOM elements to be available
-        const waitForElements = () => {
-            const detailsSection = document.getElementById('supplements-details-section');
-            const supplementsList = document.getElementById('detailed-supplements-list');
-            const otherSection = document.getElementById('other-supplements-section');
-            const otherText = document.getElementById('other-supplements-text');
-            const healthSection = document.getElementById('health-conditions-section');
-            const healthText = document.getElementById('health-conditions-text');
-            
-            console.log('🔍 DOM elements found:', {
-                detailsSection: !!detailsSection,
-                supplementsList: !!supplementsList,
-                otherSection: !!otherSection,
-                otherText: !!otherText,
-                healthSection: !!healthSection,
-                healthText: !!healthText
-            });
-            
-            if (!detailsSection) {
-                console.log('⏳ Supplements details section not found, retrying in 200ms...');
-                setTimeout(waitForElements, 200);
-                return;
-            }
-            
-            this.doPopulateDetailedSupplements(detailsSection, supplementsList, otherSection, otherText, healthSection, healthText);
-        };
+        // Check if elements exist, if not, create them
+        let detailsSection = document.getElementById('supplements-details-section');
         
-        waitForElements();
+        if (!detailsSection) {
+            console.log('⚠️ Supplements details section not found in DOM, creating it...');
+            this.createSupplementDetailsSection();
+            detailsSection = document.getElementById('supplements-details-section');
+        }
+        
+        const supplementsList = document.getElementById('detailed-supplements-list');
+        const otherSection = document.getElementById('other-supplements-section');
+        const otherText = document.getElementById('other-supplements-text');
+        const healthSection = document.getElementById('health-conditions-section');
+        const healthText = document.getElementById('health-conditions-text');
+        
+        console.log('🔍 DOM elements found:', {
+            detailsSection: !!detailsSection,
+            supplementsList: !!supplementsList,
+            otherSection: !!otherSection,
+            otherText: !!otherText,
+            healthSection: !!healthSection,
+            healthText: !!healthText
+        });
+        
+        if (detailsSection) {
+            this.doPopulateDetailedSupplements(detailsSection, supplementsList, otherSection, otherText, healthSection, healthText);
+        } else {
+            console.error('❌ Failed to create supplements details section');
+        }
+    },
+
+    createSupplementDetailsSection() {
+        console.log('🔧 Creating supplement details section dynamically');
+        
+        // Find the activation summary section to insert after
+        const activationSummary = document.querySelector('.activation-summary');
+        if (!activationSummary) {
+            console.error('❌ Could not find activation summary to insert supplements section');
+            return;
+        }
+        
+        // Create the supplements details HTML
+        const supplementsHTML = `
+            <div class="supplements-details" id="supplements-details-section" style="display: none;">
+                <h3>Your Recorded Supplements</h3>
+                <div id="detailed-supplements-list" class="detailed-supplements-list">
+                    <!-- Populated by JavaScript -->
+                </div>
+                <div id="other-supplements-section" class="other-info-section" style="display: none;">
+                    <h4>Additional Supplements:</h4>
+                    <p id="other-supplements-text" class="info-text"></p>
+                </div>
+                <div id="health-conditions-section" class="other-info-section" style="display: none;">
+                    <h4>Health Conditions:</h4>
+                    <p id="health-conditions-text" class="info-text"></p>
+                </div>
+            </div>
+        `;
+        
+        // Insert after activation summary
+        activationSummary.insertAdjacentHTML('afterend', supplementsHTML);
+        
+        // Add CSS styles if not already present
+        if (!document.getElementById('supplement-details-styles')) {
+            this.addSupplementDetailsCSS();
+        }
+        
+        console.log('✅ Supplements details section created successfully');
+    },
+
+    addSupplementDetailsCSS() {
+        const style = document.createElement('style');
+        style.id = 'supplement-details-styles';
+        style.textContent = `
+            .supplements-details {
+                background: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 40px;
+            }
+
+            .supplements-details h3 {
+                margin: 0 0 20px 0;
+                color: #333;
+            }
+
+            .detailed-supplements-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .supplement-card {
+                background: white;
+                border: 1px solid #dee2e6;
+                border-radius: 6px;
+                padding: 15px;
+                border-left: 4px solid #007bff;
+            }
+
+            .supplement-name {
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 8px;
+                font-size: 16px;
+            }
+
+            .supplement-dose {
+                color: #666;
+                font-size: 14px;
+                margin-bottom: 5px;
+            }
+
+            .other-info-section {
+                background: white;
+                border-radius: 6px;
+                padding: 15px;
+                margin-bottom: 15px;
+                border-left: 4px solid #17a2b8;
+            }
+
+            .other-info-section h4 {
+                margin: 0 0 10px 0;
+                color: #333;
+                font-size: 16px;
+            }
+
+            .info-text {
+                margin: 0;
+                color: #666;
+                font-size: 14px;
+                line-height: 1.5;
+                white-space: pre-wrap;
+            }
+
+            @media (max-width: 768px) {
+                .detailed-supplements-list {
+                    grid-template-columns: 1fr;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        console.log('✅ Supplement details CSS added');
     },
     
     doPopulateDetailedSupplements(detailsSection, supplementsList, otherSection, otherText, healthSection, healthText) {
