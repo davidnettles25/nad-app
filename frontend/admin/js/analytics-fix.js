@@ -78,28 +78,47 @@ function updateAnalyticsDisplay(stats) {
 /**
  * Export analytics report
  */
-function exportAnalytics() {
+async function exportAnalytics() {
     try {
-        showAlert('📊 Exporting analytics report...', 'info', 'analytics-alert');
+        showAlert('📊 Generating comprehensive analytics report...', 'info', 'analytics-alert');
         
-        const reportData = {
-            report_title: 'NAD Test Analytics Report',
-            generated_date: new Date().toISOString(),
-            summary: {
-                total_tests: document.getElementById('analytics-total-tests')?.textContent || '0',
-                activation_rate: document.getElementById('analytics-activation-rate')?.textContent || '0%',
-                completion_rate: document.getElementById('analytics-completion-rate')?.textContent || '0%',
-                average_score: document.getElementById('analytics-avg-score')?.textContent || '0'
-            },
-            raw_data: analyticsData || null
-        };
+        // Fetch comprehensive analytics data from backend
+        const [overviewResponse, performanceResponse] = await Promise.all([
+            fetch('/api/analytics/overview'),
+            fetch('/api/analytics/performance')
+        ]);
         
-        // Create and download the file
-        const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+        if (!overviewResponse.ok) {
+            throw new Error(`Overview API error: ${overviewResponse.status}`);
+        }
+        if (!performanceResponse.ok) {
+            throw new Error(`Performance API error: ${performanceResponse.status}`);
+        }
+        
+        const [overviewData, performanceData] = await Promise.all([
+            overviewResponse.json(),
+            performanceResponse.json()
+        ]);
+        
+        if (!overviewData.success) {
+            throw new Error(overviewData.error || 'Failed to fetch overview data');
+        }
+        if (!performanceData.success) {
+            throw new Error(performanceData.error || 'Failed to fetch performance data');
+        }
+        
+        const currentDate = new Date();
+        const dateStr = currentDate.toISOString().split('T')[0];
+        
+        // Create comprehensive CSV report
+        const csvContent = generateAnalyticsCSV(overviewData.analytics, performanceData.performance, currentDate);
+        
+        // Create and download CSV file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `nad_analytics_report_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `NAD_Analytics_Report_${dateStr}.csv`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -109,8 +128,94 @@ function exportAnalytics() {
         
     } catch (error) {
         console.error('❌ Export error:', error);
-        showAlert('❌ Failed to export analytics report', 'error', 'analytics-alert');
+        showAlert(`❌ Failed to export analytics report: ${error.message}`, 'error', 'analytics-alert');
     }
+}
+
+function generateAnalyticsCSV(analytics, performance, reportDate) {
+    let csv = '';
+    
+    // Report Header
+    csv += 'NAD+ Test Analytics Report\n';
+    csv += `Generated: ${reportDate.toLocaleString()}\n`;
+    csv += '\n';
+    
+    // Summary Statistics
+    csv += 'SUMMARY STATISTICS\n';
+    csv += 'Metric,Value\n';
+    csv += `Total Tests,${analytics.basic_stats?.total_tests || 0}\n`;
+    csv += `Activated Tests,${analytics.basic_stats?.activated_tests || 0}\n`;
+    csv += `Completed Tests,${analytics.basic_stats?.completed_tests || 0}\n`;
+    csv += `Average Score,${analytics.basic_stats?.average_score || 0}\n`;
+    
+    // Calculate rates
+    const totalTests = analytics.basic_stats?.total_tests || 0;
+    const activatedTests = analytics.basic_stats?.activated_tests || 0;
+    const completedTests = analytics.basic_stats?.completed_tests || 0;
+    
+    const activationRate = totalTests > 0 ? ((activatedTests / totalTests) * 100).toFixed(1) : 0;
+    const completionRate = activatedTests > 0 ? ((completedTests / activatedTests) * 100).toFixed(1) : 0;
+    
+    csv += `Activation Rate,${activationRate}%\n`;
+    csv += `Completion Rate,${completionRate}%\n`;
+    csv += '\n';
+    
+    // Score Distribution
+    csv += 'SCORE DISTRIBUTION\n';
+    csv += 'Score Range,Count,Percentage\n';
+    
+    const totalScored = analytics.score_distribution?.reduce((sum, item) => sum + item.count, 0) || 0;
+    
+    analytics.score_distribution?.forEach(item => {
+        const percentage = totalScored > 0 ? ((item.count / totalScored) * 100).toFixed(1) : 0;
+        csv += `"${item.score_range}",${item.count},${percentage}%\n`;
+    });
+    
+    csv += '\n';
+    
+    // Daily Completions (Last 30 Days)
+    csv += 'DAILY COMPLETIONS (LAST 30 DAYS)\n';
+    csv += 'Date,Completions\n';
+    
+    analytics.daily_completions?.forEach(item => {
+        csv += `${item.date},${item.count}\n`;
+    });
+    
+    csv += '\n';
+    
+    // Monthly Performance Data
+    csv += 'MONTHLY TEST CREATION (LAST 12 MONTHS)\n';
+    csv += 'Month,Tests Created,Tests Activated,Activation Rate\n';
+    
+    performance.monthly_creation?.forEach(item => {
+        const activationRate = item.tests_created > 0 ? 
+            ((item.tests_activated / item.tests_created) * 100).toFixed(1) : 0;
+        csv += `${item.month},${item.tests_created},${item.tests_activated},${activationRate}%\n`;
+    });
+    
+    csv += '\n';
+    
+    // Monthly Completion Data
+    csv += 'MONTHLY TEST COMPLETION (LAST 12 MONTHS)\n';
+    csv += 'Month,Tests Completed,Average Score\n';
+    
+    performance.monthly_completion?.forEach(item => {
+        const avgScore = item.avg_score ? parseFloat(item.avg_score).toFixed(1) : 'N/A';
+        csv += `${item.month},${item.tests_completed},${avgScore}\n`;
+    });
+    
+    csv += '\n';
+    
+    // Report Summary
+    csv += 'REPORT DETAILS\n';
+    csv += 'Field,Information\n';
+    csv += `Report Period,Last 12 months (daily data: last 30 days)\n`;
+    csv += `Data Source,NAD+ Lab Interface Database\n`;
+    csv += `Export Format,CSV (Comma Separated Values)\n`;
+    csv += `Total Data Points,${totalTests}\n`;
+    csv += `Report Generated,${reportDate.toISOString()}\n`;
+    
+    return csv;
 }
 
 // Make functions globally accessible
