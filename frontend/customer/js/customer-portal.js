@@ -480,8 +480,10 @@ window.NADCustomer = {
             }
         }
         
-        // Populate detailed supplements section
-        this.populateDetailedSupplements();
+        // Populate detailed supplements section after a short delay to ensure DOM is ready
+        setTimeout(() => {
+            this.populateDetailedSupplements();
+        }, 100);
         
         // Initialize any other results functionality
         if (window.NADResultsViewer) {
@@ -1094,22 +1096,37 @@ window.NADCustomer = {
         console.log('🔍 populateDetailedSupplements called');
         console.log('🧬 Current testData:', this.testData);
         
-        const detailsSection = document.getElementById('supplements-details-section');
-        const supplementsList = document.getElementById('detailed-supplements-list');
-        const otherSection = document.getElementById('other-supplements-section');
-        const otherText = document.getElementById('other-supplements-text');
-        const healthSection = document.getElementById('health-conditions-section');
-        const healthText = document.getElementById('health-conditions-text');
+        // Wait for DOM elements to be available
+        const waitForElements = () => {
+            const detailsSection = document.getElementById('supplements-details-section');
+            const supplementsList = document.getElementById('detailed-supplements-list');
+            const otherSection = document.getElementById('other-supplements-section');
+            const otherText = document.getElementById('other-supplements-text');
+            const healthSection = document.getElementById('health-conditions-section');
+            const healthText = document.getElementById('health-conditions-text');
+            
+            console.log('🔍 DOM elements found:', {
+                detailsSection: !!detailsSection,
+                supplementsList: !!supplementsList,
+                otherSection: !!otherSection,
+                otherText: !!otherText,
+                healthSection: !!healthSection,
+                healthText: !!healthText
+            });
+            
+            if (!detailsSection) {
+                console.log('⏳ Supplements details section not found, retrying in 200ms...');
+                setTimeout(waitForElements, 200);
+                return;
+            }
+            
+            this.doPopulateDetailedSupplements(detailsSection, supplementsList, otherSection, otherText, healthSection, healthText);
+        };
         
-        console.log('🔍 DOM elements found:', {
-            detailsSection: !!detailsSection,
-            supplementsList: !!supplementsList,
-            otherSection: !!otherSection,
-            otherText: !!otherText,
-            healthSection: !!healthSection,
-            healthText: !!healthText
-        });
-        
+        waitForElements();
+    },
+    
+    doPopulateDetailedSupplements(detailsSection, supplementsList, otherSection, otherText, healthSection, healthText) {
         if (!this.testData || !this.testData.supplements) {
             console.log('❌ No supplement data found');
             if (detailsSection) detailsSection.style.display = 'none';
@@ -1148,18 +1165,18 @@ window.NADCustomer = {
         }
         
         // Populate other supplements text
-        if (supplementData.other && supplementData.other.trim()) {
+        if (supplementData.other && supplementData.other.trim() && supplementData.other !== 'none') {
             console.log('✅ Found other supplements text:', supplementData.other);
             if (otherSection) otherSection.style.display = 'block';
             if (otherText) otherText.textContent = supplementData.other;
         } else {
-            console.log('❌ No other supplements text found');
+            console.log('❌ No other supplements text found (or value is "none")');
             if (otherSection) otherSection.style.display = 'none';
         }
         
         // Populate health conditions
         const healthConditions = supplementData.health_conditions;
-        if (healthConditions && healthConditions.trim()) {
+        if (healthConditions && healthConditions.trim() && healthConditions !== 'none') {
             console.log('✅ Found health conditions:', healthConditions);
             if (healthSection) {
                 healthSection.style.display = 'block';
@@ -1170,7 +1187,7 @@ window.NADCustomer = {
                 console.log('✅ Set health conditions text to:', healthConditions);
             }
         } else {
-            console.log('❌ No health conditions found');
+            console.log('❌ No health conditions found (or value is "none")');
             if (healthSection) healthSection.style.display = 'none';
         }
     },
