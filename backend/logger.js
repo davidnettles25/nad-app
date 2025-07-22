@@ -2,7 +2,7 @@ const pino = require('pino');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const rfs = require('pino-rotating-file-stream');
+// Note: Using pino.destination() instead of rotating file streams for stability
 
 // Default log configuration - runtime configurable via admin interface
 let logConfig = {
@@ -24,8 +24,13 @@ let logConfig = {
 
 // Ensure logs directory exists
 const logsDir = path.join(__dirname, 'logs');
-if (!fs.existsSync(logsDir)) {
-    fs.mkdirSync(logsDir, { recursive: true });
+try {
+    if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+    }
+} catch (error) {
+    console.error('Warning: Could not create logs directory:', error.message);
+    // Continue without file logging if directory creation fails
 }
 
 // Create rotating file streams for different log types
@@ -39,50 +44,42 @@ if (logConfig.console) {
     });
 }
 
-// File streams with rotation (daily + 10MB size limit)
+// File streams (basic file destinations - rotation can be added later)
 const createFileStream = (filename) => {
-    return rfs.createWriteStream(path.join(logsDir, filename), {
-        size: '10M',
-        interval: '1d',
-        compress: 'gzip'
-    });
+    try {
+        return pino.destination(path.join(logsDir, filename));
+    } catch (error) {
+        console.error(`Warning: Could not create log stream for ${filename}:`, error.message);
+        return null;
+    }
 };
 
-if (logConfig.files.enabled) {
-    if (logConfig.files.app) {
-        streams.push({
-            level: 'debug',
-            stream: createFileStream('app.log')
-        });
-    }
-    
-    if (logConfig.files.api) {
-        streams.push({
-            level: 'debug', 
-            stream: createFileStream('api.log')
-        });
-    }
-    
-    if (logConfig.files.error) {
-        streams.push({
-            level: 'error',
-            stream: createFileStream('error.log')
-        });
-    }
-    
-    if (logConfig.files.customer) {
-        streams.push({
-            level: 'info',
-            stream: createFileStream('customer.log')
-        });
-    }
-    
-    if (logConfig.files.admin) {
-        streams.push({
-            level: 'info',
-            stream: createFileStream('admin.log')
-        });
-    }
+if (logConfig.files.enabled && fs.existsSync(logsDir)) {
+    const logFiles = [
+        { key: 'app', file: 'app.log', level: 'debug' },
+        { key: 'api', file: 'api.log', level: 'debug' },
+        { key: 'error', file: 'error.log', level: 'error' },
+        { key: 'customer', file: 'customer.log', level: 'info' },
+        { key: 'admin', file: 'admin.log', level: 'info' }
+    ];
+
+    logFiles.forEach(({ key, file, level }) => {
+        if (logConfig.files[key]) {
+            const stream = createFileStream(file);
+            if (stream) {
+                streams.push({ level, stream });
+            }
+        }
+    });
+}
+
+// Ensure we have at least one stream (fallback to stdout if no streams created)
+if (streams.length === 0) {
+    console.warn('Warning: No log streams available, falling back to stdout');
+    streams.push({
+        level: logConfig.level,
+        stream: process.stdout
+    });
 }
 
 // Create main logger instance
@@ -98,7 +95,7 @@ let logger = pino({
         paths: ['password', 'token', 'secret', 'key'],
         censor: '[REDACTED]'
     }
-}, pino.multistream(streams));
+}, streams.length > 1 ? pino.multistream(streams) : streams[0].stream);
 
 /**
  * Logger factory with context injection
