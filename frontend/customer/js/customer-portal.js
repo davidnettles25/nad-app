@@ -311,7 +311,7 @@ window.NADCustomer = {
             
             // Reset button
             const button = document.querySelector('[data-action="next-step"]');
-            button.textContent = 'Continue to Results →';
+            button.textContent = 'Activate';
             button.disabled = false;
         }
     },
