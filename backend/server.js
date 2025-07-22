@@ -2809,7 +2809,7 @@ app.post('/api/customer/activate-test', async (req, res) => {
                         test_id, customer_id, supplements_with_dose, habits_notes, created_at
                     ) VALUES (?, ?, ?, ?, NOW())
                     ON DUPLICATE KEY UPDATE
-                    supplements_with_dose = VALUES(supplements_with_dose), updated_at = NOW()
+                    supplements_with_dose = VALUES(supplements_with_dose)
                 `, [testId, customerIdToUse, supplementsJson, '']);
                 
                 console.log(`✅ Supplement data stored successfully for test ${testId}`);
