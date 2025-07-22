@@ -1016,14 +1016,17 @@
                         <button class="btn btn-primary" onclick="refreshLogFiles()">🔄 Refresh Files</button>
                     </div>
 
-                    <div id="log-files-list">
-                        <div style="text-align: center; padding: 20px; color: #666;">
-                            Loading log files...
+                    <!-- File list container - always visible -->
+                    <div id="log-files-container">
+                        <div id="log-files-list">
+                            <div style="text-align: center; padding: 20px; color: #666;">
+                                Loading log files...
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Log Viewer (shows when a file is selected) -->
-                    <div id="log-viewer" style="display: none; margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">
+                    <!-- Log Viewer (shows below file list when a file is selected) -->
+                    <div id="log-viewer" style="display: none; margin-top: 20px; border-top: 2px solid #007bff; padding-top: 20px;">
                         <h4>📄 Viewing: <span id="current-log-file" style="color: #007bff;"></span></h4>
                         <div class="section-controls" style="margin-bottom: 15px;">
                             <label for="log-lines" style="margin-right: 10px;">Show last</label>
@@ -1032,7 +1035,7 @@
                             <button class="btn btn-sm btn-primary" onclick="refreshLogContent()">🔄 Refresh</button>
                             <button class="btn btn-sm btn-secondary" onclick="closeLogViewer()">✖ Close Viewer</button>
                         </div>
-                        <pre id="log-content" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; max-height: 500px; overflow-y: auto; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 12px; line-height: 1.4;"></pre>
+                        <pre id="log-content" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; max-height: 500px; overflow-y: auto; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 12px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word;"></pre>
                     </div>
                 </div>
             </div>

@@ -264,8 +264,16 @@ function refreshLogContent() {
  * Close log viewer
  */
 function closeLogViewer() {
-    document.getElementById('log-viewer').style.display = 'none';
-    delete document.getElementById('log-viewer').dataset.filename;
+    const logViewer = document.getElementById('log-viewer');
+    if (logViewer) {
+        logViewer.style.display = 'none';
+        delete logViewer.dataset.filename;
+    }
+    // Make sure the file list is still visible
+    const filesList = document.getElementById('log-files-list');
+    if (filesList && filesList.style.display === 'none') {
+        filesList.style.display = 'block';
+    }
 }
 
 /**
