@@ -233,8 +233,8 @@ async function viewLogFile(filename) {
             // Store current filename for refresh
             logViewer.dataset.filename = filename;
             
-            // Scroll to the log viewer
-            logViewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // Don't scroll - let the viewer appear in place
+            // logViewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             
             showAlert('✅ Log file loaded successfully', 'success', 'log-files-alert');
             console.log(`✅ Successfully loaded ${data.lines.length} lines from ${filename}`);

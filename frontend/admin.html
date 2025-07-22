@@ -1022,16 +1022,17 @@
                         </div>
                     </div>
 
-                    <!-- Log Viewer -->
-                    <div id="log-viewer" style="display: none;">
-                        <h4>Log Viewer: <span id="current-log-file"></span></h4>
-                        <div class="section-controls">
-                            <input type="number" id="log-lines" value="100" min="10" max="1000" style="width: 80px;">
-                            <label for="log-lines">lines</label>
-                            <button class="btn btn-sm" onclick="refreshLogContent()">🔄 Refresh</button>
-                            <button class="btn btn-sm btn-secondary" onclick="closeLogViewer()">✖ Close</button>
+                    <!-- Log Viewer (shows when a file is selected) -->
+                    <div id="log-viewer" style="display: none; margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">
+                        <h4>📄 Viewing: <span id="current-log-file" style="color: #007bff;"></span></h4>
+                        <div class="section-controls" style="margin-bottom: 15px;">
+                            <label for="log-lines" style="margin-right: 10px;">Show last</label>
+                            <input type="number" id="log-lines" value="100" min="10" max="1000" style="width: 80px; margin-right: 5px;">
+                            <span style="margin-right: 15px;">lines</span>
+                            <button class="btn btn-sm btn-primary" onclick="refreshLogContent()">🔄 Refresh</button>
+                            <button class="btn btn-sm btn-secondary" onclick="closeLogViewer()">✖ Close Viewer</button>
                         </div>
-                        <pre id="log-content" style="background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px;"></pre>
+                        <pre id="log-content" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; max-height: 500px; overflow-y: auto; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 12px; line-height: 1.4;"></pre>
                     </div>
                 </div>
             </div>
@@ -1050,69 +1051,12 @@
                     <div id="system-test-results"></div>
                 </div>
 
-                <!-- Log Management Controls -->
+                <!-- Note: Log Management has been moved to its own dedicated section -->
                 <div class="card">
-                    <h3>📋 Log Management</h3>
-                    <div id="log-config-alert"></div>
-                    
-                    <div class="filter-grid">
-                        <div class="form-group">
-                            <label for="log-level">Log Level</label>
-                            <select id="log-level">
-                                <option value="fatal">Fatal</option>
-                                <option value="error">Error</option>
-                                <option value="warn">Warning</option>
-                                <option value="info">Info</option>
-                                <option value="debug">Debug</option>
-                                <option value="trace">Trace</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="console-logging"> Console Logging
-                            </label>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="visual-debug"> Visual Debug Messages
-                            </label>
-                        </div>
-                    </div>
-
+                    <h3>📋 Quick Links</h3>
+                    <p>Log management features have been moved to their own dedicated section for better organization.</p>
                     <div class="section-controls">
-                        <button class="btn btn-primary" onclick="loadLogConfig()">🔄 Reload Config</button>
-                        <button class="btn btn-success" onclick="saveLogConfig()">💾 Save Configuration</button>
-                        <button class="btn btn-secondary" onclick="testLogSystem()">🧪 Test Logging</button>
-                    </div>
-                </div>
-
-                <!-- Log Files Viewer -->
-                <div class="card">
-                    <h3>📂 Log Files</h3>
-                    <div id="log-files-alert"></div>
-                    
-                    <div class="section-controls">
-                        <button class="btn btn-primary" onclick="refreshLogFiles()">🔄 Refresh Files</button>
-                    </div>
-
-                    <div id="log-files-list">
-                        <div style="text-align: center; padding: 20px; color: #666;">
-                            Click "Refresh Files" to load log files
-                        </div>
-                    </div>
-
-                    <!-- Log Viewer -->
-                    <div id="log-viewer" style="display: none;">
-                        <h4>Log Viewer: <span id="current-log-file"></span></h4>
-                        <div class="section-controls">
-                            <input type="number" id="log-lines" value="100" min="10" max="1000" style="width: 80px;">
-                            <label for="log-lines">lines</label>
-                            <button class="btn btn-sm" onclick="refreshLogContent()">🔄 Refresh</button>
-                            <button class="btn btn-sm btn-secondary" onclick="closeLogViewer()">✖ Close</button>
-                        </div>
-                        <pre id="log-content" style="background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px;"></pre>
+                        <button class="btn btn-primary" onclick="showSection('logs')">📋 Go to Log Management</button>
                     </div>
                 </div>
             </div>
