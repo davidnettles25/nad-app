@@ -1101,6 +1101,15 @@ window.NADCustomer = {
         const healthSection = document.getElementById('health-conditions-section');
         const healthText = document.getElementById('health-conditions-text');
         
+        console.log('🔍 DOM elements found:', {
+            detailsSection: !!detailsSection,
+            supplementsList: !!supplementsList,
+            otherSection: !!otherSection,
+            otherText: !!otherText,
+            healthSection: !!healthSection,
+            healthText: !!healthText
+        });
+        
         if (!this.testData || !this.testData.supplements) {
             console.log('❌ No supplement data found');
             if (detailsSection) detailsSection.style.display = 'none';
@@ -1109,6 +1118,8 @@ window.NADCustomer = {
         
         const supplementData = this.testData.supplements;
         console.log('🔬 Processing supplement data:', supplementData);
+        console.log('🔬 Supplement data keys:', Object.keys(supplementData));
+        console.log('🔬 Full supplement data structure:', JSON.stringify(supplementData, null, 2));
         
         // Show the section
         if (detailsSection) detailsSection.style.display = 'block';
@@ -1143,13 +1154,18 @@ window.NADCustomer = {
             if (otherSection) otherSection.style.display = 'none';
         }
         
-        // Populate health conditions
-        if (supplementData.healthConditions && supplementData.healthConditions.trim()) {
-            console.log('✅ Found health conditions:', supplementData.healthConditions);
+        // Populate health conditions (try multiple field names)
+        const healthConditions = supplementData.healthConditions || supplementData.health_conditions || supplementData.conditions;
+        if (healthConditions && healthConditions.trim()) {
+            console.log('✅ Found health conditions:', healthConditions);
             if (healthSection) healthSection.style.display = 'block';
-            if (healthText) healthText.textContent = supplementData.healthConditions;
+            if (healthText) healthText.textContent = healthConditions;
         } else {
-            console.log('❌ No health conditions found');
+            console.log('❌ No health conditions found. Checked fields:', {
+                healthConditions: supplementData.healthConditions,
+                health_conditions: supplementData.health_conditions,
+                conditions: supplementData.conditions
+            });
             if (healthSection) healthSection.style.display = 'none';
         }
     },
