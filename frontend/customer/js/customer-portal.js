@@ -480,6 +480,9 @@ window.NADCustomer = {
             }
         }
         
+        // Populate detailed supplements section
+        this.populateDetailedSupplements();
+        
         // Initialize any other results functionality
         if (window.NADResultsViewer) {
             window.NADResultsViewer.init();
@@ -1084,6 +1087,70 @@ window.NADCustomer = {
             // Create full URL
             attachmentUrl = `${window.location.origin}${attachmentUrl}`;
             window.open(attachmentUrl, '_blank');
+        }
+    },
+
+    populateDetailedSupplements() {
+        console.log('🔍 populateDetailedSupplements called');
+        console.log('🧬 Current testData:', this.testData);
+        
+        const detailsSection = document.getElementById('supplements-details-section');
+        const supplementsList = document.getElementById('detailed-supplements-list');
+        const otherSection = document.getElementById('other-supplements-section');
+        const otherText = document.getElementById('other-supplements-text');
+        const healthSection = document.getElementById('health-conditions-section');
+        const healthText = document.getElementById('health-conditions-text');
+        
+        if (!this.testData || !this.testData.supplements) {
+            console.log('❌ No supplement data found');
+            if (detailsSection) detailsSection.style.display = 'none';
+            return;
+        }
+        
+        const supplementData = this.testData.supplements;
+        console.log('🔬 Processing supplement data:', supplementData);
+        
+        // Show the section
+        if (detailsSection) detailsSection.style.display = 'block';
+        
+        // Populate selected supplements
+        if (supplementData.selected && supplementData.selected.length > 0) {
+            console.log('✅ Found selected supplements:', supplementData.selected);
+            
+            if (supplementsList) {
+                supplementsList.innerHTML = supplementData.selected.map(supplement => `
+                    <div class="supplement-card">
+                        <div class="supplement-name">${supplement.name}</div>
+                        <div class="supplement-dose">${supplement.dose || supplement.amount || 0}</div>
+                        <div class="supplement-unit">${supplement.unit || 'units'}</div>
+                    </div>
+                `).join('');
+            }
+        } else {
+            console.log('❌ No selected supplements found');
+            if (supplementsList) {
+                supplementsList.innerHTML = '<p>No specific supplements recorded</p>';
+            }
+        }
+        
+        // Populate other supplements text
+        if (supplementData.other && supplementData.other.trim()) {
+            console.log('✅ Found other supplements text:', supplementData.other);
+            if (otherSection) otherSection.style.display = 'block';
+            if (otherText) otherText.textContent = supplementData.other;
+        } else {
+            console.log('❌ No other supplements text found');
+            if (otherSection) otherSection.style.display = 'none';
+        }
+        
+        // Populate health conditions
+        if (supplementData.healthConditions && supplementData.healthConditions.trim()) {
+            console.log('✅ Found health conditions:', supplementData.healthConditions);
+            if (healthSection) healthSection.style.display = 'block';
+            if (healthText) healthText.textContent = supplementData.healthConditions;
+        } else {
+            console.log('❌ No health conditions found');
+            if (healthSection) healthSection.style.display = 'none';
         }
     },
 

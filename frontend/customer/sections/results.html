@@ -27,6 +27,22 @@
         </div>
     </div>
     
+    <!-- Detailed Supplements Section -->
+    <div class="supplements-details" id="supplements-details-section" style="display: none;">
+        <h3>Your Recorded Supplements</h3>
+        <div id="detailed-supplements-list" class="detailed-supplements-list">
+            <!-- Populated by JavaScript -->
+        </div>
+        <div id="other-supplements-section" class="other-info-section" style="display: none;">
+            <h4>Additional Supplements:</h4>
+            <p id="other-supplements-text" class="info-text"></p>
+        </div>
+        <div id="health-conditions-section" class="other-info-section" style="display: none;">
+            <h4>Health Conditions:</h4>
+            <p id="health-conditions-text" class="info-text"></p>
+        </div>
+    </div>
+    
     <div class="next-steps">
         <h3>What's Next?</h3>
         <div class="steps-grid">
@@ -267,6 +283,76 @@
     transform: translateY(-1px);
 }
 
+.supplements-details {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 40px;
+}
+
+.supplements-details h3 {
+    margin: 0 0 20px 0;
+    color: #333;
+}
+
+.detailed-supplements-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.supplement-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 15px;
+    border-left: 4px solid #007bff;
+}
+
+.supplement-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.supplement-dose {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.supplement-unit {
+    color: #999;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.other-info-section {
+    background: white;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 4px solid #17a2b8;
+}
+
+.other-info-section h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.info-text {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
 @media (max-width: 768px) {
     .steps-grid {
         grid-template-columns: 1fr;
@@ -278,6 +364,10 @@
     
     .action-buttons {
         flex-direction: column;
+    }
+    
+    .detailed-supplements-list {
+        grid-template-columns: 1fr;
     }
 }
 </style>
