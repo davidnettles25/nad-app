@@ -3509,7 +3509,30 @@ app.get('/api/deployment-test', (req, res) => {
         success: true,
         message: 'NEW CODE DEPLOYED SUCCESSFULLY!',
         timestamp: new Date().toISOString(),
-        commit: 'b75b559'
+        commit: '5dd64c5',
+        nodeVersion: process.version,
+        uptime: process.uptime(),
+        pid: process.pid
+    });
+});
+
+// Debug endpoint to check what endpoints are registered
+app.get('/api/debug/routes', (req, res) => {
+    const routes = [];
+    app._router.stack.forEach(middleware => {
+        if (middleware.route) {
+            routes.push({
+                path: middleware.route.path,
+                methods: Object.keys(middleware.route.methods)
+            });
+        }
+    });
+    res.json({
+        success: true,
+        totalRoutes: routes.length,
+        routes: routes,
+        serverFile: __filename,
+        timestamp: new Date().toISOString()
     });
 });
 
