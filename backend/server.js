@@ -8,16 +8,24 @@ const path = require('path');
 const fs = require('fs').promises;
 require('dotenv').config();
 
-// Initialize logger (try Pino first, fallback to simple logger)
-let logger;
-try {
-    logger = require('./logger');
-    console.log('✅ Pino logger loaded successfully');
-} catch (error) {
-    console.warn('⚠️ Pino logger failed to load, using fallback:', error.message);
-    logger = require('./logger-fallback');
-}
-const { createLogger, requestLoggingMiddleware } = logger;
+// Initialize logger (temporarily simplified for debugging)
+let logger = null;
+let createLogger = () => ({ info: console.log, error: console.error, warn: console.warn, debug: console.log });
+let requestLoggingMiddleware = (req, res, next) => { 
+    req.requestId = Date.now().toString(); 
+    req.logger = createLogger(); 
+    next(); 
+};
+
+// Commented out for debugging - may be causing server startup issues
+// try {
+//     logger = require('./logger');
+//     console.log('✅ Pino logger loaded successfully');
+// } catch (error) {
+//     console.warn('⚠️ Pino logger failed to load, using fallback:', error.message);
+//     logger = require('./logger-fallback');
+// }
+// const { createLogger, requestLoggingMiddleware } = logger;
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -3416,19 +3424,57 @@ app.get('/api/debug/supplements/:testId', async (req, res) => {
 // ============================================================================
 // SERVER STARTUP AND SHUTDOWN
 // ============================================================================
-// LOG CONFIGURATION ENDPOINTS
+// LOG CONFIGURATION ENDPOINTS  
 // ============================================================================
 
-// Get current log configuration
+// Simple test endpoint to verify new code is deployed
+app.get('/api/admin/test-logging', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Log management endpoints are active',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
+    });
+});
+
+// Basic log config endpoint without dependencies
+app.get('/api/admin/log-config-simple', (req, res) => {
+    try {
+        res.json({
+            success: true,
+            config: {
+                level: process.env.LOG_LEVEL || 'info',
+                console: process.env.NODE_ENV !== 'production',
+                files: { enabled: false },
+                debug: { enabled: true, areas: ['analytics', 'supplements'] }
+            },
+            message: 'Basic log configuration (no dependencies)',
+            usingFallback: true
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get current log configuration (simplified for debugging)
 app.get('/api/admin/log-config', (req, res) => {
     try {
-        const { getLogConfig } = logger;
-        const config = getLogConfig();
+        // Simplified config without logger dependencies
+        const config = {
+            level: process.env.LOG_LEVEL || 'info',
+            console: process.env.NODE_ENV !== 'production',
+            files: { enabled: false, app: false, api: false, error: false, customer: false, admin: false },
+            debug: { enabled: true, areas: ['analytics', 'supplements', 'batch-printing', 'exports'] }
+        };
         
         res.json({
             success: true,
             config: config,
-            usingFallback: !config.files.enabled
+            message: 'Simplified logging (debugging mode)',
+            usingFallback: true
         });
     } catch (error) {
         console.error('Error getting log configuration:', error);
@@ -3439,11 +3485,11 @@ app.get('/api/admin/log-config', (req, res) => {
     }
 });
 
-// Update log configuration
+// Update log configuration (simplified)
 app.post('/api/admin/log-config', (req, res) => {
     try {
-        const { updateLogConfig } = logger;
         const newConfig = req.body;
+        console.log('Log configuration update received:', newConfig);
         
         // Validate configuration
         if (newConfig.level && !['fatal', 'error', 'warn', 'info', 'debug', 'trace'].includes(newConfig.level)) {
@@ -3453,14 +3499,11 @@ app.post('/api/admin/log-config', (req, res) => {
             });
         }
         
-        const updatedConfig = updateLogConfig(newConfig);
-        
-        console.log('📋 Log configuration updated:', updatedConfig);
-        
+        // For now, just acknowledge the update without actually applying it
         res.json({
             success: true,
-            config: updatedConfig,
-            message: 'Log configuration updated successfully'
+            config: newConfig,
+            message: 'Log configuration received (debugging mode - not applied)'
         });
     } catch (error) {
         console.error('Error updating log configuration:', error);
