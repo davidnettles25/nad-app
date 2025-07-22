@@ -902,6 +902,7 @@ window.NADCustomer = {
         const healthSection = document.getElementById('health-conditions');
         const healthText = document.getElementById('health-conditions-text');
 
+
         if (!supplements || supplements.length === 0) {
             if (section) section.style.display = 'none';
             return;
@@ -910,12 +911,16 @@ window.NADCustomer = {
         if (section) section.style.display = 'block';
         
         if (container) {
-            container.innerHTML = supplements.map(supplement => `
-                <div class="supplement-item">
-                    <div class="supplement-name">${supplement.name}</div>
-                    <div class="supplement-amount">${supplement.amount} ${supplement.unit}</div>
-                </div>
-            `).join('');
+            container.innerHTML = supplements.map(supplement => {
+                // Handle both 'amount' and 'dose' field names
+                const dose = supplement.amount || supplement.dose || 0;
+                return `
+                    <div class="supplement-item">
+                        <div class="supplement-name">${supplement.name}</div>
+                        <div class="supplement-amount">${dose} ${supplement.unit || ''}</div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // Health conditions
