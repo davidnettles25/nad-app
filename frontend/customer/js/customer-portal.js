@@ -277,9 +277,12 @@ window.NADCustomer = {
             };
             
             // Make API call to activate test with supplement data
+            console.log('Sending activation data:', activationData);
             const response = await NAD.api.activateTest(activationData);
+            console.log('Activation API response:', response);
             
             if (response.success) {
+                console.log('✅ Activation successful');
                 // Update test data
                 this.testData.activated = true;
                 this.testData.activatedAt = new Date().toISOString();
@@ -287,6 +290,7 @@ window.NADCustomer = {
                 
                 // Store in sessionStorage to persist between page transitions
                 sessionStorage.setItem('nadTestData', JSON.stringify(this.testData));
+                console.log('💾 Stored test data:', this.testData);
                 
                 // Show success message and move to next step
                 this.showMessage('Test activated successfully with supplement information!', 'success');
@@ -294,7 +298,8 @@ window.NADCustomer = {
                     this.nextStep();
                 }, 1500);
             } else {
-                throw new Error(response.message || 'Activation failed');
+                console.log('❌ Activation failed:', response);
+                throw new Error(response.message || response.error || 'Activation failed');
             }
             
         } catch (error) {
