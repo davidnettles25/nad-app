@@ -39,6 +39,13 @@ pm2 stop nad-api || true
 cp -r "$TEMP_DIR/backend/"* "$BACKEND_TARGET/"
 cd "$BACKEND_TARGET"
 npm install --production
+
+# Setup logs directory with proper permissions
+if [ -f "$BACKEND_TARGET/scripts/setup-logs.sh" ]; then
+    log "📁 Setting up log directories..."
+    sudo bash "$BACKEND_TARGET/scripts/setup-logs.sh"
+fi
+
 pm2 start ecosystem.config.js || pm2 restart nad-api
 
 # Deploy frontend  

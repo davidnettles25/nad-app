@@ -178,7 +178,7 @@ function displayLogFiles(files) {
                             ${sizeKB} KB • Modified: ${modifiedDate}
                         </div>
                     </div>
-                    <button class="btn btn-sm btn-primary" onclick="viewLogFile('${file.name}')">
+                    <button class="btn btn-sm btn-primary" onclick="viewLogFile('${file.name.replace(/'/g, "\\'")}')" data-filename="${file.name}">
                         👁️ View
                     </button>
                 </div>
@@ -194,27 +194,59 @@ function displayLogFiles(files) {
  */
 async function viewLogFile(filename) {
     try {
+        console.log(`📖 Attempting to load log file: ${filename}`);
+        
+        // Check if required elements exist
+        const logViewer = document.getElementById('log-viewer');
+        const currentLogFile = document.getElementById('current-log-file');
+        const logContent = document.getElementById('log-content');
+        const logLines = document.getElementById('log-lines');
+        
+        if (!logViewer || !currentLogFile || !logContent) {
+            console.error('Required log viewer elements not found:', {
+                logViewer: !!logViewer,
+                currentLogFile: !!currentLogFile,
+                logContent: !!logContent
+            });
+            showAlert('❌ Log viewer elements not found in DOM', 'error', 'log-files-alert');
+            return;
+        }
+        
         showAlert(`📖 Loading ${filename}...`, 'info', 'log-files-alert');
         
-        const lines = document.getElementById('log-lines').value || 100;
-        const response = await fetch(`${API_BASE}/api/admin/log-files/${filename}?lines=${lines}`);
+        const lines = logLines ? logLines.value : 100;
+        const url = `${API_BASE}/api/admin/log-files/${encodeURIComponent(filename)}?lines=${lines}`;
+        console.log('Fetching from URL:', url);
+        
+        const response = await fetch(url);
         const data = await response.json();
         
+        if (!response.ok) {
+            throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         if (data.success) {
-            document.getElementById('current-log-file').textContent = filename;
-            document.getElementById('log-content').textContent = data.lines.join('\n');
-            document.getElementById('log-viewer').style.display = 'block';
+            currentLogFile.textContent = filename;
+            logContent.textContent = data.lines.join('\n') || '(Empty log file)';
+            logViewer.style.display = 'block';
             
             // Store current filename for refresh
-            document.getElementById('log-viewer').dataset.filename = filename;
+            logViewer.dataset.filename = filename;
+            
+            // Scroll to the log viewer
+            logViewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             
             showAlert('✅ Log file loaded successfully', 'success', 'log-files-alert');
+            console.log(`✅ Successfully loaded ${data.lines.length} lines from ${filename}`);
         } else {
             throw new Error(data.error || 'Failed to load log file');
         }
     } catch (error) {
         console.error('Error loading log file:', error);
         showAlert('❌ Failed to load log file: ' + error.message, 'error', 'log-files-alert');
+        
+        // Re-render the log files list in case it was corrupted
+        refreshLogFiles();
     }
 }
 
