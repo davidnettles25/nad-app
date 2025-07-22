@@ -1121,8 +1121,11 @@ window.NADCustomer = {
         console.log('🔬 Supplement data keys:', Object.keys(supplementData));
         console.log('🔬 Full supplement data structure:', JSON.stringify(supplementData, null, 2));
         
-        // Show the section
-        if (detailsSection) detailsSection.style.display = 'block';
+        // Show the section - make it visible when we have supplement data
+        if (detailsSection) {
+            detailsSection.style.display = 'block';
+            console.log('✅ Made supplements details section visible');
+        }
         
         // Populate selected supplements
         if (supplementData.selected && supplementData.selected.length > 0) {
@@ -1132,10 +1135,10 @@ window.NADCustomer = {
                 supplementsList.innerHTML = supplementData.selected.map(supplement => `
                     <div class="supplement-card">
                         <div class="supplement-name">${supplement.name}</div>
-                        <div class="supplement-dose">${supplement.dose || supplement.amount || 0}</div>
-                        <div class="supplement-unit">${supplement.unit || 'units'}</div>
+                        <div class="supplement-dose">${supplement.amount || supplement.dose || 0} ${supplement.unit || 'mg'}</div>
                     </div>
                 `).join('');
+                console.log('✅ Populated supplement cards');
             }
         } else {
             console.log('❌ No selected supplements found');
@@ -1154,18 +1157,20 @@ window.NADCustomer = {
             if (otherSection) otherSection.style.display = 'none';
         }
         
-        // Populate health conditions (try multiple field names)
-        const healthConditions = supplementData.healthConditions || supplementData.health_conditions || supplementData.conditions;
+        // Populate health conditions
+        const healthConditions = supplementData.health_conditions;
         if (healthConditions && healthConditions.trim()) {
             console.log('✅ Found health conditions:', healthConditions);
-            if (healthSection) healthSection.style.display = 'block';
-            if (healthText) healthText.textContent = healthConditions;
+            if (healthSection) {
+                healthSection.style.display = 'block';
+                console.log('✅ Made health conditions section visible');
+            }
+            if (healthText) {
+                healthText.textContent = healthConditions;
+                console.log('✅ Set health conditions text to:', healthConditions);
+            }
         } else {
-            console.log('❌ No health conditions found. Checked fields:', {
-                healthConditions: supplementData.healthConditions,
-                health_conditions: supplementData.health_conditions,
-                conditions: supplementData.conditions
-            });
+            console.log('❌ No health conditions found');
             if (healthSection) healthSection.style.display = 'none';
         }
     },
