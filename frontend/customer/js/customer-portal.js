@@ -951,8 +951,15 @@ window.NADCustomer = {
         // Timeline
         this.populateTimeline(test.timeline || []);
 
-        // Supplements
-        this.populateSupplements(test.supplements || [], test.health_conditions);
+        // Supplements - handle the correct data structure
+        console.log('🔍 Modal supplement data:', test.supplements);
+        if (test.supplements && typeof test.supplements === 'object') {
+            // New structure: {selected: [...], other: "...", health_conditions: "..."}
+            this.populateSupplements(test.supplements.selected || [], test.supplements.health_conditions, test.supplements.other);
+        } else {
+            // Fallback for old structure
+            this.populateSupplements(test.supplements || [], test.health_conditions);
+        }
 
         // Notes
         this.populateNotes(test.technician_notes);
@@ -978,14 +985,20 @@ window.NADCustomer = {
         `).join('');
     },
 
-    populateSupplements(supplements, healthConditions) {
+    populateSupplements(supplements, healthConditions, otherSupplements) {
+        console.log('🔍 populateSupplements called with:', { supplements, healthConditions, otherSupplements });
+        
         const section = document.getElementById('supplements-section');
         const container = document.getElementById('modal-supplements');
         const healthSection = document.getElementById('health-conditions');
         const healthText = document.getElementById('health-conditions-text');
 
+        // Show section if we have any supplement data
+        const hasSupplements = supplements && supplements.length > 0;
+        const hasOtherSupplements = otherSupplements && otherSupplements.trim() && otherSupplements !== 'none';
+        const hasHealthConditions = healthConditions && healthConditions.trim() && healthConditions !== 'none';
 
-        if (!supplements || supplements.length === 0) {
+        if (!hasSupplements && !hasOtherSupplements && !hasHealthConditions) {
             if (section) section.style.display = 'none';
             return;
         }
@@ -993,24 +1006,42 @@ window.NADCustomer = {
         if (section) section.style.display = 'block';
         
         if (container) {
-            container.innerHTML = supplements.map(supplement => {
-                // Handle both 'amount' and 'dose' field names
-                const dose = supplement.amount || supplement.dose || 0;
-                return `
-                    <div class="supplement-item">
-                        <div class="supplement-name">${supplement.name}</div>
-                        <div class="supplement-amount">${dose} ${supplement.unit || ''}</div>
+            let supplementsHTML = '';
+            
+            // Add selected supplements
+            if (hasSupplements) {
+                supplementsHTML += supplements.map(supplement => {
+                    const dose = supplement.amount || supplement.dose || 0;
+                    return `
+                        <div class="supplement-item">
+                            <div class="supplement-name">${supplement.name}</div>
+                            <div class="supplement-amount">${dose} ${supplement.unit || 'mg'}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Add other supplements if present
+            if (hasOtherSupplements) {
+                supplementsHTML += `
+                    <div class="supplement-item other-supplements">
+                        <div class="supplement-name">Additional Supplements</div>
+                        <div class="supplement-amount">${otherSupplements}</div>
                     </div>
                 `;
-            }).join('');
+            }
+            
+            container.innerHTML = supplementsHTML;
+            console.log('✅ Populated modal supplements');
         }
 
         // Health conditions
-        if (healthConditions && healthConditions.trim() && healthSection && healthText) {
-            healthSection.style.display = 'block';
-            healthText.textContent = healthConditions;
-        } else if (healthSection) {
-            healthSection.style.display = 'none';
+        if (hasHealthConditions) {
+            if (healthSection) healthSection.style.display = 'block';
+            if (healthText) healthText.textContent = healthConditions;
+            console.log('✅ Populated health conditions:', healthConditions);
+        } else {
+            if (healthSection) healthSection.style.display = 'none';
         }
     },
 
