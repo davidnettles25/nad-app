@@ -128,6 +128,106 @@ app.use((req, res, next) => {
 // app.use(requestLoggingMiddleware);
 
 // ============================================================================
+// BACKDOOR AUTHENTICATION MIDDLEWARE
+// ============================================================================
+
+function createBackdoorSession(urlPath) {
+    // Determine role based on URL path
+    let userRole = 'customer'; // default
+    let context = 'portal';
+    
+    if (urlPath.startsWith('/admin')) {
+        userRole = 'admin';
+        context = 'admin';
+    } else if (urlPath.startsWith('/lab')) {
+        userRole = 'technician';
+        context = 'lab';
+    } else if (urlPath.startsWith('/portal') || urlPath.startsWith('/customer')) {
+        userRole = 'customer';
+        context = 'portal';
+    }
+    
+    // Create session structure matching multipass format
+    return {
+        token: 'backdoor-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        role: userRole,
+        customer_id: 'john.doe@example.com',
+        user: {
+            email: 'john.doe@example.com',
+            first_name: 'John',
+            last_name: 'Doe',
+            id: 'john.doe@example.com'
+        },
+        authenticated: true,
+        context: context,
+        backdoor: true,
+        timestamp: new Date().toISOString()
+    };
+}
+
+function backdoorAuthMiddleware(req, res, next) {
+    const bypassParam = req.query.bypass;
+    const multipassOverride = process.env.MULTIPASS_OVERRIDE;
+    
+    // If no bypass parameter, continue normally
+    if (!bypassParam) {
+        return next();
+    }
+    
+    // Get client info for logging
+    const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 
+                     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+    const userAgent = req.get('User-Agent') || 'Unknown';
+    const endpoint = `${req.method} ${req.path}`;
+    const timestamp = new Date().toISOString();
+    
+    // Check if bypass parameter matches the secret
+    if (bypassParam === multipassOverride && multipassOverride) {
+        // Valid backdoor attempt
+        const session = createBackdoorSession(req.path);
+        
+        // Set headers to mimic multipass authentication
+        req.headers['x-shopify-token'] = session.token;
+        req.headers['x-shopify-role'] = session.role;
+        req.headers['x-shopify-customer-id'] = session.customer_id;
+        
+        // Add session data to request
+        req.shopifyAuth = session;
+        req.backdoorAuth = true;
+        
+        // Log successful backdoor access
+        req.logger.admin('backdoor_access_granted', 'system', {
+            clientIP,
+            userAgent,
+            endpoint,
+            context: session.context,
+            role: session.role,
+            timestamp,
+            success: true
+        });
+        
+        return next();
+    } else {
+        // Invalid backdoor attempt
+        req.logger.warn('backdoor_access_denied', {
+            clientIP,
+            userAgent,
+            endpoint,
+            attemptedBypass: bypassParam ? '[REDACTED]' : 'empty',
+            hasOverrideConfigured: !!multipassOverride,
+            timestamp,
+            success: false
+        });
+        
+        // Redirect to mynadtest.com with temporary redirect (302)
+        return res.status(302).redirect('https://mynadtest.com');
+    }
+}
+
+// Apply backdoor middleware before all authentication
+app.use(backdoorAuthMiddleware);
+
+// ============================================================================
 // DATABASE CONNECTION
 // ============================================================================
 
