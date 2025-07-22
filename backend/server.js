@@ -3020,8 +3020,11 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
         // Debug: Log what we retrieved from database
         console.log(`📋 Raw database result for ${testId}:`, {
             supplements_with_dose: test.supplements_with_dose,
+            supplements_type: typeof test.supplements_with_dose,
+            supplements_length: test.supplements_with_dose?.length || 0,
             habits_notes: test.habits_notes,
-            status: test.status
+            status: test.status,
+            all_fields: Object.keys(test)
         });
 
         // Parse supplement data - return complete structure
@@ -3031,7 +3034,15 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
             health_conditions: ''
         };
         
+        console.log(`🔍 Checking supplements_with_dose for ${testId}:`, {
+            is_null: test.supplements_with_dose === null,
+            is_empty_string: test.supplements_with_dose === '',
+            is_undefined: test.supplements_with_dose === undefined,
+            actual_value: test.supplements_with_dose
+        });
+        
         if (test.supplements_with_dose) {
+            console.log(`✅ Found supplement data for ${testId}, processing...`);
             try {
                 // Handle both JSON format and string format
                 if (test.supplements_with_dose.startsWith('{')) {
@@ -3062,6 +3073,8 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
             } catch (e) {
                 console.warn('Error parsing supplement data for test', testId, e);
             }
+        } else {
+            console.log(`❌ No supplement data found for ${testId} - supplements_with_dose is null/empty`);
         }
 
         // Create timeline events
