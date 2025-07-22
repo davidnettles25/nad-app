@@ -410,9 +410,28 @@ window.NADCustomer = {
         
         const supplementsCountElement = document.getElementById('results-supplements-count');
         if (supplementsCountElement) {
-            const supplementsCount = this.testData.supplements ? 
-                (this.testData.supplements.selected ? this.testData.supplements.selected.length : 0) : 0;
-            supplementsCountElement.textContent = supplementsCount > 0 ? `${supplementsCount} supplements` : 'None recorded';
+            // Check if we have supplement data
+            if (this.testData && this.testData.supplements) {
+                const selectedCount = this.testData.supplements.selected ? this.testData.supplements.selected.length : 0;
+                const hasOther = this.testData.supplements.other && this.testData.supplements.other.trim() !== '';
+                const totalCount = selectedCount + (hasOther ? 1 : 0);
+                
+                if (totalCount > 0) {
+                    // Build a more detailed display
+                    const supplementNames = [];
+                    if (this.testData.supplements.selected && this.testData.supplements.selected.length > 0) {
+                        supplementNames.push(...this.testData.supplements.selected.map(s => s.name));
+                    }
+                    if (hasOther) {
+                        supplementNames.push('Other supplements');
+                    }
+                    supplementsCountElement.textContent = `${totalCount} recorded (${supplementNames.slice(0, 3).join(', ')}${supplementNames.length > 3 ? '...' : ''})`;
+                } else {
+                    supplementsCountElement.textContent = 'None recorded';
+                }
+            } else {
+                supplementsCountElement.textContent = 'None recorded';
+            }
         }
         
         // Initialize any other results functionality
