@@ -11,6 +11,17 @@ window.NADCustomer = {
     
     init() {
         console.log('Initializing NAD Customer Portal');
+        
+        // Check for stored test data from previous session
+        const storedData = sessionStorage.getItem('nadTestData');
+        if (storedData) {
+            try {
+                this.testData = JSON.parse(storedData);
+            } catch (e) {
+                console.error('Failed to parse stored test data');
+            }
+        }
+        
         this.loadComponents();
         this.setupEventListeners();
         this.showStep(1);
@@ -274,6 +285,9 @@ window.NADCustomer = {
                 this.testData.activatedAt = new Date().toISOString();
                 this.testData.supplements = activationData.supplements;
                 
+                // Store in sessionStorage to persist between page transitions
+                sessionStorage.setItem('nadTestData', JSON.stringify(this.testData));
+                
                 // Show success message and move to next step
                 this.showMessage('Test activated successfully with supplement information!', 'success');
                 setTimeout(() => {
@@ -394,6 +408,18 @@ window.NADCustomer = {
     },
     
     initResultsHandlers() {
+        // Restore test data from sessionStorage if not already loaded
+        if (!this.testData || !this.testData.supplements) {
+            const storedData = sessionStorage.getItem('nadTestData');
+            if (storedData) {
+                try {
+                    this.testData = JSON.parse(storedData);
+                } catch (e) {
+                    console.error('Failed to parse stored test data');
+                }
+            }
+        }
+        
         console.log('initResultsHandlers called, testData:', this.testData);
         
         // Populate results data
