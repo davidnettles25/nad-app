@@ -1329,26 +1329,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         }
 
         // ANALYTICS FUNCTIONALITY
-        async function loadAnalytics() {
-            console.log('📈 Loading analytics data...');
-            showAlert('🔄 Loading analytics data...', 'info');
-        
-            try {
-                // Load dashboard stats as base for analytics
-                const response = await fetch(`${API_BASE}/api/dashboard/stats`);
-                const data = await response.json();
-        
-                if (response.ok && data.success) {
-                    updateAnalyticsDisplay(data.stats);
-                    showAlert('✅ Analytics data loaded successfully!', 'success');
-                } else {
-                    throw new Error(data.error || 'Failed to load analytics');
-                }
-            } catch (error) {
-                console.error('❌ Error loading analytics:', error);
-                showAnalyticsError(error.message);
-            }
-        }
+        // loadAnalytics function is implemented in analytics-fix.js
 
         function updateAnalyticsDisplay(stats) {
             const analyticsContent = document.getElementById('analytics-content');

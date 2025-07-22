@@ -3,6 +3,9 @@
 
 console.log('🔧 Loading Analytics functions fix...');
 
+// API Configuration
+const API_BASE = 'https://mynadtest.info';
+
 // Analytics Variables
 let analyticsData = null;
 let currentPeriod = '30';
