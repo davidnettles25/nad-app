@@ -3014,23 +3014,30 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
 
         const test = testRows[0];
 
-        // Parse supplement data
-        let supplements = [];
-        let healthConditions = '';
+        // Parse supplement data - return complete structure
+        let supplementsData = {
+            selected: [],
+            other: '',
+            health_conditions: ''
+        };
+        
         if (test.supplements_with_dose) {
             try {
                 // Handle both JSON format and string format
                 if (test.supplements_with_dose.startsWith('{')) {
                     // JSON format from new customer portal
                     const supplementData = JSON.parse(test.supplements_with_dose);
-                    if (supplementData.selected && Array.isArray(supplementData.selected)) {
-                        supplements = supplementData.selected;
-                    }
-                    healthConditions = supplementData.health_conditions || '';
+                    console.log(`📋 Parsed supplement data for ${testId}:`, supplementData);
+                    
+                    supplementsData = {
+                        selected: supplementData.selected || [],
+                        other: supplementData.other || '',
+                        health_conditions: supplementData.health_conditions || ''
+                    };
                 } else {
                     // String format from existing system (e.g., "NAD+ Precursor: 250 mg; Vitamin D3: 2000 IU")
                     const supplementEntries = test.supplements_with_dose.split(';').map(s => s.trim());
-                    supplements = supplementEntries.map(entry => {
+                    supplementsData.selected = supplementEntries.map(entry => {
                         const parts = entry.split(':').map(p => p.trim());
                         if (parts.length === 2) {
                             const name = parts[0];
@@ -3080,13 +3087,19 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
             technician_notes: test.technician_notes,
             test_notes: test.test_notes,
             image: test.image,
-            supplements: supplements,
-            health_conditions: healthConditions,
+            supplements: supplementsData, // Return complete supplement structure
+            health_conditions: supplementsData.health_conditions, // Keep for backward compatibility
             habits_notes: test.habits_notes,
             shipping_status: test.shipping_status,
             shipped_date: test.shipped_date,
             timeline: timeline
         };
+        
+        console.log(`✅ Returning test detail for ${testId} with supplements:`, {
+            selected: supplementsData.selected?.length || 0,
+            other: supplementsData.other || 'none',
+            health_conditions: supplementsData.health_conditions || 'none'
+        });
 
         console.log(`✅ Test detail loaded for ${testId}`);
 
