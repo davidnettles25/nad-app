@@ -19,6 +19,16 @@ let logConfig = {
     debug: {
         enabled: process.env.NODE_ENV !== 'production',
         areas: ['analytics', 'supplements', 'batch-printing', 'exports']
+    },
+    rotation: {
+        enabled: false, // Start simple, can enable later
+        maxSize: '100MB',
+        maxFiles: 10,
+        datePattern: 'YYYY-MM-DD'
+    },
+    retention: {
+        days: 30, // Keep logs for 30 days
+        maxTotalSize: '1GB' // Total size limit across all log files
     }
 };
 
@@ -227,7 +237,61 @@ function updateLogConfig(newConfig) {
     // with new configuration, but for now we'll update the level
     logger.level = logConfig.level;
     
+    // Schedule log cleanup if retention is configured
+    if (logConfig.retention && logConfig.retention.days) {
+        scheduleLogCleanup();
+    }
+    
     return logConfig;
+}
+
+// Log cleanup utility
+function cleanupOldLogs() {
+    const fs = require('fs');
+    const path = require('path');
+    
+    try {
+        if (!logConfig.retention || !logConfig.retention.days) {
+            return; // No retention policy
+        }
+        
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - logConfig.retention.days);
+        
+        const logFiles = fs.readdirSync(logsDir)
+            .filter(file => file.endsWith('.log'))
+            .map(file => {
+                const filePath = path.join(logsDir, file);
+                const stats = fs.statSync(filePath);
+                return { file, filePath, mtime: stats.mtime };
+            })
+            .filter(logFile => logFile.mtime < cutoffDate);
+            
+        if (logFiles.length > 0) {
+            console.log(`Cleaning up ${logFiles.length} old log files older than ${logConfig.retention.days} days`);
+            logFiles.forEach(logFile => {
+                fs.unlinkSync(logFile.filePath);
+                console.log(`Deleted old log file: ${logFile.file}`);
+            });
+        }
+    } catch (error) {
+        console.error('Error during log cleanup:', error.message);
+    }
+}
+
+// Schedule periodic log cleanup (daily)
+let cleanupInterval = null;
+function scheduleLogCleanup() {
+    if (cleanupInterval) {
+        clearInterval(cleanupInterval);
+    }
+    
+    // Run cleanup daily at 2 AM (or immediately if in development)
+    const interval = process.env.NODE_ENV === 'production' ? 24 * 60 * 60 * 1000 : 60000; // 24 hours or 1 minute
+    cleanupInterval = setInterval(cleanupOldLogs, interval);
+    
+    // Run initial cleanup
+    setTimeout(cleanupOldLogs, 5000); // After 5 seconds
 }
 
 /**

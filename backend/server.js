@@ -17,12 +17,15 @@ let getLogConfig;
 
 try {
     logger = require('./logger');
-    console.log('✅ Pino logger loaded successfully');
     ({ createLogger, requestLoggingMiddleware, updateLogConfig, getLogConfig } = logger);
+    // Use a temporary logger for startup until request logger is available
+    const startupLogger = createLogger({ module: 'startup' });
+    startupLogger.info('Pino logger loaded successfully');
 } catch (error) {
-    console.warn('⚠️ Pino logger failed to load, using fallback:', error.message);
     logger = require('./logger-fallback');
     ({ createLogger, requestLoggingMiddleware, updateLogConfig, getLogConfig } = logger);
+    const startupLogger = createLogger({ module: 'startup' });
+    startupLogger.warn('Pino logger failed to load, using fallback', { error: error.message });
 }
 
 const app = express();
@@ -54,8 +57,75 @@ if (process.env.NODE_ENV !== 'production') {
 // Create application logger
 const appLogger = createLogger({ module: 'app' });
 
-// Request logging middleware (replaces the manual logging)
-app.use(requestLoggingMiddleware);
+// Enhanced request logging middleware with performance monitoring
+app.use((req, res, next) => {
+    const startTime = Date.now();
+    const requestId = req.requestId || Date.now().toString();
+    
+    // Create request-specific logger
+    req.logger = createLogger({ 
+        requestId,
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        method: req.method,
+        path: req.path
+    });
+
+    // Log request start
+    req.logger.api(req.method, req.path, 'START', null, {
+        query: req.query,
+        bodySize: req.get('Content-Length') || 0,
+        referer: req.get('Referer'),
+        host: req.get('Host')
+    });
+
+    // Override res.json to capture response details
+    const originalJson = res.json;
+    res.json = function(data) {
+        const duration = Date.now() - startTime;
+        const responseSize = JSON.stringify(data).length;
+        
+        // Log response details
+        req.logger.api(req.method, req.path, res.statusCode, duration, {
+            responseSize,
+            success: data?.success !== false,
+            errorType: data?.error ? 'application_error' : null
+        });
+
+        // Performance monitoring - flag slow requests
+        if (duration > 1000) {
+            req.logger.warn('Slow request detected', {
+                endpoint: `${req.method} ${req.path}`,
+                duration: `${duration}ms`,
+                threshold: '1000ms'
+            });
+        }
+
+        // Set response headers
+        res.setHeader('X-Request-ID', requestId);
+        res.setHeader('X-Response-Time', `${duration}ms`);
+        
+        return originalJson.call(this, data);
+    };
+
+    // Handle response end for non-JSON responses
+    res.on('finish', () => {
+        const duration = Date.now() - startTime;
+        
+        // Only log if we haven't already logged via json override
+        if (!res.headersSent || !res.getHeader('X-Response-Time')) {
+            req.logger.api(req.method, req.path, res.statusCode, duration, {
+                responseType: 'non-json',
+                contentType: res.getHeader('Content-Type')
+            });
+        }
+    });
+
+    next();
+});
+
+// Request logging middleware (now enhanced above)
+// app.use(requestLoggingMiddleware);
 
 // ============================================================================
 // DATABASE CONNECTION
@@ -102,7 +172,11 @@ async function initializeDatabase() {
         
         return true;
     } catch (error) {
-        console.error('❌ Database connection failed:', error);
+        appLogger.error('Database connection failed', { 
+            error: error.message, 
+            stack: error.stack,
+            module: 'database'
+        });
         return false;
     }
 }
