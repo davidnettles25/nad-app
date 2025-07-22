@@ -3,8 +3,7 @@
 
 console.log('🔧 Loading Analytics functions fix...');
 
-// API Configuration
-const API_BASE = 'https://mynadtest.info';
+// API_BASE is defined in admin.html
 
 // Analytics Variables
 let analyticsData = null;
