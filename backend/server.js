@@ -3503,6 +3503,16 @@ app.get('/api/admin/test-logging', (req, res) => {
     });
 });
 
+// DEPLOYMENT TEST - This should appear if new code is deployed
+app.get('/api/deployment-test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'NEW CODE DEPLOYED SUCCESSFULLY!',
+        timestamp: new Date().toISOString(),
+        commit: 'b75b559'
+    });
+});
+
 // Basic log config endpoint without dependencies
 app.get('/api/admin/log-config-simple', (req, res) => {
     try {
