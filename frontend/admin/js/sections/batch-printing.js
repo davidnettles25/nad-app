@@ -3,7 +3,7 @@
  * Since the modular version isn't loading, let's create a working basic version
  */
 
-console.log('🖨️ Loading Batch Printing functionality...');
+// Loading Batch Printing functionality...
 
 // Simple batch printing functionality
 let selectedBatch = null;
@@ -11,7 +11,7 @@ let printableBatches = [];
 
 // Initialize batch printing
 function initBatchPrinting() {
-    console.log('🚀 Initializing Batch Printing...');
+    // Initializing Batch Printing...
     
     // Auto-load batches when section is shown
     setTimeout(() => {
@@ -21,11 +21,11 @@ function initBatchPrinting() {
 
 // Load printable batches from API
 async function loadPrintableBatches() {
-    console.log('🔄 Loading printable batches...');
+    // Loading printable batches...
     
     const container = document.getElementById('printable-batches');
     if (!container) {
-        console.warn('⚠️ Printable batches container not found');
+        // Printable batches container not found
         return;
     }
     
@@ -44,13 +44,13 @@ async function loadPrintableBatches() {
         if (result.success) {
             printableBatches = result.data;
             renderBatchCards();
-            console.log(`✅ Loaded ${printableBatches.length} printable batches`);
+            // Loaded printable batches
         } else {
             throw new Error(result.message || 'Failed to load batches');
         }
         
     } catch (error) {
-        console.error('❌ Error loading printable batches:', error);
+        // Error loading printable batches
         container.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #dc3545;">
                 <h4>⚠️ Error Loading Batches</h4>
@@ -65,17 +65,17 @@ async function loadPrintableBatches() {
 
 // Render batch cards
 function renderBatchCards() {
-    console.log('🎨 renderBatchCards called with', printableBatches.length, 'batches');
+    // renderBatchCards called with batches
     
     // Find the container in the batch-printing section
     const container = document.getElementById('printable-batches');
     
     if (!container) {
-        console.error('❌ Container printable-batches not found!');
+        // Container printable-batches not found!
         return;
     }
     
-    console.log('📦 Found container:', container);
+    // Found container
     
     if (printableBatches.length === 0) {
         container.innerHTML = `
@@ -121,12 +121,12 @@ function renderBatchCards() {
     `).join('');
     
     container.innerHTML = batchCards;
-    console.log('✅ Rendered batch cards in proper container');
+    // Rendered batch cards in proper container
 }
 
 // Create batch card HTML
 function createBatchCard(batch) {
-    console.log('🏗️ Creating card for batch:', batch.batch_id);
+    // Creating card for batch
     try {
         const batchShortId = batch.batch_id.split('-').pop();
         const printStatusText = getPrintStatusText(batch.print_status);
@@ -186,7 +186,7 @@ function createBatchCard(batch) {
         </div>
     `;
     } catch (error) {
-        console.error('❌ Error creating batch card:', error, batch);
+        // Error creating batch card
         return `<div style="color: red; padding: 10px;">Error creating card for batch ${batch.batch_id}</div>`;
     }
 }
@@ -230,7 +230,7 @@ function getStatusColor(status) {
 
 // Select batch for printing
 function selectBatchForPrint(batchId) {
-    console.log(`🎯 Selected batch for printing: ${batchId}`);
+    // Selected batch for printing
     
     selectedBatch = batchId;
     const batch = printableBatches.find(b => b.batch_id === batchId);
@@ -352,7 +352,7 @@ async function printSelectedBatch() {
             throw new Error(result.message || 'Print job failed');
         }
     } catch (error) {
-        console.error('❌ Print error:', error);
+        // Print error
         if (typeof showAlert === 'function') {
             showAlert(`❌ Print failed: ${error.message}`, 'error');
         }
@@ -423,7 +423,7 @@ function openPrintWindow(printData) {
 
 // Other functions
 async function viewBatchDetails(batchId) {
-    console.log(`👁️ Viewing details for batch: ${batchId}`);
+    // Viewing details for batch
     
     try {
         // Create and show modal
@@ -455,7 +455,7 @@ async function viewBatchDetails(batchId) {
         }
         
     } catch (error) {
-        console.error('❌ Error loading batch details:', error);
+        // Error loading batch details
         if (typeof showAlert === 'function') {
             showAlert('Failed to load batch details', 'error');
         }
@@ -662,7 +662,7 @@ function refreshPrintableBatches() {
 }
 
 async function showPrintHistory() {
-    console.log('📈 Loading print history...');
+    // Loading print history...
     
     try {
         // Create and show modal
@@ -694,7 +694,7 @@ async function showPrintHistory() {
         }
         
     } catch (error) {
-        console.error('❌ Error loading print history:', error);
+        // Error loading print history
         if (typeof showAlert === 'function') {
             showAlert('Failed to load print history', 'error');
         }
@@ -795,7 +795,7 @@ window.closePrintHistoryModal = closePrintHistoryModal;
 window.closeBatchDetailsModal = closeBatchDetailsModal;
 window.initBatchPrinting = initBatchPrinting;
 
-console.log('✅ Batch Printing functionality loaded');
+// Batch Printing functionality loaded
 
 // Auto-initialize if we're on the batch printing section
 if (document.getElementById('batch-printing')) {

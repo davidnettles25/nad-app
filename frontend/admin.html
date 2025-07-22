@@ -1078,7 +1078,7 @@
 
         // Global alert system
         function showAlert(message, type = 'info') {
-            console.log('📢 Alert:', message, '| Type:', type);
+            // Alert: message | Type: type
         
             const alertDiv = document.getElementById('global-alert');
             if (alertDiv) {
@@ -1101,13 +1101,13 @@
 
         // Dashboard statistics
         async function loadDashboardStats() {
-            console.log('📊 Loading dashboard statistics...');
+            // Loading dashboard statistics...
             try {
                 const response = await fetch(`${API_BASE}/api/dashboard/stats`);
                 const data = await response.json();
         
                 if (response.ok && data.success) {
-                    console.log('✅ Dashboard stats loaded:', data.stats);
+                    // Dashboard stats loaded
                     const elements = {
                         'total-tests': data.stats.total_tests || 0,
                         'activated-tests': data.stats.activated_tests || 0,
@@ -1140,21 +1140,21 @@
                     throw new Error(data.error || 'Failed to load dashboard stats');
                 }
             } catch (error) {
-                console.error('❌ Error loading dashboard stats:', error);
+                // Error loading dashboard stats
                 showAlert('⚠️ Could not load dashboard statistics', 'warning');
             }
         }
 
         // TEST MANAGEMENT FUNCTIONALITY
         function initTestManagement() {
-            console.log('🚀 Initializing Test Management...');
+            // Initializing Test Management...
         
             setTimeout(() => {
                 const form = document.getElementById('bulk-creation-form');
                 const button = document.getElementById('create-test-btn');
         
                 if (form && button) {
-                    console.log('✅ Found test form and button');
+                    // Found test form and button
         
                     // Remove existing listeners
                     const newForm = form.cloneNode(true);
@@ -1164,7 +1164,7 @@
                     const finalForm = document.getElementById('bulk-creation-form');
                     finalForm.addEventListener('submit', async (e) => {
                         e.preventDefault();
-                        console.log('📝 Test batch form submitted!');
+                        // Test batch form submitted!
         
                         const quantity = parseInt(document.getElementById('test-quantity').value);
                         const notes = document.getElementById('batch-notes').value || '';
@@ -1210,7 +1210,7 @@
                                 document.getElementById('test-quantity').value = 10;
         
                                 showAlert(`✅ Successfully created ${totalCreated} tests!`, 'success');
-                                console.log('✅ Test creation completed successfully');
+                                // Test creation completed successfully
         
                                 // Refresh data
                                 loadTestsFromAPI();
@@ -1220,7 +1220,7 @@
                             }
         
                         } catch (error) {
-                            console.error('❌ Error creating tests:', error);
+                            // Error creating tests
                             showAlert('❌ Network error: ' + error.message, 'error');
                         } finally {
                             // Reset button state
@@ -1245,16 +1245,16 @@
                     updatePreview();
                     setInterval(updatePreview, 3000);
         
-                    console.log('✅ Test Management fully configured and ready!');
+                    // Test Management fully configured and ready!
                 } else {
-                    console.error('❌ Test form or button not found');
+                    // Test form or button not found
                 }
             }, 500);
         }
 
         // Load tests from API
         async function loadTestsFromAPI() {
-            console.log('🧪 Loading tests from API...');
+            // Loading tests from API...
         
             const tbody = document.getElementById('tests-table-body');
             if (!tbody) {return;}
@@ -1277,7 +1277,7 @@
                         acc[test.status] = (acc[test.status] || 0) + 1;
                         return acc;
                     }, {});
-                    console.log('📊 Test status distribution:', statusCounts);
+                    // Test status distribution
                     
                     window.allTests = result.tests;
                     window.filteredTests = [...result.tests]; // Create filtered copy
@@ -1289,7 +1289,7 @@
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">No tests found</td></tr>';
                 }
             } catch (error) {
-                console.error('❌ Error loading tests:', error);
+                // Error loading tests
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: red;">Error loading tests</td></tr>';
             }
         }
@@ -1303,14 +1303,14 @@
                 // Remove existing listeners
                 searchInput.removeEventListener('input', handleSearch);
                 searchInput.addEventListener('input', handleSearch);
-                console.log('✅ Search input listener added');
+                // Search input listener added
             }
         
             if (statusFilter) {
                 // Remove existing listeners
                 statusFilter.removeEventListener('change', handleFilter);
                 statusFilter.addEventListener('change', handleFilter);
-                console.log('✅ Status filter listener added');
+                // Status filter listener added
             }
         }
 
@@ -1355,18 +1355,14 @@
         
             // Apply status filter
             if (statusFilter) {
-                console.log(`🔍 Applying status filter: "${statusFilter}"`);
+                // Applying status filter
                 
                 // Debug: show all unique statuses before filtering
                 const uniqueStatuses = [...new Set(filtered.map(t => t.status))];
-                console.log('All unique statuses in data:', uniqueStatuses);
+                // All unique statuses in data
                 
                 // Debug: show sample tests
-                console.log('Sample tests before filter:', filtered.slice(0, 5).map(t => ({ 
-                    id: t.test_id, 
-                    status: t.status,
-                    score: t.score
-                })));
+                // Sample tests before filter
                 
                 filtered = filtered.filter(test => {
                     // Use the new status field - ensure exact match
@@ -1374,17 +1370,14 @@
                     
                     // Debug problematic matches
                     if (statusFilter === 'activated' && test.status === 'completed') {
-                        console.warn(`⚠️ Test ${test.test_id} has status "${test.status}" instead of "${statusFilter}"`);
+                        // Test has unexpected status
                     }
                     
                     return matches;
                 });
                 
-                console.log(`🔍 Filtered to ${filtered.length} tests with status "${statusFilter}"`);
-                console.log('Sample filtered tests:', filtered.slice(0, 3).map(t => ({ 
-                    id: t.test_id, 
-                    status: t.status 
-                })));
+                // Filtered tests by status
+                // Sample filtered tests
             }
         
             window.filteredTests = filtered;
@@ -1392,7 +1385,7 @@
         
             // Update search results info
             const resultsInfo = `Showing ${filtered.length} of ${allTests.length} tests`;
-            console.log('🔍 Filter applied:', resultsInfo);
+            // Filter applied
         
             if (searchTerm || statusFilter) {
                 showAlert(`🔍 ${resultsInfo}`, 'info');
@@ -1416,10 +1409,10 @@
 
         // Load all batches from API
         async function loadAllBatches() {
-            console.log('📊 Loading all batches...');
+            // Loading all batches...
             
             // TODO: Implement batch loading when endpoint is available
-            console.log('⚠️ Batch loading not yet implemented');
+            // Batch loading not yet implemented
             return;
         
             try {
@@ -1429,13 +1422,13 @@
                 if (result.success) {
                     window.allBatches = result.data;
                     renderBatchList(result.data);
-                    console.log(`✅ Loaded ${result.data.length} batches`);
+                    // Loaded batches
                 } else {
-                    console.error('Failed to load batches:', result.message);
+                    // Failed to load batches
                     showBatchesError('Failed to load batches');
                 }
             } catch (error) {
-                console.error('Error loading batches:', error);
+                // Error loading batches
                 showBatchesError('Network error loading batches');
             }
         }
@@ -1688,11 +1681,11 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         // SUPPLEMENTS FUNCTIONALITY
         window.loadSupplements = function() {
-            console.log('💊 Loading supplements from API...');
+            // Loading supplements from API...
         
             const tbody = document.getElementById('supplements-table-body');
             if (!tbody) {
-                console.error('❌ supplements-table-body not found');
+                // supplements-table-body not found
                 return;
             }
         
@@ -1702,11 +1695,11 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             // Make API call
             fetch(`${API_BASE}/api/supplements`)
                 .then(response => {
-                    console.log('📡 API Response status:', response.status);
+                    // API Response status
                     return response.json();
                 })
                 .then(data => {
-                    console.log('📦 Supplements data received:', data);
+                    // Supplements data received
         
                     if (data.success && data.supplements && data.supplements.length > 0) {
                         // Render supplements
@@ -1735,7 +1728,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                             tbody.appendChild(row);
                         });
         
-                        console.log(`✅ Loaded ${data.supplements.length} supplements successfully`);
+                        // Loaded supplements successfully
                         showAlert(`✅ Loaded ${data.supplements.length} supplements successfully!`, 'success');
                     } else {
                         // No supplements found
@@ -1750,11 +1743,11 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                                 </td>
                             </tr>
                         `;
-                        console.log('ℹ️ No supplements found in database');
+                        // No supplements found in database
                     }
                 })
                 .catch(error => {
-                    console.error('❌ Error loading supplements:', error);
+                    // Error loading supplements
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="5" style="text-align: center; padding: 40px;">
@@ -1786,7 +1779,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         // Section navigation
         function showSection(sectionName) {
-            console.log('📍 Switching to section:', sectionName);
+            // Switching to section
         
             // Hide all sections and cleanup
             document.querySelectorAll('.content-section').forEach(section => {
@@ -1802,11 +1795,11 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         
             // Show selected section
             const targetSection = document.getElementById(sectionName);
-            console.log('🔍 Target section:', sectionName, targetSection);
+            // Target section
             if (targetSection) {
                 targetSection.classList.add('active');
                 targetSection.style.display = 'block';
-                console.log('🔍 Added active class, computed display:', window.getComputedStyle(targetSection).display);
+                // Added active class, computed display
         
                 // Update navigation
                 document.querySelectorAll('.nav-link').forEach(link => {
@@ -1823,31 +1816,31 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                         loadDashboardStats();
                         break;
                     case 'tests':
-                        console.log('🔄 Auto-loading tests');
+                        // Auto-loading tests
                         initTestManagement();
                         loadTestsFromAPI();
                         // Batch loading removed - use Batch Printing navigation
                         break;
                     case 'batch-printing':
-                        console.log('🔄 Auto-loading batch printing...');
+                        // Auto-loading batch printing...
                         // Create batch printing content directly in the active section
                         createBatchPrintingContent();
                         if (typeof loadPrintableBatches === 'function') {
                             loadPrintableBatches(); // eslint-disable-line no-undef
                         } else {
-                            console.log('📋 Batch printing functionality not yet implemented');
+                            // Batch printing functionality not yet implemented
                         }
                         break;
                     case 'supplements':
-                        console.log('🔄 Auto-loading supplements');
+                        // Auto-loading supplements
                         loadSupplements();
                         break;
                     case 'analytics':
-                        console.log('🔄 Auto-loading analytics');
+                        // Auto-loading analytics
                         loadAnalytics();
                         break;
                     case 'logs':
-                        console.log('🔄 Auto-loading log management');
+                        // Auto-loading log management
                         initLogManagement();
                         break;
                     case 'system':
@@ -1899,7 +1892,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                         `;
                         
                         batchSection.appendChild(batchContent);
-                        console.log('✅ Created batch printing content in batch-printing section');
+                        // Created batch printing content in batch-printing section
                     }
                 }
                 
@@ -1908,17 +1901,17 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                     const existingBatchContent = document.getElementById('dynamic-batch-content');
                     if (existingBatchContent) {
                         existingBatchContent.remove();
-                        console.log('🧹 Cleaned up batch content');
+                        // Cleaned up batch content
                     }
                 };
             } else {
-                console.error('❌ Section not found:', sectionName);
+                // Section not found
             }
         }
 
         // Refresh functionality
         function refreshData() {
-            console.log('🔄 Refreshing dashboard data...');
+            // Refreshing dashboard data...
             showAlert('🔄 Refreshing data from API...', 'info');
         
             const activeSection = document.querySelector('.content-section.active');
@@ -1948,7 +1941,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         // System health functions
         function testSystemHealth() {
-            console.log('🔍 Testing system health...');
+            // Testing system health...
             showAlert('🔍 Running system health check...', 'info');
         
             const resultsDiv = document.getElementById('system-test-results');
@@ -1974,7 +1967,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         }
 
         function testAPIEndpoints() {
-            console.log('🌐 Testing API endpoints...');
+            // Testing API endpoints...
             showAlert('🌐 Testing API connectivity...', 'info');
         
             setTimeout(() => {
@@ -1984,7 +1977,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         // Event listeners and initialization
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('📋 NAD Admin Dashboard initializing...');
+            // NAD Admin Dashboard initializing...
         
             // Setup navigation
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -2006,7 +1999,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 loadDashboardStats();
             }, 500);
         
-            console.log('✅ Admin dashboard initialization complete!');
+            // Admin dashboard initialization complete!
         
             // Show welcome message
             setTimeout(() => {
@@ -2048,7 +2041,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         }
         window.showBatchPrinting = showBatchPrinting;
 
-        console.log('🎯 NAD Admin Dashboard ready!');
+        // NAD Admin Dashboard ready!
     </script>
     <script src="admin/js/dropdown-fix.js"></script>
     <script src="admin/js/filter-helpers.js"></script>
@@ -2101,7 +2094,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 <script>
 // FINAL JavaScript fix to ensure test management is hidden
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔒 Applying final test management visibility fix...');
+    // Applying final test management visibility fix...
     
     // Function to completely remove duplicate test elements outside #tests section
     function removeDuplicateTestManagement() {
@@ -2111,7 +2104,7 @@ document.addEventListener('DOMContentLoaded', function() {
         testElements.forEach(el => {
             // If this element is NOT inside the main #tests section, remove it completely
             if (!el.closest('#tests')) {
-                console.log('🗑️ Removing duplicate test element:', el.className);
+                // Removing duplicate test element
                 el.remove();
             }
         });
@@ -2156,7 +2149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Also run periodically
     setInterval(removeDuplicateTestManagement, 1000);
     
-    console.log('✅ Test management removal fix applied');
+    // Test management removal fix applied
 });
 </script>
 

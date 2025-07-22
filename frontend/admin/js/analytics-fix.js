@@ -1,7 +1,7 @@
 // Analytics Functions Fix
 // Add missing loadAnalytics and related functions
 
-console.log('🔧 Loading Analytics functions fix...');
+// Loading Analytics functions fix...
 
 // API_BASE is defined in admin.html
 
@@ -14,7 +14,7 @@ let currentPeriod = '30';
  */
 async function loadAnalytics() {
     try {
-        console.log('📊 Loading analytics data...');
+        // Loading analytics data...
         showAlert('🔄 Loading analytics data...', 'info', 'analytics-alert');
         
         // Try the analytics endpoint first
@@ -39,7 +39,7 @@ async function loadAnalytics() {
         }
         
     } catch (error) {
-        console.error('❌ Error loading analytics:', error);
+        // Error loading analytics
         showAlert('⚠️ Analytics temporarily unavailable. Showing basic metrics.', 'warning', 'analytics-alert');
         
         // Show basic fallback analytics
@@ -74,7 +74,7 @@ function updateAnalyticsDisplay(stats) {
     updateElement('analytics-completion-rate', `${completionRate}%`);
     updateElement('analytics-avg-score', avgScore);
     
-    console.log('✅ Analytics display updated');
+    // Analytics display updated
 }
 
 /**
@@ -129,7 +129,7 @@ async function exportAnalytics() {
         showAlert('✅ Analytics report exported successfully!', 'success', 'analytics-alert');
         
     } catch (error) {
-        console.error('❌ Export error:', error);
+        // Export error
         showAlert(`❌ Failed to export analytics report: ${error.message}`, 'error', 'analytics-alert');
     }
 }
@@ -264,7 +264,7 @@ async function exportTestDetails() {
         showAlert(`✅ Test details exported successfully! ${data.total_records} records exported.`, 'success', 'analytics-alert');
         
     } catch (error) {
-        console.error('❌ Export error:', error);
+        // Export error
         showAlert(`❌ Failed to export test details: ${error.message}`, 'error', 'analytics-alert');
     }
 }
@@ -350,7 +350,7 @@ function analyzeSupplementData(testData) {
     const supplementFields = new Set();
     let maxSupplements = 0;
     
-    console.log('🔍 Analyzing supplement data from', testData.length, 'test records');
+    // Analyzing supplement data from test records
     
     testData.forEach((test, testIndex) => {
         if (test.supplements_with_dose) {
@@ -366,7 +366,7 @@ function analyzeSupplementData(testData) {
                 if (supplementData && supplementData.selected && Array.isArray(supplementData.selected)) {
                     const numSupplements = supplementData.selected.length;
                     maxSupplements = Math.max(maxSupplements, numSupplements);
-                    console.log(`Test ${testIndex + 1} has ${numSupplements} supplements`);
+                    // Test has supplements
                 }
                 
                 // Always add health conditions and other supplements fields
@@ -378,7 +378,7 @@ function analyzeSupplementData(testData) {
                 }
                 
             } catch (e) {
-                console.log(`Test ${testIndex + 1} supplement parsing error:`, e.message);
+                // Test supplement parsing error
                 supplementFields.add('Supplements_Raw_Data');
             }
         }
@@ -392,8 +392,8 @@ function analyzeSupplementData(testData) {
     }
     
     const fields = Array.from(supplementFields).sort();
-    console.log('📊 Supplement fields found:', fields);
-    console.log('📊 Max supplements in any test:', maxSupplements);
+    // Supplement fields found
+    // Max supplements in any test
     
     return fields;
 }
@@ -406,7 +406,7 @@ function parseSupplementData(supplementsData) {
     
     if (!supplementsData) return result;
     
-    console.log('🔧 Parsing supplement data:', typeof supplementsData, supplementsData);
+    // Parsing supplement data
     
     try {
         let supplementData;
@@ -416,7 +416,7 @@ function parseSupplementData(supplementsData) {
             supplementData = supplementsData;
         }
         
-        console.log('🔧 Parsed supplement data:', supplementData);
+        // Parsed supplement data
         
         // Handle the actual structure: {selected: [...], other: "...", health_conditions: "..."}
         if (supplementData && typeof supplementData === 'object') {
@@ -428,7 +428,7 @@ function parseSupplementData(supplementsData) {
                         result[`Supplement_${index + 1}_Name`] = supplement.name;
                         result[`Supplement_${index + 1}_Amount`] = supplement.amount || '';
                         result[`Supplement_${index + 1}_Unit`] = supplement.unit || '';
-                        console.log(`🔧 Added supplement ${index + 1}:`, supplement.name, supplement.amount, supplement.unit);
+                        // Added supplement
                     }
                 });
             }
@@ -436,22 +436,22 @@ function parseSupplementData(supplementsData) {
             // Add health conditions
             if (supplementData.health_conditions) {
                 result['Health_Conditions'] = cleanText(supplementData.health_conditions);
-                console.log('🔧 Added health conditions:', supplementData.health_conditions);
+                // Added health conditions
             }
             
             // Add other supplements
             if (supplementData.other) {
                 result['Other_Supplements'] = cleanText(supplementData.other);
-                console.log('🔧 Added other supplements:', supplementData.other);
+                // Added other supplements
             }
         }
     } catch (e) {
-        console.log('🔧 Error parsing supplement data:', e.message);
+        // Error parsing supplement data
         // Handle non-JSON data
         result['Supplements_Raw_Data'] = cleanText(supplementsData);
     }
     
-    console.log('🔧 Final supplement result:', result);
+    // Final supplement result
     return result;
 }
 
@@ -493,5 +493,5 @@ window.updateAnalyticsDisplay = updateAnalyticsDisplay;
 window.exportAnalytics = exportAnalytics;
 window.exportTestDetails = exportTestDetails;
 
-console.log('✅ Analytics functions fix loaded successfully');
-console.log('📊 loadAnalytics function now available globally');
+// Analytics functions fix loaded successfully
+// loadAnalytics function now available globally

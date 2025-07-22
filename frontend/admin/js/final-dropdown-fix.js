@@ -1,19 +1,19 @@
 // FINAL Dropdown Fix - Runs after everything else
 // This version waits for all other scripts to finish
 
-console.log('🔧 FINAL dropdown fix loading...');
+// FINAL dropdown fix loading...
 
 // Function that definitely works (copied from console method)
 function applyFinalDropdownFix() {
-    console.log('🔧 Applying FINAL dropdown fix...');
+    // Applying FINAL dropdown fix...
     
     const statusFilter = document.getElementById('status-filter');
     if (!statusFilter) {
-        console.error('❌ Status filter not found in FINAL fix');
+        // Status filter not found in FINAL fix
         return false;
     }
     
-    console.log('✅ Status filter found, applying FINAL fix...');
+    // Status filter found, applying FINAL fix...
     
     // Replace element to clear ALL existing listeners
     const parent = statusFilter.parentNode;
@@ -25,7 +25,7 @@ function applyFinalDropdownFix() {
     // Add our working listener (exact copy of console method)
     newFilter.addEventListener('change', function(e) {
         const status = e.target.value;
-        console.log('🔽 FINAL: Status changed to:', status);
+        // FINAL: Status changed to status
         
         const tests = window.allTests || [];
         let filtered = tests;
@@ -38,16 +38,16 @@ function applyFinalDropdownFix() {
             filtered = tests.filter(t => t.status === 'completed');
         }
         
-        console.log(`FINAL: Showing ${filtered.length} of ${tests.length} tests`);
+        // FINAL: Showing filtered tests
         
         if (window.renderTestsTable) {
             window.renderTestsTable(filtered);
         } else {
-            console.warn('⚠️ renderTestsTable not found');
+            // renderTestsTable not found
         }
     });
     
-    console.log('✅ FINAL: Event listener attached successfully');
+    // FINAL: Event listener attached successfully
     return true;
 }
 
@@ -55,20 +55,20 @@ function applyFinalDropdownFix() {
 
 // Strategy 1: Wait for everything to load
 window.addEventListener('load', function() {
-    console.log('🔧 Window loaded, applying FINAL fix...');
+    // Window loaded, applying FINAL fix...
     setTimeout(applyFinalDropdownFix, 500);
 });
 
 // Strategy 2: Use longer delays
 setTimeout(function() {
-    console.log('🔧 5-second delay, applying FINAL fix...');
+    // 5-second delay, applying FINAL fix...
     applyFinalDropdownFix();
 }, 5000);
 
 // Strategy 3: Watch for when tests are loaded
 let testLoadWatcher = setInterval(function() {
     if (window.allTests && window.allTests.length > 0) {
-        console.log('🔧 Tests detected, applying FINAL fix...');
+        // Tests detected, applying FINAL fix...
         clearInterval(testLoadWatcher);
         setTimeout(applyFinalDropdownFix, 1000);
     }
@@ -78,7 +78,7 @@ let testLoadWatcher = setInterval(function() {
 if (window.setupSearchAndFilter) {
     const originalSetup = window.setupSearchAndFilter;
     window.setupSearchAndFilter = function() {
-        console.log('🔧 Intercepting setupSearchAndFilter...');
+        // Intercepting setupSearchAndFilter...
         originalSetup.apply(this, arguments);
         setTimeout(applyFinalDropdownFix, 500);
     };
@@ -87,4 +87,4 @@ if (window.setupSearchAndFilter) {
 // Strategy 5: Manual trigger function
 window.applyFinalDropdownFix = applyFinalDropdownFix;
 
-console.log('✅ FINAL dropdown fix strategies loaded');
+// FINAL dropdown fix strategies loaded
