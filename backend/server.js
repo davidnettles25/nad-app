@@ -152,30 +152,65 @@ async function migrateTestStatusValues() {
     try {
         console.log('🔄 Starting status migration check...');
         
-        // First, get current state statistics
-        const [beforeStats] = await db.execute(`
+        // Check if is_activated column still exists
+        const [isActivatedExists] = await db.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'nad_test_ids' 
+            AND COLUMN_NAME = 'is_activated'
+        `);
+        
+        const hasIsActivated = isActivatedExists.length > 0;
+        console.log('📊 is_activated column exists:', hasIsActivated);
+        
+        // First, get current state statistics (without referencing is_activated if it doesn't exist)
+        let beforeStatsQuery = `
             SELECT 
                 COUNT(*) as total_tests,
                 COUNT(CASE WHEN status IS NULL THEN 1 END) as null_status,
                 COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
                 COUNT(CASE WHEN status = 'activated' THEN 1 END) as activated,
-                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
-                COUNT(CASE WHEN is_activated = 1 AND status != 'activated' AND status != 'completed' THEN 1 END) as mismatched
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
             FROM nad_test_ids
-        `);
+        `;
         
+        if (hasIsActivated) {
+            beforeStatsQuery = `
+                SELECT 
+                    COUNT(*) as total_tests,
+                    COUNT(CASE WHEN status IS NULL THEN 1 END) as null_status,
+                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                    COUNT(CASE WHEN status = 'activated' THEN 1 END) as activated,
+                    COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+                    COUNT(CASE WHEN is_activated = 1 AND status != 'activated' AND status != 'completed' THEN 1 END) as mismatched
+                FROM nad_test_ids
+            `;
+        }
+        
+        const [beforeStats] = await db.execute(beforeStatsQuery);
         console.log('📊 Before migration:', beforeStats[0]);
         
-        // Step 1: Set status for NULL values based on is_activated
-        const [nullUpdate] = await db.execute(`
-            UPDATE nad_test_ids 
-            SET status = CASE 
-                WHEN is_activated = 1 THEN 'activated'
-                ELSE 'pending'
-            END
-            WHERE status IS NULL
-        `);
-        console.log(`✅ Updated ${nullUpdate.affectedRows} NULL status values`);
+        // Step 1: Set status for NULL values (only if is_activated column exists)
+        if (hasIsActivated) {
+            const [nullUpdate] = await db.execute(`
+                UPDATE nad_test_ids 
+                SET status = CASE 
+                    WHEN is_activated = 1 THEN 'activated'
+                    ELSE 'pending'
+                END
+                WHERE status IS NULL
+            `);
+            console.log(`✅ Updated ${nullUpdate.affectedRows} NULL status values based on is_activated`);
+        } else {
+            // If is_activated doesn't exist, set NULL statuses to pending by default
+            const [nullUpdate] = await db.execute(`
+                UPDATE nad_test_ids 
+                SET status = 'pending'
+                WHERE status IS NULL
+            `);
+            console.log(`✅ Updated ${nullUpdate.affectedRows} NULL status values to pending (default)`);
+        }
         
         // Step 2: Fix completed tests (those with scores)
         const [completedUpdate] = await db.execute(`
@@ -187,44 +222,61 @@ async function migrateTestStatusValues() {
         `);
         console.log(`✅ Updated ${completedUpdate.affectedRows} tests to completed status`);
         
-        // Step 3: Fix activated tests (is_activated=1 but no score)
-        const [activatedUpdate] = await db.execute(`
-            UPDATE nad_test_ids ti
-            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-            SET ti.status = 'activated'
-            WHERE ti.is_activated = 1 
-            AND ts.score IS NULL
-            AND ti.status != 'activated'
-        `);
-        console.log(`✅ Updated ${activatedUpdate.affectedRows} tests to activated status`);
+        // Step 3: Fix activated tests (only if is_activated column exists)
+        if (hasIsActivated) {
+            const [activatedUpdate] = await db.execute(`
+                UPDATE nad_test_ids ti
+                LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+                SET ti.status = 'activated'
+                WHERE ti.is_activated = 1 
+                AND ts.score IS NULL
+                AND ti.status != 'activated'
+            `);
+            console.log(`✅ Updated ${activatedUpdate.affectedRows} tests to activated status`);
+        }
         
-        // Step 4: Fix pending tests
-        const [pendingUpdate] = await db.execute(`
-            UPDATE nad_test_ids 
-            SET status = 'pending'
-            WHERE is_activated = 0 
-            AND status != 'pending'
-        `);
-        console.log(`✅ Updated ${pendingUpdate.affectedRows} tests to pending status`);
+        // Step 4: Fix pending tests (only if is_activated column exists)
+        if (hasIsActivated) {
+            const [pendingUpdate] = await db.execute(`
+                UPDATE nad_test_ids 
+                SET status = 'pending'
+                WHERE is_activated = 0 
+                AND status != 'pending'
+            `);
+            console.log(`✅ Updated ${pendingUpdate.affectedRows} tests to pending status`);
+        }
         
-        // Get final statistics
-        const [afterStats] = await db.execute(`
+        // Get final statistics (conditional based on is_activated column existence)
+        let afterStatsQuery = `
             SELECT 
                 COUNT(*) as total_tests,
                 COUNT(CASE WHEN status IS NULL THEN 1 END) as null_status,
                 COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
                 COUNT(CASE WHEN status = 'activated' THEN 1 END) as activated,
-                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
-                COUNT(CASE WHEN 
-                    (is_activated = 0 AND status != 'pending') OR
-                    (is_activated = 1 AND status = 'pending')
-                THEN 1 END) as still_mismatched
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
             FROM nad_test_ids
-        `);
+        `;
         
+        if (hasIsActivated) {
+            afterStatsQuery = `
+                SELECT 
+                    COUNT(*) as total_tests,
+                    COUNT(CASE WHEN status IS NULL THEN 1 END) as null_status,
+                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                    COUNT(CASE WHEN status = 'activated' THEN 1 END) as activated,
+                    COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+                    COUNT(CASE WHEN 
+                        (is_activated = 0 AND status != 'pending') OR
+                        (is_activated = 1 AND status = 'pending')
+                    THEN 1 END) as still_mismatched
+                FROM nad_test_ids
+            `;
+        }
+        
+        const [afterStats] = await db.execute(afterStatsQuery);
         console.log('📊 After migration:', afterStats[0]);
         
-        if (afterStats[0].still_mismatched > 0) {
+        if (hasIsActivated && afterStats[0].still_mismatched && afterStats[0].still_mismatched > 0) {
             console.warn('⚠️  Some tests still have mismatched status values');
         }
         
@@ -655,6 +707,20 @@ async function recreateCustomerIdIndexes() {
         
         for (const update of indexUpdates) {
             console.log(`🔧 Recreating ${update.indexName} index on ${update.table}...`);
+            
+            // Check if customer_id column exists in this table
+            const [columnExists] = await db.execute(`
+                SELECT COLUMN_NAME 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = '${update.table}' 
+                AND COLUMN_NAME = 'customer_id'
+            `);
+            
+            if (columnExists.length === 0) {
+                console.log(`ℹ️  ${update.table}.customer_id column does not exist, skipping index creation...`);
+                continue;
+            }
             
             // Drop existing index if it exists
             try {
