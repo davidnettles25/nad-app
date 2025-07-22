@@ -349,8 +349,11 @@ function generateTestDetailsCSV(testData, reportDate, period) {
 function analyzeSupplementData(testData) {
     const supplementFields = new Set();
     
-    testData.forEach(test => {
+    console.log('🔍 Analyzing supplement data from', testData.length, 'test records');
+    
+    testData.forEach((test, testIndex) => {
         if (test.supplements_with_dose) {
+            console.log(`Test ${testIndex + 1} supplement data:`, typeof test.supplements_with_dose, test.supplements_with_dose);
             try {
                 let supplements;
                 if (typeof test.supplements_with_dose === 'string') {
@@ -359,23 +362,36 @@ function analyzeSupplementData(testData) {
                     supplements = test.supplements_with_dose;
                 }
                 
+                console.log(`Test ${testIndex + 1} parsed supplements:`, supplements);
+                
                 if (Array.isArray(supplements)) {
                     supplements.forEach((supplement, index) => {
-                        if (supplement.name) {
+                        console.log(`Test ${testIndex + 1}, Supplement ${index + 1}:`, supplement);
+                        if (supplement && supplement.name) {
                             supplementFields.add(`Supplement_${index + 1}_Name`);
                             supplementFields.add(`Supplement_${index + 1}_Dose`);
                             supplementFields.add(`Supplement_${index + 1}_Frequency`);
                         }
                     });
+                } else if (supplements && typeof supplements === 'object') {
+                    // Handle non-array supplement data
+                    console.log('Non-array supplement object found:', supplements);
+                    supplementFields.add('Supplement_1_Name');
+                    supplementFields.add('Supplement_1_Dose');
+                    supplementFields.add('Supplement_1_Frequency');
                 }
             } catch (e) {
+                console.log(`Test ${testIndex + 1} supplement parsing error:`, e.message);
                 // Handle non-JSON supplement data
                 supplementFields.add('Supplements_Raw_Data');
             }
         }
     });
     
-    return Array.from(supplementFields).sort();
+    const fields = Array.from(supplementFields).sort();
+    console.log('📊 Supplement fields found:', fields);
+    
+    return fields;
 }
 
 /**
@@ -386,6 +402,8 @@ function parseSupplementData(supplementsData) {
     
     if (!supplementsData) return result;
     
+    console.log('🔧 Parsing supplement data:', typeof supplementsData, supplementsData);
+    
     try {
         let supplements;
         if (typeof supplementsData === 'string') {
@@ -394,20 +412,31 @@ function parseSupplementData(supplementsData) {
             supplements = supplementsData;
         }
         
+        console.log('🔧 Parsed supplements:', supplements);
+        
         if (Array.isArray(supplements)) {
             supplements.forEach((supplement, index) => {
-                if (supplement.name) {
+                if (supplement && supplement.name) {
                     result[`Supplement_${index + 1}_Name`] = supplement.name;
                     result[`Supplement_${index + 1}_Dose`] = supplement.dose || '';
                     result[`Supplement_${index + 1}_Frequency`] = supplement.frequency || '';
+                    console.log(`🔧 Added supplement ${index + 1}:`, supplement.name, supplement.dose, supplement.frequency);
                 }
             });
+        } else if (supplements && typeof supplements === 'object') {
+            // Handle non-array supplement object
+            console.log('🔧 Handling non-array supplement object');
+            result['Supplement_1_Name'] = supplements.name || '';
+            result['Supplement_1_Dose'] = supplements.dose || '';
+            result['Supplement_1_Frequency'] = supplements.frequency || '';
         }
     } catch (e) {
+        console.log('🔧 Error parsing supplement data:', e.message);
         // Handle non-JSON data
         result['Supplements_Raw_Data'] = cleanText(supplementsData);
     }
     
+    console.log('🔧 Final supplement result:', result);
     return result;
 }
 
