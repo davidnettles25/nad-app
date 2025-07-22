@@ -1,7 +1,7 @@
 // Robust Test Management Dropdown Fix
 // This version works with existing code and handles conflicts
 
-console.log('🔧 Loading ROBUST dropdown fix...');
+// Loading ROBUST dropdown fix
 
 (function() {
     'use strict';
@@ -13,20 +13,17 @@ console.log('🔧 Loading ROBUST dropdown fix...');
     // Function to apply the fix
     function applyDropdownFix() {
         if (fixApplied) {
-            console.log('✅ Dropdown fix already applied');
             return true;
         }
         
         attempts++;
-        console.log(`🔧 Attempting dropdown fix (attempt ${attempts}/${maxAttempts})...`);
         
         const statusFilter = document.getElementById('status-filter');
         if (!statusFilter) {
-            console.warn(`⚠️ Status filter not found (attempt ${attempts})`);
             return false;
         }
         
-        console.log('✅ Status filter found, applying fix...');
+        // Status filter found, applying fix
         
         // Clear all existing event listeners by replacing the element
         const parent = statusFilter.parentNode;
@@ -42,20 +39,16 @@ console.log('🔧 Loading ROBUST dropdown fix...');
         // Add our robust event listener
         newFilter.addEventListener('change', function(e) {
             const selectedStatus = e.target.value;
-            console.log('🔽 ROBUST: Status changed to:', selectedStatus || 'All');
             
             // Try multiple ways to get test data
             const allTests = window.allTests || window.filteredTests || [];
                             
             if (allTests.length === 0) {
-                console.warn('⚠️ No test data found');
                 if (typeof loadTestsFromAPI === 'function') {
                     loadTestsFromAPI();
                 }
                 return;
             }
-            
-            console.log(`📊 Working with ${allTests.length} tests`);
             
             // Apply filter
             let filtered = [...allTests];
@@ -66,7 +59,6 @@ console.log('🔧 Loading ROBUST dropdown fix...');
                 filtered = allTests.filter(test => test.status === 'pending');
             }
             
-            console.log(`📋 Filtered to ${filtered.length} tests`);
             
             // Try multiple ways to update the display
             let updateSuccess = false;
@@ -75,9 +67,8 @@ console.log('🔧 Loading ROBUST dropdown fix...');
                 try {
                     renderTestsTable(filtered);
                     updateSuccess = true;
-                    console.log('✅ Updated via renderTestsTable()');
                 } catch (error) {
-                    console.warn('⚠️ renderTestsTable failed:', error);
+                    // renderTestsTable failed
                 }
             }
             
@@ -85,9 +76,8 @@ console.log('🔧 Loading ROBUST dropdown fix...');
                 try {
                     window.renderTestsTable(filtered);
                     updateSuccess = true;
-                    console.log('✅ Updated via window.renderTestsTable()');
                 } catch (error) {
-                    console.warn('⚠️ window.renderTestsTable failed:', error);
+                    // window.renderTestsTable failed
                 }
             }
             
@@ -97,13 +87,11 @@ console.log('🔧 Loading ROBUST dropdown fix...');
             // Show feedback
             const statusText = selectedStatus || 'All';
             if (typeof showAlert === 'function') {
-                showAlert(`🔍 ${statusText} tests: ${filtered.length} shown`, 'info');
-            } else {
-                console.log(`📊 ${statusText} - ${filtered.length} tests shown`);
+                showAlert(`${statusText} tests: ${filtered.length} shown`, 'info');
             }
         });
         
-        console.log('✅ ROBUST: Event listener attached');
+        // ROBUST: Event listener attached
         fixApplied = true;
         return true;
     }
@@ -133,6 +121,6 @@ console.log('🔧 Loading ROBUST dropdown fix...');
         applyDropdownFix();
     };
     
-    console.log('✅ ROBUST dropdown fix loaded');
+    // ROBUST dropdown fix loaded
     
 })();

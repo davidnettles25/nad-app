@@ -10,7 +10,7 @@ window.NADCustomer = {
     },
     
     init() {
-        console.log('Initializing NAD Customer Portal');
+        // Initializing NAD Customer Portal
         
         // Check for stored test data from previous session
         const storedData = sessionStorage.getItem('nadTestData');
@@ -18,7 +18,7 @@ window.NADCustomer = {
             try {
                 this.testData = JSON.parse(storedData);
             } catch (e) {
-                console.error('Failed to parse stored test data');
+                // Failed to parse stored test data
             }
         }
         
@@ -37,11 +37,11 @@ window.NADCustomer = {
             
             // Load footer if exists
             await this.loadComponent('footer', '#footer-container').catch(() => {
-                console.log('No footer component found');
+                // No footer component found
             });
             
         } catch (error) {
-            console.error('Error loading components:', error);
+            // Failed to load portal components
             this.showError('Failed to load portal components');
         }
     },
@@ -158,7 +158,7 @@ window.NADCustomer = {
             }
             
         } catch (error) {
-            console.error('Verification error:', error);
+            // Verification failed with error
             let errorMessage = 'Unable to verify Test ID.';
             
             if (error.message.includes('not found')) {
@@ -199,14 +199,14 @@ window.NADCustomer = {
     },
     
     initSupplementHandlers() {
-        console.log('initSupplementHandlers called, testData:', this.testData);
+        // Initialize supplement form handlers
         
         // Display test ID
         const testIdDisplay = document.getElementById('test-id-display');
         if (testIdDisplay) {
             const testId = this.testData.testId || this.testData.test_id;
             testIdDisplay.textContent = testId || 'Unknown';
-            console.log('Setting test ID display:', testId);
+            // Set test ID display in form
         }
         
         // Update status display
@@ -227,26 +227,26 @@ window.NADCustomer = {
         // Handle form submission
         const form = document.getElementById('supplement-form');
         if (form) {
-            console.log('📋 Form submission handler attached to:', form);
+            // Attach form submission handler
             form.addEventListener('submit', (e) => {
-                console.log('📋 Form submit event triggered');
+                // Form submit event triggered
                 e.preventDefault();
                 this.handleSupplementSubmission();
             });
         } else {
-            console.log('❌ No supplement form found with ID "supplement-form"');
+            // No supplement form found in DOM
         }
         
         // Supplement selection is now handled by setupSupplementCheckboxes()
     },
     
     async handleSupplementSubmission() {
-        console.log('🚀 handleSupplementSubmission called');
+        // Handle supplement form submission
         try {
             // Show loading state
             const button = document.querySelector('[data-action="next-step"]');
             const originalText = button.textContent;
-            console.log('🔄 Setting button to loading state');
+            // Set button to loading state
             button.textContent = 'Activating Test...';
             button.disabled = true;
             
@@ -283,12 +283,10 @@ window.NADCustomer = {
             };
             
             // Make API call to activate test with supplement data
-            console.log('Sending activation data:', activationData);
             const response = await NAD.api.activateTest(activationData);
-            console.log('Activation API response:', response);
             
             if (response.success) {
-                console.log('✅ Activation successful');
+                // Activation successful
                 // Update test data
                 this.testData.activated = true;
                 this.testData.activatedAt = new Date().toISOString();
@@ -296,7 +294,6 @@ window.NADCustomer = {
                 
                 // Store in sessionStorage to persist between page transitions
                 sessionStorage.setItem('nadTestData', JSON.stringify(this.testData));
-                console.log('💾 Stored test data:', this.testData);
                 
                 // Show success message and move to next step
                 this.showMessage('Test activated successfully with supplement information!', 'success');
@@ -304,12 +301,12 @@ window.NADCustomer = {
                     this.nextStep();
                 }, 1500);
             } else {
-                console.log('❌ Activation failed:', response);
+                // Activation failed
                 throw new Error(response.message || response.error || 'Activation failed');
             }
             
         } catch (error) {
-            console.error('Activation error:', error);
+            // Activation failed with error
             this.showMessage('Failed to activate test. Please try again.', 'error');
             
             // Reset button
@@ -330,17 +327,16 @@ window.NADCustomer = {
                 this.renderMockSupplements();
             }
         } catch (error) {
-            console.error('Error loading supplements:', error);
+            // Failed to load supplements from API, using fallback
             this.renderMockSupplements();
         }
     },
     
     renderSupplements(supplements) {
-        console.log('renderSupplements called with:', supplements);
+        // Render supplements in grid layout
         const grid = document.getElementById('supplement-grid');
-        console.log('Grid element:', grid);
         if (!grid) {
-            console.error('supplement-grid element not found');
+            // Supplement grid element not found
             return;
         }
         
@@ -371,7 +367,7 @@ window.NADCustomer = {
             </div>
         `).join('');
         
-        console.log('Setting grid innerHTML to:', supplementsHtml);
+        // Populate supplement grid with HTML
         grid.innerHTML = supplementsHtml;
         
         // Add event listeners for checkbox changes
@@ -379,7 +375,7 @@ window.NADCustomer = {
     },
     
     renderMockSupplements() {
-        console.log('renderMockSupplements called');
+        // Render fallback mock supplements
         const mockSupplements = [
             { id: 1, name: 'NAD+ Precursor', description: 'Nicotinamide Riboside or NMN', default_dose: 250, unit: 'mg' },
             { id: 2, name: 'Vitamin D3', description: 'Supports cellular energy production', default_dose: 2000, unit: 'IU' },
@@ -391,7 +387,7 @@ window.NADCustomer = {
             { id: 8, name: 'Multivitamin', description: 'General nutritional support', default_dose: 1, unit: 'tablet' }
         ];
         
-        console.log('Mock supplements:', mockSupplements);
+        // Use mock supplement data as fallback
         this.renderSupplements(mockSupplements);
     },
     
@@ -426,13 +422,12 @@ window.NADCustomer = {
                 try {
                     this.testData = JSON.parse(storedData);
                 } catch (e) {
-                    console.error('Failed to parse stored test data');
+                    // Failed to parse stored test data
                 }
             }
         }
         
-        console.log('initResultsHandlers called, testData:', this.testData);
-        console.log('Supplement data check:', this.testData?.supplements);
+        // Initialize results page handlers
         
         // Populate results data
         const testIdElement = document.getElementById('results-test-id');
@@ -448,7 +443,7 @@ window.NADCustomer = {
         
         const supplementsCountElement = document.getElementById('results-supplements-count');
         if (supplementsCountElement) {
-            console.log('Processing supplements for display:', this.testData?.supplements);
+            // Process supplements for display
             
             // Check if we have supplement data
             if (this.testData && this.testData.supplements) {
@@ -456,7 +451,7 @@ window.NADCustomer = {
                 const hasOther = this.testData.supplements.other && this.testData.supplements.other.trim() !== '';
                 const totalCount = selectedCount + (hasOther ? 1 : 0);
                 
-                console.log('Supplement counts - Selected:', selectedCount, 'HasOther:', hasOther, 'Total:', totalCount);
+                // Calculate supplement counts
                 
                 if (totalCount > 0) {
                     // Build a more detailed display
@@ -468,14 +463,14 @@ window.NADCustomer = {
                         supplementNames.push('Other supplements');
                     }
                     const displayText = `${totalCount} recorded (${supplementNames.slice(0, 3).join(', ')}${supplementNames.length > 3 ? '...' : ''})`;
-                    console.log('Setting supplement display text to:', displayText);
+                    // Set supplement display text
                     supplementsCountElement.textContent = displayText;
                 } else {
-                    console.log('No supplements found, showing None recorded');
+                    // No supplements found
                     supplementsCountElement.textContent = 'None recorded';
                 }
             } else {
-                console.log('No supplement data in testData, showing None recorded');
+                // No supplement data available
                 supplementsCountElement.textContent = 'None recorded';
             }
         }
@@ -496,11 +491,11 @@ window.NADCustomer = {
             if (e.target.matches('[data-action="next-step"]')) {
                 // Check if we're on the supplements step
                 if (this.currentStep === 2) {
-                    console.log('🎯 Next-step clicked on supplements page, calling handleSupplementSubmission');
+                    // Next step clicked on supplements page
                     e.preventDefault();
                     this.handleSupplementSubmission();
                 } else {
-                    console.log('🎯 Next-step clicked on step', this.currentStep, 'calling nextStep');
+                    // Next step clicked, advancing to next step
                     this.nextStep();
                 }
             }
@@ -607,7 +602,7 @@ window.NADCustomer = {
             await this.loadCustomerStats();
             await this.loadRecentTests();
         } catch (error) {
-            console.error('Error loading dashboard:', error);
+            // Failed to load dashboard
             this.showError('Failed to load dashboard');
         }
     },
@@ -640,7 +635,7 @@ window.NADCustomer = {
                 this.customerData = data;
             }
         } catch (error) {
-            console.error('Error loading customer stats:', error);
+            // Failed to load customer stats
             // Set default values safely
             ['total-tests', 'completed-tests', 'pending-tests', 'activated-tests'].forEach(id => {
                 const element = document.getElementById(id);
@@ -660,7 +655,7 @@ window.NADCustomer = {
 
             // Check if elements exist before manipulating them
             if (!recentSection || !noTestsSection) {
-                console.warn('Recent tests sections not found in DOM');
+                // Recent tests sections not found in DOM
                 return;
             }
 
@@ -678,7 +673,7 @@ window.NADCustomer = {
             }
 
         } catch (error) {
-            console.error('Error loading recent tests:', error);
+            // Failed to load recent tests
         }
     },
 
@@ -706,7 +701,7 @@ window.NADCustomer = {
             await this.loadSection('test-history', '#content-container');
             await this.loadAllTests();
         } catch (error) {
-            console.error('Error loading test history:', error);
+            // Failed to load test history
             this.showError('Failed to load test history');
         }
     },
@@ -735,7 +730,7 @@ window.NADCustomer = {
                 throw new Error(data.error || 'Failed to load tests');
             }
         } catch (error) {
-            console.error('Error loading all tests:', error);
+            // Failed to load test history
             this.showNoTestsMessage();
         } finally {
             const loadingMessage = document.getElementById('loading-message');
@@ -880,7 +875,7 @@ window.NADCustomer = {
     // Test detail modal functionality
     async viewTestDetails(testId) {
         try {
-            console.log('Loading test details for:', testId);
+            // Load test details for modal
             
             // Load modal component
             await this.loadTestDetailModal();
@@ -897,7 +892,7 @@ window.NADCustomer = {
                 throw new Error(data.error || 'Failed to load test details');
             }
         } catch (error) {
-            console.error('Error loading test details:', error);
+            // Failed to load test details
             alert('Failed to load test details. Please try again.');
         }
     },
@@ -916,7 +911,7 @@ window.NADCustomer = {
             // Add modal to body
             document.body.insertAdjacentHTML('beforeend', html);
         } catch (error) {
-            console.error('Error loading modal:', error);
+            // Failed to load modal component
             throw error;
         }
     },
@@ -952,7 +947,6 @@ window.NADCustomer = {
         this.populateTimeline(test.timeline || []);
 
         // Supplements - handle the correct data structure
-        console.log('🔍 Modal supplement data:', test.supplements);
         if (test.supplements && typeof test.supplements === 'object') {
             // New structure: {selected: [...], other: "...", health_conditions: "..."}
             this.populateSupplements(test.supplements.selected || [], test.supplements.health_conditions, test.supplements.other);
@@ -986,7 +980,7 @@ window.NADCustomer = {
     },
 
     populateSupplements(supplements, healthConditions, otherSupplements) {
-        console.log('🔍 populateSupplements called with:', { supplements, healthConditions, otherSupplements });
+        // Populate supplement data in modal
         
         const section = document.getElementById('supplements-section');
         const container = document.getElementById('modal-supplements');
@@ -1032,14 +1026,12 @@ window.NADCustomer = {
             }
             
             container.innerHTML = supplementsHTML;
-            console.log('✅ Populated modal supplements');
         }
 
         // Health conditions
         if (hasHealthConditions) {
             if (healthSection) healthSection.style.display = 'block';
             if (healthText) healthText.textContent = healthConditions;
-            console.log('✅ Populated health conditions:', healthConditions);
         } else {
             if (healthSection) healthSection.style.display = 'none';
         }
@@ -1124,14 +1116,13 @@ window.NADCustomer = {
     },
 
     populateDetailedSupplements() {
-        console.log('🔍 populateDetailedSupplements called');
-        console.log('🧬 Current testData:', this.testData);
+        // Populate detailed supplement information
         
         // Check if elements exist, if not, create them
         let detailsSection = document.getElementById('supplements-details-section');
         
         if (!detailsSection) {
-            console.log('⚠️ Supplements details section not found in DOM, creating it...');
+            // Supplements details section not found, creating it
             this.createSupplementDetailsSection();
             detailsSection = document.getElementById('supplements-details-section');
         }
@@ -1142,29 +1133,22 @@ window.NADCustomer = {
         const healthSection = document.getElementById('health-conditions-section');
         const healthText = document.getElementById('health-conditions-text');
         
-        console.log('🔍 DOM elements found:', {
-            detailsSection: !!detailsSection,
-            supplementsList: !!supplementsList,
-            otherSection: !!otherSection,
-            otherText: !!otherText,
-            healthSection: !!healthSection,
-            healthText: !!healthText
-        });
+        // Check DOM elements availability
         
         if (detailsSection) {
             this.doPopulateDetailedSupplements(detailsSection, supplementsList, otherSection, otherText, healthSection, healthText);
         } else {
-            console.error('❌ Failed to create supplements details section');
+            // Failed to create supplements details section
         }
     },
 
     createSupplementDetailsSection() {
-        console.log('🔧 Creating supplement details section dynamically');
+        // Create supplement details section dynamically
         
         // Find the activation summary section to insert after
         const activationSummary = document.querySelector('.activation-summary');
         if (!activationSummary) {
-            console.error('❌ Could not find activation summary to insert supplements section');
+            // Could not find activation summary element
             return;
         }
         
@@ -1194,7 +1178,7 @@ window.NADCustomer = {
             this.addSupplementDetailsCSS();
         }
         
-        console.log('✅ Supplements details section created successfully');
+        // Supplements details section created
     },
 
     addSupplementDetailsCSS() {
@@ -1271,30 +1255,28 @@ window.NADCustomer = {
             }
         `;
         document.head.appendChild(style);
-        console.log('✅ Supplement details CSS added');
+        // Supplement details CSS added
     },
     
     doPopulateDetailedSupplements(detailsSection, supplementsList, otherSection, otherText, healthSection, healthText) {
         if (!this.testData || !this.testData.supplements) {
-            console.log('❌ No supplement data found');
+            // No supplement data found
             if (detailsSection) detailsSection.style.display = 'none';
             return;
         }
         
         const supplementData = this.testData.supplements;
-        console.log('🔬 Processing supplement data:', supplementData);
-        console.log('🔬 Supplement data keys:', Object.keys(supplementData));
-        console.log('🔬 Full supplement data structure:', JSON.stringify(supplementData, null, 2));
+        // Process supplement data for display
         
         // Show the section - make it visible when we have supplement data
         if (detailsSection) {
             detailsSection.style.display = 'block';
-            console.log('✅ Made supplements details section visible');
+            // Made supplements details section visible
         }
         
         // Populate selected supplements
         if (supplementData.selected && supplementData.selected.length > 0) {
-            console.log('✅ Found selected supplements:', supplementData.selected);
+            // Found selected supplements
             
             if (supplementsList) {
                 supplementsList.innerHTML = supplementData.selected.map(supplement => `
@@ -1303,10 +1285,10 @@ window.NADCustomer = {
                         <div class="supplement-dose">${supplement.amount || supplement.dose || 0} ${supplement.unit || 'mg'}</div>
                     </div>
                 `).join('');
-                console.log('✅ Populated supplement cards');
+                // Populated supplement cards
             }
         } else {
-            console.log('❌ No selected supplements found');
+            // No selected supplements found
             if (supplementsList) {
                 supplementsList.innerHTML = '<p>No specific supplements recorded</p>';
             }
@@ -1314,28 +1296,28 @@ window.NADCustomer = {
         
         // Populate other supplements text
         if (supplementData.other && supplementData.other.trim() && supplementData.other !== 'none') {
-            console.log('✅ Found other supplements text:', supplementData.other);
+            // Found other supplements text
             if (otherSection) otherSection.style.display = 'block';
             if (otherText) otherText.textContent = supplementData.other;
         } else {
-            console.log('❌ No other supplements text found (or value is "none")');
+            // No other supplements text found
             if (otherSection) otherSection.style.display = 'none';
         }
         
         // Populate health conditions
         const healthConditions = supplementData.health_conditions;
         if (healthConditions && healthConditions.trim() && healthConditions !== 'none') {
-            console.log('✅ Found health conditions:', healthConditions);
+            // Found health conditions
             if (healthSection) {
                 healthSection.style.display = 'block';
-                console.log('✅ Made health conditions section visible');
+                // Made health conditions section visible
             }
             if (healthText) {
                 healthText.textContent = healthConditions;
-                console.log('✅ Set health conditions text to:', healthConditions);
+                // Set health conditions text
             }
         } else {
-            console.log('❌ No health conditions found (or value is "none")');
+            // No health conditions found
             if (healthSection) healthSection.style.display = 'none';
         }
     },
@@ -1409,7 +1391,7 @@ window.NADCustomer = {
             }
             
         } catch (error) {
-            console.error('Error loading test history section:', error);
+            // Failed to load test history section
         } finally {
             // Hide loading
             const loadingMessage = document.getElementById('loading-tests');
@@ -1468,7 +1450,7 @@ window.NADCustomer = {
 
     // Revert to original init method
     init() {
-        console.log('Initializing NAD Customer Portal');
+        // Initialize NAD Customer Portal
         this.loadComponents();
         this.setupEventListeners();
         // Show verification step (original behavior)

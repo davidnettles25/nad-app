@@ -7,7 +7,7 @@
 (function() {
     'use strict';
     
-    console.log('🔍 Loading Supplement Search Fix...');
+    // Loading Supplement Search Fix
     
     let searchSetupComplete = false;
     
@@ -16,23 +16,20 @@
     // ========================================================================
     
     function createDirectTableSearch() {
-        console.log('🔍 Creating direct table search function...');
+        // Create direct table search function
         
         window.filterSupplements = function() {
-            console.log('🔍 DIRECT SEARCH: Filtering table rows...');
+            // Filter table rows
             
             const searchInput = document.getElementById('supplement-search');
             if (!searchInput) {
-                console.warn('❌ Search input not found during filtering');
                 return;
             }
             
             const searchTerm = searchInput.value.toLowerCase().trim();
-            console.log('🔍 Search term:', `"${searchTerm}"`);
             
             const tbody = document.getElementById('supplements-table-body');
             if (!tbody) {
-                console.warn('❌ Table body not found during filtering');
                 return;
             }
             
@@ -67,13 +64,13 @@
                 }
             });
             
-            console.log(`✅ Search complete: ${visibleCount} visible, ${hiddenCount} hidden`);
+            // Search complete
             showNoResultsMessage(tbody, visibleCount, searchTerm);
         };
         
         // Clear search function
         window.clearSupplementSearch = function() {
-            console.log('🧹 Clearing supplement search...');
+            // Clear supplement search
             
             const searchInput = document.getElementById('supplement-search');
             if (searchInput) {
@@ -92,7 +89,7 @@
             }
         };
         
-        console.log('✅ Search functions created');
+        // Search functions created
     }
     
     function showNoResultsMessage(tbody, visibleCount, searchTerm) {
@@ -123,15 +120,12 @@
     // ========================================================================
     
     function setupSearchInput() {
-        console.log('🔧 Setting up search input...');
+        // Set up search input
         
         const searchInput = document.getElementById('supplement-search');
         if (!searchInput) {
-            console.warn('❌ Search input not found');
             return false;
         }
-        
-        console.log('✅ Found search input:', searchInput.placeholder || 'no placeholder');
         
         // Remove any existing inline event handlers
         searchInput.removeAttribute('onkeyup');
@@ -163,7 +157,7 @@
             }
         });
         
-        console.log('✅ Search input event listeners added');
+        // Search input event listeners added
         return true;
     }
     
@@ -172,20 +166,17 @@
     // ========================================================================
     
     function waitForSearchInput() {
-        console.log('👁️ Waiting for search input to appear...');
+        // Wait for search input to appear
         
         const checkForInput = () => {
             const searchInput = document.getElementById('supplement-search');
             const supplementsSection = document.getElementById('supplements');
             
             if (searchInput && supplementsSection) {
-                console.log('✅ Search input and supplements section found!');
-                
                 if (!searchSetupComplete) {
                     const success = setupSearchInput();
                     if (success) {
                         searchSetupComplete = true;
-                        console.log('✅ Search setup completed successfully');
                     }
                 }
                 return true;
@@ -208,14 +199,11 @@
         // Stop checking after 30 seconds
         setTimeout(() => {
             clearInterval(checkInterval);
-            if (!searchSetupComplete) {
-                console.warn('⚠️ Search input setup timed out after 30 seconds');
-            }
         }, 30000);
     }
     
     function monitorSectionChanges() {
-        console.log('👁️ Monitoring for supplements section activation...');
+        // Monitor for supplements section activation
         
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
@@ -226,7 +214,6 @@
                          supplementsSection.classList.contains('active'))) {
                         
                         if (!searchSetupComplete) {
-                            console.log('🔍 Supplements section activated, setting up search...');
                             setTimeout(() => {
                                 const searchInput = document.getElementById('supplement-search');
                                 if (searchInput && !searchSetupComplete) {
@@ -247,7 +234,7 @@
             attributeFilter: ['style', 'class']
         });
         
-        console.log('✅ Section change monitoring active');
+        // Section change monitoring active
     }
     
     // ========================================================================
@@ -255,7 +242,7 @@
     // ========================================================================
     
     function initializeSearchFix() {
-        console.log('🚀 Initializing Supplement Search Fix...');
+        // Initialize Supplement Search Fix
         
         // Create the search functions first
         createDirectTableSearch();
@@ -272,7 +259,7 @@
             monitorSectionChanges();
         }
         
-        console.log('✅ Search fix initialization complete');
+        // Search fix initialization complete
     }
     
     // ========================================================================
@@ -285,11 +272,10 @@
     // Make functions globally available for debugging
     window.SupplementSearchFix = {
         setup: setupSearchInput,
-        filter: () => typeof filterSupplements === 'function' ? filterSupplements() : console.warn('Filter function not ready'),
-        clear: () => typeof clearSupplementSearch === 'function' ? clearSupplementSearch() : console.warn('Clear function not ready')
+        filter: () => typeof filterSupplements === 'function' ? filterSupplements() : null,
+        clear: () => typeof clearSupplementSearch === 'function' ? clearSupplementSearch() : null
     };
     
-    console.log('🔍 Supplement Search Fix loaded');
-    console.log('💡 Debug functions available: SupplementSearchFix.setup(), .filter(), .clear()');
+    // Supplement Search Fix loaded
     
 })();

@@ -27,7 +27,7 @@ const NAD_UTILS = {
         try {
             return new Date(dateString).toLocaleDateString('en-US', formatOptions);
         } catch (error) {
-            console.warn('Invalid date:', dateString);
+            // Invalid date
             return 'Invalid Date';
         }
     },
@@ -51,7 +51,7 @@ const NAD_UTILS = {
         try {
             return new Date(dateString).toLocaleString('en-US', formatOptions);
         } catch (error) {
-            console.warn('Invalid datetime:', dateString);
+            // Invalid datetime
             return 'Invalid Date';
         }
     },
@@ -264,8 +264,7 @@ const NAD_UTILS = {
         }
         
         if (!container) {
-            console.warn('Alert container not found, using console');
-            console.log(`${type.toUpperCase()}: ${message}`);
+            // Alert container not found
             return;
         }
         
@@ -460,7 +459,7 @@ const NAD_UTILS = {
      */
     exportAsCSV(data, filename, headers = null) {
         if (!data || data.length === 0) {
-            console.warn('No data to export');
+            // No data to export
             return;
         }
         
@@ -509,7 +508,7 @@ const NAD_UTILS = {
             localStorage.setItem(key, JSON.stringify(value));
             return true;
         } catch (error) {
-            console.warn('Failed to save to localStorage:', error);
+            // Failed to save to localStorage
             return false;
         }
     },
@@ -522,7 +521,7 @@ const NAD_UTILS = {
             const stored = localStorage.getItem(key);
             return stored ? JSON.parse(stored) : defaultValue;
         } catch (error) {
-            console.warn('Failed to load from localStorage:', error);
+            // Failed to load from localStorage
             return defaultValue;
         }
     },
@@ -535,7 +534,7 @@ const NAD_UTILS = {
             localStorage.removeItem(key);
             return true;
         } catch (error) {
-            console.warn('Failed to remove from localStorage:', error);
+            // Failed to remove from localStorage
             return false;
         }
     },
@@ -731,7 +730,7 @@ const NAD_UTILS = {
     measurePerformance(operation, startTime) {
         const endTime = performance.now();
         const duration = (endTime - startTime).toFixed(2);
-        console.log(`⏱️ ${operation} completed in ${duration}ms`);
+        // Performance measurement completed
         return duration;
     },
     
@@ -768,7 +767,7 @@ const NAD_UTILS = {
             await navigator.clipboard.writeText(text);
             return true;
         } catch (error) {
-            console.warn('Clipboard API failed, using fallback');
+            // Clipboard API failed, using fallback
             // Fallback for older browsers
             const textArea = document.createElement('textarea');
             textArea.value = text;
@@ -788,7 +787,7 @@ const NAD_UTILS = {
      * Handle API errors consistently
      */
     handleApiError(error, context = '') {
-        console.error(`❌ API Error ${context}:`, error);
+        // API Error occurred
         
         let message = NAD_CONFIG.ERROR_MESSAGES.API_ERROR;
         
@@ -871,15 +870,15 @@ const NAD_UTILS = {
      * Initialize utilities
      */
     init() {
-        console.log('🔧 Initializing NAD utilities...');
+        // Initialize NAD utilities
         
         // Set up global error handling
         window.addEventListener('error', (e) => {
-            console.error('Global error:', e.error);
+            // Global error occurred
         });
         
         window.addEventListener('unhandledrejection', (e) => {
-            console.error('Unhandled promise rejection:', e.reason);
+            // Unhandled promise rejection
         });
         
         // Set up responsive event listeners
@@ -896,7 +895,7 @@ const NAD_UTILS = {
             }));
         }, 250));
         
-        console.log('✅ NAD utilities initialized successfully');
+        // NAD utilities initialized successfully
     }
 };
 
@@ -917,5 +916,4 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = NAD_UTILS;
 }
 
-console.log('✅ NAD Utility functions loaded successfully');
-console.log('🛠️ Available utilities:', Object.keys(NAD_UTILS).filter(key => typeof NAD_UTILS[key] === 'function').length);
+// NAD Utility functions loaded successfully

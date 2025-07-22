@@ -89,7 +89,7 @@ NAD.events = {
             try {
                 callback(...args);
             } catch (error) {
-                console.error(`Error in event listener for '${event}':`, error);
+                // Error in event listener
             }
         });
     }
@@ -98,18 +98,18 @@ NAD.events = {
 // Logger
 NAD.logger = {
     debug(...args) {
-        if (NAD.config.debug) console.log('[NAD DEBUG]', ...args);
+        // Debug logging disabled
     },
     info(...args) {
-        console.info('[NAD INFO]', ...args);
+        // Info logging disabled
     },
     warn(...args) {
-        console.warn('[NAD WARN]', ...args);
+        // Warning logging disabled
     },
     error(...args) {
-        console.error('[NAD ERROR]', ...args);
+        // Error logging disabled
     }
 };
 
 // Initialize
-NAD.logger.info('NAD Core utilities loaded');
+// NAD Core utilities loaded

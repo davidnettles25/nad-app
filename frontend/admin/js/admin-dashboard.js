@@ -3,10 +3,10 @@ const API_BASE = 'https://mynadtest.info';
 let allSupplements = [];
 let filteredSupplements = [];
 
-console.log('🚀 FINAL FIX Admin Dashboard Loaded');
+// FINAL FIX Admin Dashboard Loaded
 
 async function loadSupplements() {
-    console.log('💊 Loading supplements...');
+    // Loading supplements
     try {
         const response = await fetch(API_BASE + '/api/supplements');
         const data = await response.json();
@@ -15,10 +15,9 @@ async function loadSupplements() {
             allSupplements = data.supplements || [];
             filteredSupplements = [...allSupplements];
             renderSupplementsTable();
-            console.log('✅ Loaded ' + allSupplements.length + ' supplements');
         }
     } catch (error) {
-        console.error('❌ Error loading supplements:', error);
+        // Error loading supplements
     }
 }
 
@@ -50,7 +49,7 @@ function showAddSupplementForm() {
 }
 
 function editSupplementFinal(id) {
-    console.log('📝 FINAL Edit supplement:', id);
+    // Edit supplement
     
     let supplement = null;
     let isEdit = false;
@@ -58,9 +57,9 @@ function editSupplementFinal(id) {
     if (id !== null) {
         supplement = allSupplements.find(s => s.id == id);
         isEdit = true;
-        console.log('✅ Found supplement for edit:', supplement);
+        // Found supplement for edit
     } else {
-        console.log('📝 Creating new supplement');
+        // Creating new supplement
     }
     
     // Remove any existing modal
@@ -134,7 +133,7 @@ function editSupplementFinal(id) {
     `;
     
     document.body.appendChild(modal);
-    console.log('✅ FINAL Modal created with unique IDs');
+    // Modal created with unique IDs
     
     // Focus on name field
     setTimeout(() => {
@@ -147,7 +146,7 @@ function editSupplementFinal(id) {
 }
 
 async function saveFinalSupplement(editId) {
-    console.log('💾 FINAL Save function called, editId:', editId);
+    // Save function called
     
     const isEdit = editId !== null;
     const idPrefix = 'final-';
@@ -162,8 +161,7 @@ async function saveFinalSupplement(editId) {
         is_active: document.getElementById(idPrefix + 'supplement-active').checked
     };
     
-    console.log('📝 FINAL Form data:', data);
-    console.log('🔄 FINAL Is edit mode:', isEdit, 'ID:', editId);
+    // Form data collected
     
     if (!data.name || !data.category) {
         showAlert('Please fill in required fields (Name and Category)', 'error');
@@ -176,7 +174,7 @@ async function saveFinalSupplement(editId) {
             API_BASE + '/api/supplements';
         const method = isEdit ? 'PUT' : 'POST';
         
-        console.log('🌐 FINAL Request:', method, url);
+        // Making request
         
         const response = await fetch(url, {
             method: method,
@@ -195,7 +193,7 @@ async function saveFinalSupplement(editId) {
         }
         
     } catch (error) {
-        console.error('❌ FINAL Error saving supplement:', error);
+        // Error saving supplement
         showAlert('❌ Failed to save: ' + error.message, 'error');
     }
 }
@@ -206,7 +204,7 @@ function closeFinalModal() {
 }
 
 function showAlert(message, type) {
-    console.log('📢 Alert:', message);
+    // Show alert
     
     const existingAlert = document.getElementById('alert');
     if (existingAlert) existingAlert.remove();
@@ -240,4 +238,4 @@ window.closeFinalModal = closeFinalModal;
 window.saveFinalSupplement = saveFinalSupplement;
 window.showAlert = showAlert;
 
-console.log('✅ FINAL FIX dashboard loaded');
+// FINAL FIX dashboard loaded

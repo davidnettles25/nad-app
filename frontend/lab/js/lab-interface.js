@@ -1,25 +1,11 @@
 // Main lab controller - Version 20250719-1
-console.log('🔄 Loading NAD Lab Interface JS - Version 20250719-1');
 
 window.NADLab = {
     init() {
-        console.log('Initializing NAD Lab Interface');
+        // Initialize NAD Lab Interface
         
-        // Diagnostic: Check what containers exist in the DOM
-        console.log('DOM Container Check:');
-        console.log('- header-container:', !!document.getElementById('header-container'));
-        console.log('- queue-container:', !!document.getElementById('queue-container'));
-        console.log('- recent-container:', !!document.getElementById('recent-container'));
-        console.log('- modal-container:', !!document.getElementById('modal-container'));
-        
-        // Also check the HTML structure
+        // Check DOM containers exist
         const labContainer = document.querySelector('.lab-container');
-        if (labContainer) {
-            console.log('Lab container children:', labContainer.children.length);
-            for (let i = 0; i < labContainer.children.length; i++) {
-                console.log(`  Child ${i}:`, labContainer.children[i].id || labContainer.children[i].className);
-            }
-        }
         
         // Ensure modal container exists BEFORE loading components
         this.ensureModalContainer();
@@ -32,13 +18,10 @@ window.NADLab = {
     ensureModalContainer() {
         let modalContainer = document.getElementById('modal-container');
         if (!modalContainer) {
-            console.warn('Modal container not found in HTML, creating it...');
+            // Create modal container if missing
             modalContainer = document.createElement('div');
             modalContainer.id = 'modal-container';
             document.querySelector('.lab-container').appendChild(modalContainer);
-            console.log('Modal container created and added to DOM');
-        } else {
-            console.log('Modal container found in DOM');
         }
     },
     
@@ -53,15 +36,11 @@ window.NADLab = {
             // Load recent tests
             await this.loadComponent('recent-tests', '#recent-container');
             
-            // Load process modal (container should exist from ensureModalContainer)
-            console.log('Loading process modal...');
+            // Load process modal
             await this.loadComponent('process-test-modal', '#modal-container');
-            console.log('Process modal loaded');
             
             // Load edit modal
-            console.log('Loading edit modal...');
             await this.loadComponent('edit-test-modal', '#modal-container');
-            console.log('Edit modal loaded');
             
             // Load pending tests once all components are loaded
             setTimeout(() => {
@@ -71,24 +50,20 @@ window.NADLab = {
             }, 500);
             
         } catch (error) {
-            console.error('Error loading components:', error);
             this.showError('Failed to load lab interface components');
         }
     },
     
     async loadComponent(componentName, targetSelector) {
         try {
-            console.log(`Loading component: ${componentName} into ${targetSelector}`);
+            // Load component HTML
             const response = await fetch(`lab/components/${componentName}.html`);
             if (!response.ok) {
                 throw new Error(`Failed to load ${componentName}`);
             }
             
             const html = await response.text();
-            console.log(`Component HTML length: ${html.length}`);
-            
             const target = document.querySelector(targetSelector);
-            console.log(`Target element found: ${!!target}`);
             
             if (target) {
                 // For modal container, append instead of replace to allow multiple modals
@@ -97,20 +72,8 @@ window.NADLab = {
                 } else {
                     target.innerHTML = html;
                 }
-                console.log(`Component ${componentName} inserted into DOM`);
-                
-                // Special handling for modal component
-                if (componentName === 'process-test-modal') {
-                    setTimeout(() => {
-                        const modal = document.getElementById('process-test-modal');
-                        console.log(`Modal element check after insert: ${!!modal}`);
-                    }, 100);
-                }
-            } else {
-                console.error(`Target selector ${targetSelector} not found!`);
             }
         } catch (error) {
-            console.error(`Error loading ${componentName}:`, error);
             // Create basic fallback content
             const target = document.querySelector(targetSelector);
             if (target) {
@@ -126,11 +89,9 @@ window.NADLab = {
             
             if (data.success) {
                 this.updateStats(data.stats);
-            } else {
-                console.error('Failed to load stats:', data.message);
             }
         } catch (error) {
-            console.error('Error loading stats:', error);
+            // Stats loading failed
         }
     },
     
@@ -151,11 +112,9 @@ window.NADLab = {
             
             if (data.success) {
                 this.renderPendingTests(data.tests);
-            } else {
-                console.error('Failed to load pending tests:', data.message);
             }
         } catch (error) {
-            console.error('Error loading pending tests:', error);
+            // Pending tests loading failed
         }
     },
     
@@ -202,14 +161,12 @@ window.NADLab = {
             if (data.success) {
                 this.renderRecentTests(data.tests);
             } else {
-                console.error('Failed to load recent tests:', data.message);
                 const container = document.getElementById('recent-tests-list');
                 if (container) {
                     container.innerHTML = '<p class="error-message">Failed to load recent tests</p>';
                 }
             }
         } catch (error) {
-            console.error('Error loading recent tests:', error);
             const container = document.getElementById('recent-tests-list');
             if (container) {
                 container.innerHTML = '<p class="error-message">Error loading recent tests</p>';
@@ -255,14 +212,8 @@ window.NADLab = {
     },
     
     openProcessModal(testId) {
-        console.log('Opening process modal for test:', testId);
-        
-        // First check if modal container exists
+        // Open process modal for test
         const modalContainer = document.getElementById('modal-container');
-        console.log('Modal container found:', !!modalContainer);
-        if (modalContainer) {
-            console.log('Modal container HTML:', modalContainer.innerHTML.substring(0, 100) + '...');
-        }
         
         // Find the test data
         const testData = this.currentTests.find(test => test.test_id === testId);
@@ -286,23 +237,12 @@ window.NADLab = {
         const errorMessage = document.getElementById('modal-error-message');
         const modal = document.getElementById('process-test-modal');
         
-        console.log('Modal elements found:', {
-            modalTestId: !!modalTestId,
-            modalBatchId: !!modalBatchId,
-            modalActivatedDate: !!modalActivatedDate,
-            technicianEmailField: !!technicianEmailField,
-            processForm: !!processForm,
-            modal: !!modal
-        });
-        
         if (!modal) {
-            console.error('Modal not found! Attempting to reload modal component...');
             // Try to reload the modal component
             this.loadComponent('process-test-modal', '#modal-container').then(() => {
                 setTimeout(() => {
                     const reloadedModal = document.getElementById('process-test-modal');
                     if (reloadedModal) {
-                        console.log('Modal reloaded successfully');
                         this.openProcessModal(testId); // Retry
                     } else {
                         alert('Failed to load modal component. Please refresh the page.');
@@ -332,11 +272,10 @@ window.NADLab = {
     },
 
     getTechnicianEmail() {
-        console.log('Getting technician email...');
+        // Get technician email from various sources
         
         // Try to get from multipass data first
         if (window.shopifyMultipass && window.shopifyMultipass.email) {
-            console.log('Found email in multipass:', window.shopifyMultipass.email);
             return window.shopifyMultipass.email;
         }
         
@@ -344,7 +283,6 @@ window.NADLab = {
         const urlParams = new URLSearchParams(window.location.search);
         const emailFromUrl = urlParams.get('email');
         if (emailFromUrl) {
-            console.log('Found email in URL:', emailFromUrl);
             return emailFromUrl;
         }
         
@@ -354,16 +292,14 @@ window.NADLab = {
             try {
                 const userData = JSON.parse(storedUser);
                 if (userData.email) {
-                    console.log('Found email in localStorage:', userData.email);
                     return userData.email;
                 }
             } catch (e) {
-                console.warn('Failed to parse stored user data');
+                // Failed to parse stored user data
             }
         }
         
         // Default fallback
-        console.log('Using default email fallback');
         return 'lab-tech@example.com';
     },
     
@@ -373,7 +309,7 @@ window.NADLab = {
     },
 
     openEditModal(testId) {
-        console.log('Opening edit modal for test:', testId);
+        // Open edit modal for test
         
         // Get the test data from recent tests
         const testData = this.recentTests?.find(test => test.test_id === testId);
@@ -400,7 +336,6 @@ window.NADLab = {
         const modal = document.getElementById('edit-test-modal');
         
         if (!modal) {
-            console.error('Edit modal not found!');
             alert('Edit modal not loaded. Please refresh the page.');
             return;
         }
@@ -454,7 +389,6 @@ window.NADLab = {
                 throw new Error(data.message || 'Processing failed');
             }
         } catch (error) {
-            console.error('Error processing test:', error);
             this.showModalError(error.message || 'Error processing test. Please try again.');
         }
     },
@@ -473,30 +407,24 @@ window.NADLab = {
     },
     
     setupModalEventListeners() {
-        console.log('Setting up modal event listeners...');
+        // Set up modal event listeners
         
         // Add a small delay to ensure modals are fully loaded
         setTimeout(() => {
             const processForm = document.getElementById('process-test-form');
             if (processForm) {
-                console.log('Process modal form found, adding event listener');
                 processForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     this.handleProcessFormSubmit();
                 });
-            } else {
-                console.error('Process modal form not found!');
             }
             
             const editForm = document.getElementById('edit-test-form');
             if (editForm) {
-                console.log('Edit modal form found, adding event listener');
                 editForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     this.handleEditFormSubmit();
                 });
-            } else {
-                console.error('Edit modal form not found!');
             }
         }, 100);
         
@@ -604,7 +532,6 @@ window.NADLab = {
                 throw new Error(data.message || 'Update failed');
             }
         } catch (error) {
-            console.error('Error updating test:', error);
             this.showEditModalError(error.message || 'Error updating test. Please try again.');
         }
     },
