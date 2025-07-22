@@ -421,6 +421,7 @@ window.NADCustomer = {
         }
         
         console.log('initResultsHandlers called, testData:', this.testData);
+        console.log('Supplement data check:', this.testData?.supplements);
         
         // Populate results data
         const testIdElement = document.getElementById('results-test-id');
@@ -436,11 +437,15 @@ window.NADCustomer = {
         
         const supplementsCountElement = document.getElementById('results-supplements-count');
         if (supplementsCountElement) {
+            console.log('Processing supplements for display:', this.testData?.supplements);
+            
             // Check if we have supplement data
             if (this.testData && this.testData.supplements) {
                 const selectedCount = this.testData.supplements.selected ? this.testData.supplements.selected.length : 0;
                 const hasOther = this.testData.supplements.other && this.testData.supplements.other.trim() !== '';
                 const totalCount = selectedCount + (hasOther ? 1 : 0);
+                
+                console.log('Supplement counts - Selected:', selectedCount, 'HasOther:', hasOther, 'Total:', totalCount);
                 
                 if (totalCount > 0) {
                     // Build a more detailed display
@@ -451,11 +456,15 @@ window.NADCustomer = {
                     if (hasOther) {
                         supplementNames.push('Other supplements');
                     }
-                    supplementsCountElement.textContent = `${totalCount} recorded (${supplementNames.slice(0, 3).join(', ')}${supplementNames.length > 3 ? '...' : ''})`;
+                    const displayText = `${totalCount} recorded (${supplementNames.slice(0, 3).join(', ')}${supplementNames.length > 3 ? '...' : ''})`;
+                    console.log('Setting supplement display text to:', displayText);
+                    supplementsCountElement.textContent = displayText;
                 } else {
+                    console.log('No supplements found, showing None recorded');
                     supplementsCountElement.textContent = 'None recorded';
                 }
             } else {
+                console.log('No supplement data in testData, showing None recorded');
                 supplementsCountElement.textContent = 'None recorded';
             }
         }
@@ -776,9 +785,13 @@ window.NADCustomer = {
                             </div>
                         ` : ''}
                         
-                        ${test.supplements && test.supplements.length > 0 ? `
+                        ${test.supplements && Array.isArray(test.supplements) && test.supplements.length > 0 ? `
                             <div class="supplements-summary">
-                                ${test.supplements.length} supplements recorded
+                                ${test.supplements.length} supplement${test.supplements.length !== 1 ? 's' : ''} recorded
+                            </div>
+                        ` : test.has_supplements ? `
+                            <div class="supplements-summary">
+                                Supplements recorded
                             </div>
                         ` : ''}
                     </div>
