@@ -8,8 +8,16 @@ const path = require('path');
 const fs = require('fs').promises;
 require('dotenv').config();
 
-// Initialize Pino logger
-const { createLogger, requestLoggingMiddleware } = require('./logger');
+// Initialize logger (try Pino first, fallback to simple logger)
+let logger;
+try {
+    logger = require('./logger');
+    console.log('✅ Pino logger loaded successfully');
+} catch (error) {
+    console.warn('⚠️ Pino logger failed to load, using fallback:', error.message);
+    logger = require('./logger-fallback');
+}
+const { createLogger, requestLoggingMiddleware } = logger;
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -3414,12 +3422,13 @@ app.get('/api/debug/supplements/:testId', async (req, res) => {
 // Get current log configuration
 app.get('/api/admin/log-config', (req, res) => {
     try {
-        const { getLogConfig } = require('./logger');
+        const { getLogConfig } = logger;
         const config = getLogConfig();
         
         res.json({
             success: true,
-            config: config
+            config: config,
+            usingFallback: !config.files.enabled
         });
     } catch (error) {
         console.error('Error getting log configuration:', error);
@@ -3433,7 +3442,7 @@ app.get('/api/admin/log-config', (req, res) => {
 // Update log configuration
 app.post('/api/admin/log-config', (req, res) => {
     try {
-        const { updateLogConfig } = require('./logger');
+        const { updateLogConfig } = logger;
         const newConfig = req.body;
         
         // Validate configuration
@@ -3472,7 +3481,8 @@ app.get('/api/admin/log-files', (req, res) => {
         if (!fs.existsSync(logsDir)) {
             return res.json({
                 success: true,
-                files: []
+                files: [],
+                message: 'Log directory does not exist. File logging may be disabled.'
             });
         }
         
