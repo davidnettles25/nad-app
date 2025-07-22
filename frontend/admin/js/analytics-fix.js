@@ -348,48 +348,52 @@ function generateTestDetailsCSV(testData, reportDate, period) {
  */
 function analyzeSupplementData(testData) {
     const supplementFields = new Set();
+    let maxSupplements = 0;
     
     console.log('🔍 Analyzing supplement data from', testData.length, 'test records');
     
     testData.forEach((test, testIndex) => {
         if (test.supplements_with_dose) {
-            console.log(`Test ${testIndex + 1} supplement data:`, typeof test.supplements_with_dose, test.supplements_with_dose);
             try {
-                let supplements;
+                let supplementData;
                 if (typeof test.supplements_with_dose === 'string') {
-                    supplements = JSON.parse(test.supplements_with_dose);
+                    supplementData = JSON.parse(test.supplements_with_dose);
                 } else {
-                    supplements = test.supplements_with_dose;
+                    supplementData = test.supplements_with_dose;
                 }
                 
-                console.log(`Test ${testIndex + 1} parsed supplements:`, supplements);
-                
-                if (Array.isArray(supplements)) {
-                    supplements.forEach((supplement, index) => {
-                        console.log(`Test ${testIndex + 1}, Supplement ${index + 1}:`, supplement);
-                        if (supplement && supplement.name) {
-                            supplementFields.add(`Supplement_${index + 1}_Name`);
-                            supplementFields.add(`Supplement_${index + 1}_Dose`);
-                            supplementFields.add(`Supplement_${index + 1}_Frequency`);
-                        }
-                    });
-                } else if (supplements && typeof supplements === 'object') {
-                    // Handle non-array supplement data
-                    console.log('Non-array supplement object found:', supplements);
-                    supplementFields.add('Supplement_1_Name');
-                    supplementFields.add('Supplement_1_Dose');
-                    supplementFields.add('Supplement_1_Frequency');
+                // Handle the actual data structure: {selected: [...], other: "...", health_conditions: "..."}
+                if (supplementData && supplementData.selected && Array.isArray(supplementData.selected)) {
+                    const numSupplements = supplementData.selected.length;
+                    maxSupplements = Math.max(maxSupplements, numSupplements);
+                    console.log(`Test ${testIndex + 1} has ${numSupplements} supplements`);
                 }
+                
+                // Always add health conditions and other supplements fields
+                if (supplementData.health_conditions) {
+                    supplementFields.add('Health_Conditions');
+                }
+                if (supplementData.other) {
+                    supplementFields.add('Other_Supplements');
+                }
+                
             } catch (e) {
                 console.log(`Test ${testIndex + 1} supplement parsing error:`, e.message);
-                // Handle non-JSON supplement data
                 supplementFields.add('Supplements_Raw_Data');
             }
         }
     });
     
+    // Add columns for the maximum number of supplements found
+    for (let i = 1; i <= maxSupplements; i++) {
+        supplementFields.add(`Supplement_${i}_Name`);
+        supplementFields.add(`Supplement_${i}_Amount`);
+        supplementFields.add(`Supplement_${i}_Unit`);
+    }
+    
     const fields = Array.from(supplementFields).sort();
     console.log('📊 Supplement fields found:', fields);
+    console.log('📊 Max supplements in any test:', maxSupplements);
     
     return fields;
 }
@@ -405,30 +409,41 @@ function parseSupplementData(supplementsData) {
     console.log('🔧 Parsing supplement data:', typeof supplementsData, supplementsData);
     
     try {
-        let supplements;
+        let supplementData;
         if (typeof supplementsData === 'string') {
-            supplements = JSON.parse(supplementsData);
+            supplementData = JSON.parse(supplementsData);
         } else {
-            supplements = supplementsData;
+            supplementData = supplementsData;
         }
         
-        console.log('🔧 Parsed supplements:', supplements);
+        console.log('🔧 Parsed supplement data:', supplementData);
         
-        if (Array.isArray(supplements)) {
-            supplements.forEach((supplement, index) => {
-                if (supplement && supplement.name) {
-                    result[`Supplement_${index + 1}_Name`] = supplement.name;
-                    result[`Supplement_${index + 1}_Dose`] = supplement.dose || '';
-                    result[`Supplement_${index + 1}_Frequency`] = supplement.frequency || '';
-                    console.log(`🔧 Added supplement ${index + 1}:`, supplement.name, supplement.dose, supplement.frequency);
-                }
-            });
-        } else if (supplements && typeof supplements === 'object') {
-            // Handle non-array supplement object
-            console.log('🔧 Handling non-array supplement object');
-            result['Supplement_1_Name'] = supplements.name || '';
-            result['Supplement_1_Dose'] = supplements.dose || '';
-            result['Supplement_1_Frequency'] = supplements.frequency || '';
+        // Handle the actual structure: {selected: [...], other: "...", health_conditions: "..."}
+        if (supplementData && typeof supplementData === 'object') {
+            
+            // Parse selected supplements
+            if (supplementData.selected && Array.isArray(supplementData.selected)) {
+                supplementData.selected.forEach((supplement, index) => {
+                    if (supplement && supplement.name) {
+                        result[`Supplement_${index + 1}_Name`] = supplement.name;
+                        result[`Supplement_${index + 1}_Amount`] = supplement.amount || '';
+                        result[`Supplement_${index + 1}_Unit`] = supplement.unit || '';
+                        console.log(`🔧 Added supplement ${index + 1}:`, supplement.name, supplement.amount, supplement.unit);
+                    }
+                });
+            }
+            
+            // Add health conditions
+            if (supplementData.health_conditions) {
+                result['Health_Conditions'] = cleanText(supplementData.health_conditions);
+                console.log('🔧 Added health conditions:', supplementData.health_conditions);
+            }
+            
+            // Add other supplements
+            if (supplementData.other) {
+                result['Other_Supplements'] = cleanText(supplementData.other);
+                console.log('🔧 Added other supplements:', supplementData.other);
+            }
         }
     } catch (e) {
         console.log('🔧 Error parsing supplement data:', e.message);
