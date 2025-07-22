@@ -227,20 +227,26 @@ window.NADCustomer = {
         // Handle form submission
         const form = document.getElementById('supplement-form');
         if (form) {
+            console.log('📋 Form submission handler attached to:', form);
             form.addEventListener('submit', (e) => {
+                console.log('📋 Form submit event triggered');
                 e.preventDefault();
                 this.handleSupplementSubmission();
             });
+        } else {
+            console.log('❌ No supplement form found with ID "supplement-form"');
         }
         
         // Supplement selection is now handled by setupSupplementCheckboxes()
     },
     
     async handleSupplementSubmission() {
+        console.log('🚀 handleSupplementSubmission called');
         try {
             // Show loading state
             const button = document.querySelector('[data-action="next-step"]');
             const originalText = button.textContent;
+            console.log('🔄 Setting button to loading state');
             button.textContent = 'Activating Test...';
             button.disabled = true;
             
@@ -483,7 +489,15 @@ window.NADCustomer = {
     setupEventListeners() {
         document.addEventListener('click', (e) => {
             if (e.target.matches('[data-action="next-step"]')) {
-                this.nextStep();
+                // Check if we're on the supplements step
+                if (this.currentStep === 2) {
+                    console.log('🎯 Next-step clicked on supplements page, calling handleSupplementSubmission');
+                    e.preventDefault();
+                    this.handleSupplementSubmission();
+                } else {
+                    console.log('🎯 Next-step clicked on step', this.currentStep, 'calling nextStep');
+                    this.nextStep();
+                }
             }
             if (e.target.matches('[data-action="prev-step"]')) {
                 this.prevStep();
