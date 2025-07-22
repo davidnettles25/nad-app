@@ -2222,6 +2222,56 @@ app.get('/api/admin/export/:type', async (req, res) => {
     }
 });
 
+// Export Test Details with Date Filtering (for CSV export)
+app.get('/api/admin/export/test-details', async (req, res) => {
+    try {
+        const { period } = req.query;
+        
+        // Build date filter based on period
+        let dateFilter = '';
+        if (period && period !== 'all') {
+            const days = parseInt(period);
+            dateFilter = `AND ti.created_date >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+        }
+        
+        const [testData] = await db.execute(`
+            SELECT 
+                ti.test_id,
+                ti.customer_id,
+                ti.created_date,
+                ti.activated_date,
+                ti.status,
+                ts.score,
+                ts.score_submission_date,
+                ts.technician_id,
+                ts.notes as technician_notes,
+                us.supplements_with_dose,
+                us.habits_notes,
+                us.created_at as supplements_recorded_date
+            FROM nad_test_ids ti
+            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id
+            WHERE 1=1 ${dateFilter}
+            ORDER BY ti.created_date DESC
+        `);
+        
+        res.json({
+            success: true,
+            data: testData,
+            total_records: testData.length,
+            export_period: period || 'all',
+            export_date: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('Error exporting test details:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to export test details: ' + error.message 
+        });
+    }
+});
+
 // ============================================================================
 // ANALYTICS ENDPOINTS
 // ============================================================================
