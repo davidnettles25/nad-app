@@ -2227,14 +2227,8 @@ app.get('/api/admin/export/test-details', async (req, res) => {
     try {
         const { period } = req.query;
         
-        // Build date filter based on period
-        let dateFilter = '';
-        if (period && period !== 'all') {
-            const days = parseInt(period);
-            dateFilter = `AND ti.created_date >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
-        }
-        
-        const [testData] = await db.execute(`
+        // Build query and parameters based on period
+        let query = `
             SELECT 
                 ti.test_id,
                 ti.customer_id,
@@ -2251,9 +2245,24 @@ app.get('/api/admin/export/test-details', async (req, res) => {
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
             LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id
-            WHERE 1=1 ${dateFilter}
-            ORDER BY ti.created_date DESC
-        `);
+        `;
+        
+        let queryParams = [];
+        
+        if (period && period !== 'all') {
+            const days = parseInt(period);
+            if (!isNaN(days) && days > 0) {
+                query += ` WHERE ti.created_date >= DATE_SUB(NOW(), INTERVAL ? DAY)`;
+                queryParams.push(days);
+            }
+        }
+        
+        query += ` ORDER BY ti.created_date DESC`;
+        
+        console.log('Executing test details export query:', query);
+        console.log('Query parameters:', queryParams);
+        
+        const [testData] = await db.execute(query, queryParams);
         
         res.json({
             success: true,
