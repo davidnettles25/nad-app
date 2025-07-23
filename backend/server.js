@@ -2997,6 +2997,11 @@ app.get('/api/admin/printable-batches', async (req, res) => {
                 printStatus = printedCount === totalTests ? 'fully_printed' : 'partially_printed';
             }
             
+            // Debug log for batches that should be fully printed but aren't
+            if (printedCount > 0 && printedCount !== totalTests) {
+                console.log(`⚠️ Batch ${batch.batch_id}: ${printedCount}/${totalTests} printed (should be ${totalTests}/${totalTests})`);
+            }
+            
             return {
                 batch_id: batch.batch_id,
                 batch_size: batch.test_count,
@@ -3230,6 +3235,19 @@ app.post('/api/admin/print-batch', async (req, res) => {
             WHERE batch_id = ?
         `, [batch_id]);
         
+        // Debug: Check final print status after update
+        const [finalCheck] = await db.execute(`
+            SELECT 
+                batch_id,
+                COUNT(*) as total_tests,
+                SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) as printed_tests,
+                COUNT(*) - SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) as unprinted_tests
+            FROM nad_test_ids 
+            WHERE batch_id = ?
+        `, [batch_id]);
+        
+        console.log(`🖨️ Batch ${batch_id} print status:`, finalCheck[0]);
+        
         // Return success response
         res.json({
             success: true,
@@ -3237,6 +3255,7 @@ app.post('/api/admin/print-batch', async (req, res) => {
             data: {
                 print_job_id: printJobId,
                 batch_id: batch_id,
+                debug: finalCheck[0],
                 print_format: print_format,
                 printer_name: printer_name || 'default',
                 test_count: tests.length,
@@ -3256,8 +3275,54 @@ app.post('/api/admin/print-batch', async (req, res) => {
     }
 });
 
+// Debug endpoint to check batch print status
+app.get('/api/admin/debug-batch/:batchId', async (req, res) => {
+    try {
+        const { batchId } = req.params;
+        
+        // Get detailed batch info
+        const [batchInfo] = await db.execute(`
+            SELECT 
+                test_id,
+                batch_id,
+                status,
+                is_printed,
+                printed_date,
+                created_date
+            FROM nad_test_ids 
+            WHERE batch_id = ?
+            ORDER BY test_id
+        `, [batchId]);
+        
+        const totalTests = batchInfo.length;
+        const printedTests = batchInfo.filter(t => t.is_printed === 1).length;
+        const unprintedTests = batchInfo.filter(t => t.is_printed === 0).length;
+        
+        res.json({
+            success: true,
+            batch_id: batchId,
+            summary: {
+                total_tests: totalTests,
+                printed_tests: printedTests,
+                unprinted_tests: unprintedTests,
+                status: printedTests === 0 ? 'not_printed' : 
+                       printedTests === totalTests ? 'fully_printed' : 'partially_printed'
+            },
+            tests: batchInfo
+        });
+        
+    } catch (error) {
+        console.error('Error debugging batch:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to debug batch',
+            details: error.message
+        });
+    }
+});
+
 // ============================================================================
-// CUSTOMER PORTAL ENDPOINTS
+// CUSTOMER PORTAL ENDPOINTS  
 // ============================================================================
 
 app.post('/api/customer/verify-test', async (req, res) => {

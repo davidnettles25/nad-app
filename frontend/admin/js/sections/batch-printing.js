@@ -333,8 +333,18 @@ async function printSelectedBatch() {
         const result = await response.json();
         
         if (result.success) {
+            // Show debug info if available
+            let debugInfo = '';
+            if (result.data.debug) {
+                const d = result.data.debug;
+                debugInfo = ` | Debug: ${d.printed_tests}/${d.total_tests} tests printed`;
+                if (d.unprinted_tests > 0) {
+                    debugInfo += ` (${d.unprinted_tests} NOT printed!)`;
+                }
+            }
+            
             if (typeof showAlert === 'function') {
-                showAlert(`✅ Batch queued for printing! Job ID: ${result.data.print_job_id}`, 'success');
+                showAlert(`✅ Batch queued for printing! Job ID: ${result.data.print_job_id}${debugInfo}`, 'success');
             }
             
             // Open print window
