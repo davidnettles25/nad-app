@@ -2988,8 +2988,8 @@ app.get('/api/admin/printable-batches', async (req, res) => {
         // Format the batches
         const formattedBatches = batches.map(batch => {
             const testIds = batch.all_test_ids.split(', ');
-            const printedCount = batch.printed_count || 0;
-            const totalTests = batch.test_count;
+            const printedCount = parseInt(batch.printed_count) || 0;  // Convert to number
+            const totalTests = parseInt(batch.test_count);            // Convert to number
             
             // Determine print status
             let printStatus = 'not_printed';
@@ -3340,7 +3340,7 @@ app.get('/api/admin/debug-batch/:batchId', async (req, res) => {
                 status: printedTests === 0 ? 'not_printed' : 
                        printedTests === totalTests ? 'fully_printed' : 'partially_printed'
             },
-            batch_list_data: batchListData[0] || null,
+            batch_list_data: batchListData,
             similar_batch_ids: allBatchIds,
             tests: batchInfo
         });
