@@ -54,7 +54,7 @@ if (logConfig.console) {
     });
 }
 
-// File streams (basic file destinations - rotation can be added later)
+// File streams with type-based routing
 const createFileStream = (filename) => {
     try {
         return pino.destination(path.join(logsDir, filename));
@@ -64,23 +64,40 @@ const createFileStream = (filename) => {
     }
 };
 
+// Simplified approach: Use fewer, more focused log files to avoid duplicates
 if (logConfig.files.enabled && fs.existsSync(logsDir)) {
-    const logFiles = [
-        { key: 'app', file: 'app.log', level: 'debug' },
-        { key: 'api', file: 'api.log', level: 'debug' },
-        { key: 'error', file: 'error.log', level: 'error' },
-        { key: 'customer', file: 'customer.log', level: 'info' },
-        { key: 'admin', file: 'admin.log', level: 'info' }
-    ];
-
-    logFiles.forEach(({ key, file, level }) => {
-        if (logConfig.files[key]) {
-            const stream = createFileStream(file);
-            if (stream) {
-                streams.push({ level, stream });
-            }
+    // Main application log (all general app events, API calls, etc.)
+    if (logConfig.files.app || logConfig.files.api) {
+        const appStream = createFileStream('app.log');
+        if (appStream) {
+            streams.push({
+                level: 'debug',
+                stream: appStream
+            });
         }
-    });
+    }
+
+    // Error logs only (level error and above)
+    if (logConfig.files.error) {
+        const errorStream = createFileStream('error.log');
+        if (errorStream) {
+            streams.push({
+                level: 'error',
+                stream: errorStream
+            });
+        }
+    }
+
+    // Admin/Customer specific logs (admin actions, customer interactions)
+    if (logConfig.files.admin || logConfig.files.customer) {
+        const adminStream = createFileStream('admin.log');
+        if (adminStream) {
+            streams.push({
+                level: 'info',
+                stream: adminStream
+            });
+        }
+    }
 }
 
 // Ensure we have at least one stream (fallback to stdout if no streams created)
