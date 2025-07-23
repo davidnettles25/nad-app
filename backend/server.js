@@ -3585,6 +3585,88 @@ app.get('/api/customer/test-history', async (req, res) => {
     }
 });
 
+// Create sample test data for john.doe@example.com (for chart testing)
+app.post('/api/customer/create-sample-data', async (req, res) => {
+    try {
+        const customerId = 'john.doe@example.com';
+        
+        // Check if sample data already exists
+        const [existing] = await db.execute(
+            'SELECT COUNT(*) as count FROM nad_test_ids WHERE customer_id = ?',
+            [customerId]
+        );
+        
+        if (existing[0].count > 0) {
+            return res.json({
+                success: false,
+                message: 'Sample data already exists for john.doe@example.com'
+            });
+        }
+        
+        // Create sample test data
+        const sampleTests = [
+            {
+                test_id: '2024-01-15-12345',
+                status: 'completed',
+                batch_id: 'BATCH001',
+                score: 7.2,
+                score_date: '2024-01-20 10:30:00'
+            },
+            {
+                test_id: '2024-03-22-12346',
+                status: 'completed', 
+                batch_id: 'BATCH002',
+                score: 8.1,
+                score_date: '2024-03-25 14:15:00'
+            },
+            {
+                test_id: '2024-06-10-12347',
+                status: 'completed',
+                batch_id: 'BATCH003', 
+                score: 8.7,
+                score_date: '2024-06-15 09:45:00'
+            },
+            {
+                test_id: '2024-09-01-12348',
+                status: 'completed',
+                batch_id: 'BATCH004',
+                score: 9.3,
+                score_date: '2024-09-05 16:20:00'
+            }
+        ];
+        
+        // Insert test records
+        for (const test of sampleTests) {
+            await db.execute(
+                `INSERT INTO nad_test_ids (test_id, customer_id, status, batch_id, created_date, activated_date)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [test.test_id, customerId, test.status, test.batch_id, test.score_date, test.score_date]
+            );
+            
+            // Insert score records
+            await db.execute(
+                `INSERT INTO nad_test_scores (test_id, score, score_submission_date, technician_id)
+                 VALUES (?, ?, ?, ?)`,
+                [test.test_id, test.score, test.score_date, 'system']
+            );
+        }
+        
+        res.json({
+            success: true,
+            message: `Created ${sampleTests.length} sample tests for ${customerId}`,
+            tests_created: sampleTests.length
+        });
+        
+    } catch (error) {
+        console.error('Error creating sample data:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create sample data',
+            details: error.message
+        });
+    }
+});
+
 app.get('/api/customer/test-detail/:testId', async (req, res) => {
     try {
         const { testId } = req.params;

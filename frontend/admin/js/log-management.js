@@ -159,11 +159,9 @@ async function refreshLogFiles() {
  */
 function getLogFileDescription(filename) {
     const descriptions = {
-        'app.log': 'General application logs including system events, startup, and operational messages',
-        'api.log': 'HTTP API request/response logs with performance metrics and endpoint activity',
+        'app.log': 'Main application logs including API requests, system events, startup, and operational messages',
         'error.log': 'Error messages, exceptions, and critical system failures',
-        'customer.log': 'Customer portal activity, authentication, and user interactions',
-        'admin.log': 'Admin dashboard activity, administrative actions, and configuration changes',
+        'admin.log': 'Admin dashboard activity, customer interactions, administrative actions, and configuration changes',
         'debug.log': 'Detailed debugging information when debug mode is enabled',
         'access.log': 'HTTP access logs with request details and response status codes',
         'performance.log': 'Performance metrics, slow queries, and system resource usage',

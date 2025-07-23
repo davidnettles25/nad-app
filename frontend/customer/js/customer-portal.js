@@ -84,6 +84,7 @@ window.NADCustomer = {
     },
     
     initVerificationHandlers() {
+        console.log('initVerificationHandlers called');
         // Update user greeting
         const nameElement = document.getElementById('user-name');
         const emailElement = document.getElementById('user-email');
@@ -111,6 +112,7 @@ window.NADCustomer = {
         });
         
         // Load test history below the form
+        console.log('About to call loadTestHistorySection');
         this.loadTestHistorySection();
     },
     
@@ -1350,19 +1352,26 @@ window.NADCustomer = {
 
     // Test history section loading
     async loadTestHistorySection() {
+        console.log('loadTestHistorySection called');
         try {
             const testHistorySection = document.getElementById('test-history-section');
             const loadingMessage = document.getElementById('loading-tests');
             
-            if (!testHistorySection) return;
+            console.log('Test history section element:', testHistorySection);
+            if (!testHistorySection) {
+                console.log('No test history section found in DOM');
+                return;
+            }
             
             // Show loading
             if (loadingMessage) loadingMessage.style.display = 'block';
             
             // Load customer test history
             const customerId = this.userData.email;
+            console.log('Loading test history for:', customerId);
             const response = await fetch(`/api/customer/test-history?customer_id=${customerId}`);
             const data = await response.json();
+            console.log('Test history API response:', data);
             
             if (data.success && data.tests.length > 0) {
                 // Show the test history section
@@ -1376,6 +1385,16 @@ window.NADCustomer = {
                 if (totalTestsEl) totalTestsEl.textContent = data.summary.total_tests;
                 if (activatedTestsEl) activatedTestsEl.textContent = data.summary.activated_tests;
                 if (completedTestsEl) completedTestsEl.textContent = data.summary.completed_tests;
+                
+                // Render test history chart if multiple tests exist
+                console.log('Checking if should render chart:', {
+                    test_count: data.tests.length,
+                    should_render: data.tests.length > 1
+                });
+                if (data.tests.length > 1) {
+                    console.log('Calling renderTestHistoryChart with tests:', data.tests);
+                    this.renderTestHistoryChart(data.tests);
+                }
                 
                 // Render test cards
                 this.renderVerificationTestCards(data.tests);
@@ -1448,6 +1467,185 @@ window.NADCustomer = {
         `;
     },
 
+    // Test History Chart Rendering
+    renderTestHistoryChart(tests) {
+        const chartContainer = document.getElementById('test-history-chart-container');
+        const chartCanvas = document.getElementById('test-history-chart');
+        
+        if (!chartContainer || !chartCanvas) {
+            console.log('Chart container or canvas not found');
+            return;
+        }
+        
+        console.log('All tests:', tests);
+        
+        // Debug each test
+        tests.forEach((test, index) => {
+            console.log(`Test ${index + 1}:`, {
+                test_id: test.test_id,
+                status: test.status,
+                score: test.score,
+                score_type: typeof test.score,
+                score_date: test.score_date,
+                has_score: test.score !== null && test.score !== undefined,
+                full_test: test
+            });
+        });
+        
+        // Filter tests with completed status and NAD scores
+        const completedTests = tests.filter(test => 
+            test.status === 'completed' && 
+            test.score !== null && 
+            test.score !== undefined &&
+            test.score_date
+        );
+        
+        console.log('Completed tests with scores:', completedTests);
+        
+        // Only show chart if we have at least 2 completed tests
+        if (completedTests.length < 2) {
+            console.log(`Not enough completed tests with scores: ${completedTests.length} (need at least 2)`);
+            chartContainer.style.display = 'none';
+            return;
+        }
+        
+        console.log(`Showing chart with ${completedTests.length} tests`);
+        
+        // Sort tests by completion date
+        completedTests.sort((a, b) => new Date(a.score_date) - new Date(b.score_date));
+        
+        // Prepare chart data
+        const labels = completedTests.map(test => {
+            const date = new Date(test.score_date);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+            });
+        });
+        
+        const nadScores = completedTests.map(test => parseFloat(test.score));
+        
+        // Show the chart container
+        chartContainer.style.display = 'block';
+        
+        // Destroy existing chart if it exists
+        if (this.testHistoryChart) {
+            this.testHistoryChart.destroy();
+        }
+        
+        // Create the chart
+        this.testHistoryChart = new Chart(chartCanvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'NAD+ Level',
+                    data: nadScores,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#3498db',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointHoverBackgroundColor: '#2980b9',
+                    pointHoverBorderColor: '#ffffff',
+                    pointHoverBorderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(44, 62, 80, 0.9)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: '#3498db',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                const testIndex = context[0].dataIndex;
+                                const test = completedTests[testIndex];
+                                return `Test ${test.test_id}`;
+                            },
+                            label: function(context) {
+                                return `NAD+ Level: ${context.parsed.y.toFixed(1)}`;
+                            },
+                            afterLabel: function(context) {
+                                const testIndex = context.dataIndex;
+                                const test = completedTests[testIndex];
+                                const date = new Date(test.score_date);
+                                return `Completed: ${date.toLocaleDateString('en-US', { 
+                                    weekday: 'short',
+                                    year: 'numeric', 
+                                    month: 'short', 
+                                    day: 'numeric' 
+                                })}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#7f8c8d',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#7f8c8d',
+                            font: {
+                                size: 12
+                            },
+                            callback: function(value) {
+                                return value.toFixed(1);
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'NAD+ Level',
+                            color: '#2c3e50',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        hoverBorderWidth: 3
+                    }
+                }
+            }
+        });
+    },
+
     // Revert to original init method
     init() {
         // Initialize NAD Customer Portal
@@ -1460,5 +1658,6 @@ window.NADCustomer = {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing NADCustomer');
     window.NADCustomer.init();
 });
