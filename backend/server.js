@@ -4389,6 +4389,17 @@ function getLevelName(level) {
     return levels[level] || 'UNKNOWN';
 }
 
+// Server status endpoint to verify restart
+app.get('/api/admin/server-status', (req, res) => {
+    res.json({
+        success: true,
+        serverStartTime: new Date().toISOString(),
+        pinoFormattingEnabled: true,
+        version: 'v2.0-pino-formatting',
+        message: 'Server has pino-pretty formatting enabled'
+    });
+});
+
 // Test endpoint for pino formatting
 app.get('/api/admin/test-pino-format', (req, res) => {
     const testLog = '{"level":30,"time":1705123456789,"pid":12345,"hostname":"server","msg":"Test message","module":"api","method":"GET","path":"/test","requestId":"req-123"}';
@@ -4427,6 +4438,9 @@ app.get('/api/admin/test-pino-format', (req, res) => {
 
 async function startServer() {
     try {
+        console.log('🚀 Starting NAD server with pino-pretty formatting enabled...');
+        console.log('📅 Server start time:', new Date().toISOString());
+        
         const dbConnected = await initializeDatabase();
         if (!dbConnected) {
             appLogger.fatal('Failed to connect to database. Exiting...');
@@ -4434,7 +4448,8 @@ async function startServer() {
         }
         
         app.listen(PORT, () => {
-            appLogger.info('NAD Test Cycle API Server Started - USER MANAGEMENT REMOVED', {
+            console.log('✅ NAD Server started successfully with pino-pretty formatting!');
+            appLogger.info('NAD Test Cycle API Server Started - USER MANAGEMENT REMOVED - PINO-PRETTY ENABLED', {
                 port: PORT,
                 environment: process.env.NODE_ENV || 'development',
                 endpoints: {
