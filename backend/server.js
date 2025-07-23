@@ -4015,7 +4015,8 @@ app.get('/api/admin/log-files', (req, res) => {
     }
 });
 
-// Read log file contents (with pagination)
+// Read log file contents (with pagination) - DISABLED: Duplicate of formatted version below
+/*
 app.get('/api/admin/log-files/:filename', (req, res) => {
     try {
         const fs = require('fs');
@@ -4063,6 +4064,7 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
         });
     }
 });
+*/
 
 // ============================================================================
 // ERROR HANDLING MIDDLEWARE
