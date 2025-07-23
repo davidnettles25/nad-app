@@ -4348,6 +4348,12 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
             }
         });
         
+        // Add debug information
+        console.log(`Log file ${filename}: ${logLines.length} lines read, ${formattedCount} formatted`);
+        if (logLines.length > 0) {
+            console.log(`First line sample: ${logLines[0].substring(0, 100)}...`);
+        }
+        
         res.json({
             success: true,
             filename: filename,
@@ -4355,7 +4361,11 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
             totalLines: allLines.length,
             formatted: formattedCount > 0,
             formattedCount: formattedCount,
-            originalCount: logLines.length
+            originalCount: logLines.length,
+            debug: {
+                sampleLine: logLines.length > 0 ? logLines[0].substring(0, 200) : null,
+                isJson: logLines.length > 0 ? logLines[0].trim().startsWith('{') : false
+            }
         });
     } catch (error) {
         console.error('Error reading log file:', error);
@@ -4378,6 +4388,40 @@ function getLevelName(level) {
     };
     return levels[level] || 'UNKNOWN';
 }
+
+// Test endpoint for pino formatting
+app.get('/api/admin/test-pino-format', (req, res) => {
+    const testLog = '{"level":30,"time":1705123456789,"pid":12345,"hostname":"server","msg":"Test message","module":"api","method":"GET","path":"/test","requestId":"req-123"}';
+    
+    try {
+        const logObj = JSON.parse(testLog);
+        const timestamp = new Date(logObj.time).toLocaleString();
+        const level = getLevelName(logObj.level);
+        const msg = logObj.msg || logObj.message || '';
+        
+        let formatted = `[${timestamp}] ${level.padEnd(5)}`;
+        if (logObj.module) formatted += ` (${logObj.module})`;
+        if (logObj.method && logObj.path) {
+            formatted += ` ${logObj.method} ${logObj.path}`;
+        }
+        if (logObj.requestId) formatted += ` [${logObj.requestId}]`;
+        if (msg) formatted += `: ${msg}`;
+        
+        res.json({
+            success: true,
+            original: testLog,
+            formatted: formatted,
+            timestamp: timestamp,
+            level: level
+        });
+    } catch (error) {
+        res.json({
+            success: false,
+            error: error.message,
+            original: testLog
+        });
+    }
+});
 
 // ============================================================================
 

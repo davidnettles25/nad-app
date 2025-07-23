@@ -312,6 +312,11 @@ async function viewLogFile(filename) {
                 successMsg = `✅ Log file loaded and formatted successfully (${data.formattedCount}/${data.originalCount} lines formatted)`;
             } else if (data.formattedCount === 0) {
                 successMsg = '✅ Log file loaded (no Pino JSON logs detected for formatting)';
+                // Add debug info to help troubleshoot
+                if (data.debug && data.debug.sampleLine) {
+                    console.log('Debug: Sample log line:', data.debug.sampleLine);
+                    console.log('Debug: Detected as JSON:', data.debug.isJson);
+                }
             }
             showAlert(successMsg, 'success', 'log-files-alert');
         } else {
