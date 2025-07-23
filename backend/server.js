@@ -231,13 +231,18 @@ function backdoorAuthMiddleware(req, res, next) {
 // Apply backdoor middleware before all authentication
 app.use(backdoorAuthMiddleware);
 
-// Test endpoint to verify bypass redirect works
-app.get('/test-redirect', (req, res) => {
-    res.json({ 
-        message: 'If you see this with ?bypass=wrongkey, the redirect is not working',
-        bypass_param: req.query.bypass,
-        timestamp: new Date().toISOString()
-    });
+// Bypass validation endpoint for client-side check
+app.get('/api/admin/validate-bypass', (req, res) => {
+    const bypassParam = req.query.bypass;
+    const multipassOverride = process.env.MULTIPASS_OVERRIDE;
+    
+    if (bypassParam === multipassOverride && multipassOverride) {
+        // Valid bypass
+        res.json({ valid: true });
+    } else {
+        // Invalid bypass - return error
+        res.status(401).json({ valid: false, error: 'Invalid bypass key' });
+    }
 });
 
 // Serve protected HTML files through Node.js to ensure bypass middleware runs

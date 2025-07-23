@@ -12,18 +12,22 @@
         const bypassParam = urlParams.get('bypass');
         
         if (bypassParam) {
-            // Check if bypass parameter is valid by making API call
-            fetch('/test-redirect?bypass=' + encodeURIComponent(bypassParam))
-                .then(response => {
-                    if (response.redirected || response.status === 301 || response.status === 302) {
-                        // Invalid bypass - redirect
-                        window.location.href = 'http://mynadtest.com';
-                    }
-                })
-                .catch(() => {
-                    // On error, assume invalid and redirect
+            // Check if bypass parameter is valid
+            fetch('/api/admin/validate-bypass?bypass=' + encodeURIComponent(bypassParam), {
+                method: 'GET',
+                redirect: 'manual'
+            })
+            .then(response => {
+                if (!response.ok || response.status === 401) {
+                    // Invalid bypass - redirect
                     window.location.href = 'http://mynadtest.com';
-                });
+                }
+                // If response is ok, bypass is valid, continue loading
+            })
+            .catch(() => {
+                // On error, assume invalid and redirect
+                window.location.href = 'http://mynadtest.com';
+            });
         }
     })();
     </script>
