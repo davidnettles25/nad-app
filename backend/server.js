@@ -1080,6 +1080,24 @@ function generateTestId() {
     return `NAD-${year}${month}${day}-${random}`;
 }
 
+function generateRandomSuffix() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+function generateTestIdWithAutoIncrement(autoIncrementId) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const randomSuffix = generateRandomSuffix();
+    
+    return `${year}-${month}-${autoIncrementId}-${randomSuffix}`;
+}
+
 
 // ============================================================================
 // SHOPIFY AUTHENTICATION MIDDLEWARE
@@ -2234,6 +2252,96 @@ app.get('/api/admin/tests', async (req, res) => {
     } catch (error) {
         console.error('Error fetching all tests:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// =====================================================
+// BULK TEST CREATION ENDPOINTS
+// =====================================================
+
+// Bulk test creation endpoint
+app.post('/api/admin/create-test-batch', async (req, res) => {
+    const { quantity, notes } = req.body;
+    
+    // Validation
+    if (!quantity || quantity < 1 || quantity > 1000) {
+        return res.status(400).json({
+            success: false,
+            message: 'Quantity must be between 1 and 1000'
+        });
+    }
+
+    const connection = await db.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+        
+        // Generate batch ID for tracking
+        const batchId = `BATCH-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+        const createdTests = [];
+        
+        req.logger.info('Creating test batch', { 
+            quantity, 
+            batchId, 
+            notes: notes || 'No notes provided' 
+        });
+        
+        // Create tests in bulk
+        for (let i = 0; i < quantity; i++) {
+            // Insert placeholder record to get auto-increment ID
+            const [insertResult] = await connection.execute(
+                `INSERT INTO nad_test_ids (
+                    test_id, batch_id, batch_size, notes, generated_by, order_id, customer_id, created_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+                ['TEMP', batchId, quantity, notes, null, null, null]
+            );
+            
+            const autoIncrementId = insertResult.insertId;
+            const testId = generateTestIdWithAutoIncrement(autoIncrementId);
+            
+            // Update with the actual test_id
+            await connection.execute(
+                'UPDATE nad_test_ids SET test_id = ? WHERE id = ?',
+                [testId, autoIncrementId]
+            );
+            
+            createdTests.push({
+                id: autoIncrementId,
+                test_id: testId,
+                batch_id: batchId
+            });
+        }
+        
+        await connection.commit();
+        
+        req.logger.info('Test batch created successfully', { 
+            batchId, 
+            testsCreated: createdTests.length 
+        });
+        
+        res.json({
+            success: true,
+            message: `Successfully created ${quantity} tests`,
+            data: {
+                batch_id: batchId,
+                quantity: quantity,
+                tests_created: createdTests.length,
+                sample_test_ids: createdTests.slice(0, 5).map(t => t.test_id),
+                notes: notes || ''
+            }
+        });
+        
+    } catch (error) {
+        await connection.rollback();
+        req.logger.error('Error creating test batch', { error: error.message });
+        
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create test batch',
+            error: error.message
+        });
+    } finally {
+        connection.release();
     }
 });
 
