@@ -218,9 +218,13 @@ function displayLogFiles(files) {
         const description = getLogFileDescription(file.name);
         
         return `
-            <div class="log-file-item" style="border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 10px; background: #f9f9f9;">
+            <div class="log-file-item" onclick="viewLogFile('${file.name.replace(/'/g, "\\'")}')" 
+                 style="border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 10px; background: #f9f9f9; cursor: pointer; transition: all 0.2s ease;"
+                 onmouseover="this.style.backgroundColor='#e9ecef'; this.style.borderColor='#007bff'; this.style.transform='translateY(-1px)'"
+                 onmouseout="this.style.backgroundColor='#f9f9f9'; this.style.borderColor='#ddd'; this.style.transform='translateY(0)'"
+                 data-filename="${file.name}">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="flex: 1; margin-right: 15px;">
+                    <div style="flex: 1;">
                         <strong>${file.name}</strong>
                         <div style="font-size: 13px; color: #555; margin: 4px 0; line-height: 1.3;">
                             ${description}
@@ -229,9 +233,9 @@ function displayLogFiles(files) {
                             ${sizeKB} KB • Modified: ${modifiedDate}
                         </div>
                     </div>
-                    <button class="btn btn-sm btn-primary" onclick="viewLogFile('${file.name.replace(/'/g, "\\'")}')" data-filename="${file.name}">
-                        👁️ View
-                    </button>
+                    <div style="color: #007bff; font-size: 18px;">
+                        👁️
+                    </div>
                 </div>
             </div>
         `;
