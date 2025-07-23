@@ -269,6 +269,7 @@ async function initializeDatabase() {
         
         // Run customer_id migration to VARCHAR - DISABLED to fix startup issues
         // await migrateCustomerIdToVarchar();
+        console.log('🚀 SERVER STARTED WITH MIGRATION DISABLED - VERSION 2025-07-23-14:30');
         
         return true;
     } catch (error) {
