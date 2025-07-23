@@ -4348,11 +4348,13 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
             }
         });
         
-        // Add debug information
-        console.log(`Log file ${filename}: ${logLines.length} lines read, ${formattedCount} formatted`);
-        if (logLines.length > 0) {
-            console.log(`First line sample: ${logLines[0].substring(0, 100)}...`);
-        }
+        // Add debug information using proper logger
+        req.logger.info('Log file processing debug', {
+            filename,
+            linesRead: logLines.length,
+            formattedCount,
+            sampleLine: logLines.length > 0 ? logLines[0].substring(0, 100) : null
+        });
         
         res.json({
             success: true,
@@ -4364,7 +4366,9 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
             originalCount: logLines.length,
             debug: {
                 sampleLine: logLines.length > 0 ? logLines[0].substring(0, 200) : null,
-                isJson: logLines.length > 0 ? logLines[0].trim().startsWith('{') : false
+                isJson: logLines.length > 0 ? logLines[0].trim().startsWith('{') : false,
+                firstLineFormatted: formattedCount > 0 ? formattedLines[0] : null,
+                processingDetails: `Processed ${logLines.length} lines, formatted ${formattedCount} lines`
             }
         });
     } catch (error) {
@@ -4391,11 +4395,30 @@ function getLevelName(level) {
 
 // Server status endpoint to verify restart
 app.get('/api/admin/server-status', (req, res) => {
+    // Test the formatting function directly
+    const testLogLine = '{"level":30,"time":1705123456789,"pid":12345,"hostname":"server","msg":"Test message","module":"api","method":"GET","path":"/test","requestId":"req-123"}';
+    let formattingWorks = false;
+    let formattedSample = '';
+    
+    try {
+        const logObj = JSON.parse(testLogLine);
+        if (logObj.time && logObj.level !== undefined) {
+            const timestamp = new Date(logObj.time).toLocaleString();
+            const level = getLevelName(logObj.level);
+            formattedSample = `[${timestamp}] ${level.padEnd(5)} (${logObj.module}) ${logObj.method} ${logObj.path} [${logObj.requestId}]: ${logObj.msg}`;
+            formattingWorks = true;
+        }
+    } catch (e) {
+        formattingWorks = false;
+    }
+    
     res.json({
         success: true,
         serverStartTime: new Date().toISOString(),
         pinoFormattingEnabled: true,
         version: 'v2.0-pino-formatting',
+        formattingWorks: formattingWorks,
+        formattedSample: formattedSample,
         message: 'Server has pino-pretty formatting enabled'
     });
 });
@@ -4438,8 +4461,9 @@ app.get('/api/admin/test-pino-format', (req, res) => {
 
 async function startServer() {
     try {
-        console.log('🚀 Starting NAD server with pino-pretty formatting enabled...');
-        console.log('📅 Server start time:', new Date().toISOString());
+        // Use process.stdout.write to ensure startup messages are visible
+        process.stdout.write('🚀 Starting NAD server with pino-pretty formatting enabled...\n');
+        process.stdout.write(`📅 Server start time: ${new Date().toISOString()}\n`);
         
         const dbConnected = await initializeDatabase();
         if (!dbConnected) {
@@ -4448,7 +4472,7 @@ async function startServer() {
         }
         
         app.listen(PORT, () => {
-            console.log('✅ NAD Server started successfully with pino-pretty formatting!');
+            process.stdout.write('✅ NAD Server started successfully with pino-pretty formatting!\n');
             appLogger.info('NAD Test Cycle API Server Started - USER MANAGEMENT REMOVED - PINO-PRETTY ENABLED', {
                 port: PORT,
                 environment: process.env.NODE_ENV || 'development',

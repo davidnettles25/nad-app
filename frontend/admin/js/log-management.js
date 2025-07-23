@@ -312,12 +312,19 @@ async function viewLogFile(filename) {
                 successMsg = `✅ Log file loaded and formatted successfully (${data.formattedCount}/${data.originalCount} lines formatted)`;
             } else if (data.formattedCount === 0) {
                 successMsg = '✅ Log file loaded (no Pino JSON logs detected for formatting)';
-                // Add debug info to help troubleshoot
-                if (data.debug && data.debug.sampleLine) {
-                    console.log('Debug: Sample log line:', data.debug.sampleLine);
-                    console.log('Debug: Detected as JSON:', data.debug.isJson);
+            }
+            
+            // Always show debug info prominently
+            if (data.debug) {
+                successMsg += `<br><small><strong>Debug:</strong> ${data.debug.processingDetails}</small>`;
+                if (data.debug.sampleLine) {
+                    successMsg += `<br><small><strong>Sample:</strong> ${data.debug.sampleLine.substring(0, 100)}...</small>`;
+                }
+                if (data.debug.firstLineFormatted) {
+                    successMsg += `<br><small><strong>Formatted:</strong> ${data.debug.firstLineFormatted.substring(0, 100)}...</small>`;
                 }
             }
+            
             showAlert(successMsg, 'success', 'log-files-alert');
         } else {
             throw new Error(data.error || 'Failed to load log file');
