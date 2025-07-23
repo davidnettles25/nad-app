@@ -273,6 +273,15 @@ async function viewLogFile(filename) {
         }
         
         if (data.success) {
+            // DEBUG: Add temporary debugging
+            console.log('DEBUG: Log response data:', {
+                formatted: data.formatted,
+                formattedCount: data.formattedCount,
+                originalCount: data.originalCount,
+                linesLength: data.lines ? data.lines.length : 0,
+                firstLine: data.lines ? data.lines[0] : 'No lines'
+            });
+            
             // Update header with formatting info
             const formatInfo = data.formatted ? ' (formatted)' : '';
             currentLogFile.textContent = filename + formatInfo;
@@ -282,7 +291,9 @@ async function viewLogFile(filename) {
             logContent.textContent = logText;
             
             // Apply monospace font and better styling for formatted logs
+            console.log('DEBUG: About to apply formatting, data.formatted =', data.formatted);
             if (data.formatted) {
+                console.log('DEBUG: Applying formatted styles');
                 logContent.style.fontFamily = 'Monaco, Consolas, "Courier New", monospace';
                 logContent.style.fontSize = '12px';
                 logContent.style.lineHeight = '1.4';
@@ -291,6 +302,7 @@ async function viewLogFile(filename) {
                 logContent.style.borderRadius = '4px';
                 logContent.style.padding = '12px';
             } else {
+                console.log('DEBUG: Applying non-formatted styles');
                 // Reset styles for non-formatted logs
                 logContent.style.fontFamily = 'monospace';
                 logContent.style.fontSize = '11px';
