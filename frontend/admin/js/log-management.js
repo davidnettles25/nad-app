@@ -293,24 +293,22 @@ async function viewLogFile(filename) {
             // Apply monospace font and better styling for formatted logs
             console.log('DEBUG: About to apply formatting, data.formatted =', data.formatted);
             if (data.formatted) {
-                console.log('DEBUG: Applying formatted styles');
-                logContent.style.fontFamily = 'Monaco, Consolas, "Courier New", monospace';
-                logContent.style.fontSize = '12px';
-                logContent.style.lineHeight = '1.4';
-                logContent.style.backgroundColor = '#f8f9fa';
-                logContent.style.border = '1px solid #e9ecef';
-                logContent.style.borderRadius = '4px';
-                logContent.style.padding = '12px';
-                logContent.style.color = '#333'; // Make sure text is dark
-                logContent.style.opacity = '1'; // Override any grey/opacity
+                console.log('DEBUG: Applying formatted styles with !important');
+                // Use setProperty with !important to override any CSS conflicts
+                logContent.style.setProperty('font-family', 'Monaco, Consolas, "Courier New", monospace', 'important');
+                logContent.style.setProperty('font-size', '12px', 'important');
+                logContent.style.setProperty('line-height', '1.4', 'important');
+                logContent.style.setProperty('background-color', '#f8f9fa', 'important');
+                logContent.style.setProperty('border', '1px solid #e9ecef', 'important');
+                logContent.style.setProperty('border-radius', '4px', 'important');
+                logContent.style.setProperty('padding', '12px', 'important');
+                logContent.style.setProperty('color', '#333', 'important');
+                logContent.style.setProperty('opacity', '1', 'important');
                 
-                console.log('DEBUG: Applied styles - computed style:', {
-                    fontFamily: getComputedStyle(logContent).fontFamily,
-                    fontSize: getComputedStyle(logContent).fontSize,
-                    color: getComputedStyle(logContent).color,
-                    opacity: getComputedStyle(logContent).opacity,
-                    backgroundColor: getComputedStyle(logContent).backgroundColor
-                });
+                // Also remove any classes that might be causing grey styling
+                logContent.className = '';
+                
+                console.log('DEBUG: Forced styles applied with !important');
             } else {
                 console.log('DEBUG: Applying non-formatted styles');
                 // Reset styles for non-formatted logs
