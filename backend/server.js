@@ -925,16 +925,17 @@ async function validateCustomerIdMigration() {
     try {
         console.log('🔍 Validating customer_id migration...');
         
-        // Step 1: Verify column types
+        // Step 1: Verify column types (excluding backup tables)
         const [columnTypes] = await db.execute(`
             SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE
             FROM INFORMATION_SCHEMA.COLUMNS 
             WHERE TABLE_SCHEMA = DATABASE() 
             AND COLUMN_NAME = 'customer_id'
+            AND TABLE_NAME NOT LIKE '%_backup_%'
             ORDER BY TABLE_NAME
         `);
         
-        console.log('🔍 Column types after migration:');
+        console.log('🔍 Column types after migration (excluding backup tables):');
         for (const col of columnTypes) {
             console.log(`  ${col.TABLE_NAME}.customer_id: ${col.DATA_TYPE}(${col.CHARACTER_MAXIMUM_LENGTH}) ${col.IS_NULLABLE === 'YES' ? 'NULL' : 'NOT NULL'}`);
             
