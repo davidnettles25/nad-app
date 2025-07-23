@@ -301,6 +301,16 @@ async function viewLogFile(filename) {
                 logContent.style.border = '1px solid #e9ecef';
                 logContent.style.borderRadius = '4px';
                 logContent.style.padding = '12px';
+                logContent.style.color = '#333'; // Make sure text is dark
+                logContent.style.opacity = '1'; // Override any grey/opacity
+                
+                console.log('DEBUG: Applied styles - computed style:', {
+                    fontFamily: getComputedStyle(logContent).fontFamily,
+                    fontSize: getComputedStyle(logContent).fontSize,
+                    color: getComputedStyle(logContent).color,
+                    opacity: getComputedStyle(logContent).opacity,
+                    backgroundColor: getComputedStyle(logContent).backgroundColor
+                });
             } else {
                 console.log('DEBUG: Applying non-formatted styles');
                 // Reset styles for non-formatted logs
