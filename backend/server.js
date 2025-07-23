@@ -4066,6 +4066,147 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
 });
 */
 
+// Read log file contents (with pagination and pino-pretty formatting)
+app.get('/api/admin/log-files/:filename', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const { Transform } = require('stream');
+        const { filename } = req.params;
+        const { lines = 100, offset = 0 } = req.query;
+        
+        // Security: only allow .log files
+        if (!filename.endsWith('.log') || filename.includes('..')) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid filename'
+            });
+        }
+        
+        const filePath = path.join(__dirname, 'logs', filename);
+        
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                error: 'Log file not found'
+            });
+        }
+        
+        const content = fs.readFileSync(filePath, 'utf8');
+        const allLines = content.split('\n').filter(line => line.trim());
+        const startIndex = Math.max(0, allLines.length - parseInt(lines) - parseInt(offset));
+        const endIndex = allLines.length - parseInt(offset);
+        const logLines = allLines.slice(startIndex, endIndex);
+        
+        // Try to format Pino logs with pino-pretty
+        let formattedCount = 0;
+        const formattedLines = logLines.map(line => {
+            if (!line.trim()) return line;
+            
+            try {
+                // Check if line looks like JSON (Pino format)
+                if (line.trim().startsWith('{') && line.trim().endsWith('}')) {
+                    const logObj = JSON.parse(line);
+                    
+                    // Verify this is actually a Pino log (has time and level)
+                    if (!logObj.time || logObj.level === undefined) {
+                        return line; // Not a Pino log, return as-is
+                    }
+                    
+                    formattedCount++;
+                    
+                    // Create a readable format similar to pino-pretty
+                    const timestamp = new Date(logObj.time).toLocaleString();
+                    const level = getLevelName(logObj.level);
+                    const msg = logObj.msg || logObj.message || '';
+                    
+                    // Build formatted line with color-like indicators
+                    let formatted = `[${timestamp}] ${level.padEnd(5)}`;
+                    
+                    // Add context information
+                    if (logObj.module) formatted += ` (${logObj.module})`;
+                    if (logObj.method && logObj.path) {
+                        formatted += ` ${logObj.method} ${logObj.path}`;
+                    }
+                    if (logObj.requestId) formatted += ` [${logObj.requestId}]`;
+                    
+                    // Add main message
+                    if (msg) formatted += `: ${msg}`;
+                    
+                    // Add additional context fields
+                    const excludeFields = ['time', 'level', 'msg', 'message', 'module', 'method', 'path', 'requestId', 'hostname', 'pid', 'name'];
+                    const additionalFields = [];
+                    
+                    for (const [key, value] of Object.entries(logObj)) {
+                        if (!excludeFields.includes(key)) {
+                            if (typeof value === 'object') {
+                                additionalFields.push(`${key}=${JSON.stringify(value)}`);
+                            } else {
+                                additionalFields.push(`${key}=${value}`);
+                            }
+                        }
+                    }
+                    
+                    if (additionalFields.length > 0) {
+                        formatted += ` (${additionalFields.join(', ')})`;
+                    }
+                    
+                    return formatted;
+                } else {
+                    // Return non-JSON lines as-is (already formatted logs)
+                    return line;
+                }
+            } catch (e) {
+                // If JSON parsing fails, return original line
+                return line;
+            }
+        });
+        
+        // Add debug information using proper logger
+        req.logger.info('Log file processing debug', {
+            filename,
+            linesRead: logLines.length,
+            formattedCount,
+            sampleLine: logLines.length > 0 ? logLines[0].substring(0, 100) : null
+        });
+        
+        res.json({
+            success: true,
+            filename: filename,
+            lines: formattedLines,
+            totalLines: allLines.length,
+            formatted: formattedCount > 0,
+            formattedCount: formattedCount,
+            originalCount: logLines.length,
+            debug: {
+                sampleLine: logLines.length > 0 ? logLines[0].substring(0, 200) : null,
+                isJson: logLines.length > 0 ? logLines[0].trim().startsWith('{') : false,
+                firstLineFormatted: formattedCount > 0 ? formattedLines[0] : null,
+                processingDetails: `Processed ${logLines.length} lines, formatted ${formattedCount} lines`
+            }
+        });
+    } catch (error) {
+        console.error('Error reading log file:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to read log file: ' + error.message 
+        });
+    }
+});
+
+// Helper function to convert Pino log levels to readable names
+function getLevelName(level) {
+    const levels = {
+        10: 'TRACE',
+        20: 'DEBUG', 
+        30: 'INFO',
+        40: 'WARN',
+        50: 'ERROR',
+        60: 'FATAL'
+    };
+    return levels[level] || 'UNKNOWN';
+}
+
 // ============================================================================
 // ERROR HANDLING MIDDLEWARE
 // ============================================================================
@@ -4290,146 +4431,7 @@ app.get('/api/admin/log-files', (req, res) => {
     }
 });
 
-// Read log file contents (with pagination)
-app.get('/api/admin/log-files/:filename', (req, res) => {
-    try {
-        const fs = require('fs');
-        const path = require('path');
-        const { Transform } = require('stream');
-        const { filename } = req.params;
-        const { lines = 100, offset = 0 } = req.query;
-        
-        // Security: only allow .log files
-        if (!filename.endsWith('.log') || filename.includes('..')) {
-            return res.status(400).json({
-                success: false,
-                error: 'Invalid filename'
-            });
-        }
-        
-        const filePath = path.join(__dirname, 'logs', filename);
-        
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({
-                success: false,
-                error: 'Log file not found'
-            });
-        }
-        
-        const content = fs.readFileSync(filePath, 'utf8');
-        const allLines = content.split('\n').filter(line => line.trim());
-        const startIndex = Math.max(0, allLines.length - parseInt(lines) - parseInt(offset));
-        const endIndex = allLines.length - parseInt(offset);
-        const logLines = allLines.slice(startIndex, endIndex);
-        
-        // Try to format Pino logs with pino-pretty
-        let formattedCount = 0;
-        const formattedLines = logLines.map(line => {
-            if (!line.trim()) return line;
-            
-            try {
-                // Check if line looks like JSON (Pino format)
-                if (line.trim().startsWith('{') && line.trim().endsWith('}')) {
-                    const logObj = JSON.parse(line);
-                    
-                    // Verify this is actually a Pino log (has time and level)
-                    if (!logObj.time || logObj.level === undefined) {
-                        return line; // Not a Pino log, return as-is
-                    }
-                    
-                    formattedCount++;
-                    
-                    // Create a readable format similar to pino-pretty
-                    const timestamp = new Date(logObj.time).toLocaleString();
-                    const level = getLevelName(logObj.level);
-                    const msg = logObj.msg || logObj.message || '';
-                    
-                    // Build formatted line with color-like indicators
-                    let formatted = `[${timestamp}] ${level.padEnd(5)}`;
-                    
-                    // Add context information
-                    if (logObj.module) formatted += ` (${logObj.module})`;
-                    if (logObj.method && logObj.path) {
-                        formatted += ` ${logObj.method} ${logObj.path}`;
-                    }
-                    if (logObj.requestId) formatted += ` [${logObj.requestId}]`;
-                    
-                    // Add main message
-                    if (msg) formatted += `: ${msg}`;
-                    
-                    // Add additional context fields
-                    const excludeFields = ['time', 'level', 'msg', 'message', 'module', 'method', 'path', 'requestId', 'hostname', 'pid', 'name'];
-                    const additionalFields = [];
-                    
-                    for (const [key, value] of Object.entries(logObj)) {
-                        if (!excludeFields.includes(key)) {
-                            if (typeof value === 'object') {
-                                additionalFields.push(`${key}=${JSON.stringify(value)}`);
-                            } else {
-                                additionalFields.push(`${key}=${value}`);
-                            }
-                        }
-                    }
-                    
-                    if (additionalFields.length > 0) {
-                        formatted += ` (${additionalFields.join(', ')})`;
-                    }
-                    
-                    return formatted;
-                } else {
-                    // Return non-JSON lines as-is (already formatted logs)
-                    return line;
-                }
-            } catch (e) {
-                // If JSON parsing fails, return original line
-                return line;
-            }
-        });
-        
-        // Add debug information using proper logger
-        req.logger.info('Log file processing debug', {
-            filename,
-            linesRead: logLines.length,
-            formattedCount,
-            sampleLine: logLines.length > 0 ? logLines[0].substring(0, 100) : null
-        });
-        
-        res.json({
-            success: true,
-            filename: filename,
-            lines: formattedLines,
-            totalLines: allLines.length,
-            formatted: formattedCount > 0,
-            formattedCount: formattedCount,
-            originalCount: logLines.length,
-            debug: {
-                sampleLine: logLines.length > 0 ? logLines[0].substring(0, 200) : null,
-                isJson: logLines.length > 0 ? logLines[0].trim().startsWith('{') : false,
-                firstLineFormatted: formattedCount > 0 ? formattedLines[0] : null,
-                processingDetails: `Processed ${logLines.length} lines, formatted ${formattedCount} lines`
-            }
-        });
-    } catch (error) {
-        console.error('Error reading log file:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to read log file: ' + error.message 
-        });
-    }
-});
-
-// Helper function to convert Pino log levels to readable names
-function getLevelName(level) {
-    const levels = {
-        10: 'TRACE',
-        20: 'DEBUG', 
-        30: 'INFO',
-        40: 'WARN',
-        50: 'ERROR',
-        60: 'FATAL'
-    };
-    return levels[level] || 'UNKNOWN';
-}
+// REMOVED: Duplicate endpoint moved above error handler
 
 // Server status endpoint to verify restart
 app.get('/api/admin/server-status', (req, res) => {
