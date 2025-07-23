@@ -251,12 +251,16 @@ app.get('/customer-portal.html', (req, res) => {
 
 // Also handle root paths
 app.get('/admin', (req, res) => {
-    res.redirect('/admin.html' + (req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''));
+    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    res.redirect('/admin.html' + queryString);
 });
 
 app.get('/customer', (req, res) => {
-    res.redirect('/customer-portal.html' + (req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''));
+    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    res.redirect('/customer-portal.html' + queryString);
 });
+
+// Note: Static files are served by web server (nginx/Apache), not Node.js
 
 // ============================================================================
 // DATABASE CONNECTION
