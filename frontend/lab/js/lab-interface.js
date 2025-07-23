@@ -137,7 +137,7 @@ window.NADLab = {
             return `
                 <div class="test-item" data-test-id="${test.id}">
                     <div class="test-info">
-                        <h3>${test.test_id}</h3>
+                        <h3>${test.test_id} ${test.customer_id ? `(${test.customer_id})` : ''}</h3>
                         <p>Batch: ${batchShort}</p>
                         <p>Activated: ${new Date(test.activated_date).toLocaleDateString()}</p>
                     </div>
@@ -192,7 +192,7 @@ window.NADLab = {
             return `
                 <div class="test-item recent-test-item">
                     <div class="test-info">
-                        <h3>${test.test_id}</h3>
+                        <h3>${test.test_id} ${test.customer_id ? `(${test.customer_id})` : ''}</h3>
                         <p>Batch: ${batchShort}</p>
                         <p>NAD+ Score: <strong>${test.nad_score || 'N/A'}</strong></p>
                         <p>Processed: ${new Date(test.processed_date).toLocaleDateString()}</p>

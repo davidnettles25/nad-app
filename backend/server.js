@@ -1911,7 +1911,7 @@ app.get('/api/lab/pending-tests', async (req, res) => {
         
         // Get tests with activated status
         const [tests] = await db.execute(`
-            SELECT id, test_id, batch_id, activated_date 
+            SELECT id, test_id, batch_id, activated_date, customer_id 
             FROM nad_test_ids 
             WHERE status = 'activated'
             ORDER BY activated_date ASC
@@ -1958,7 +1958,8 @@ app.get('/api/lab/recent-tests', async (req, res) => {
                 ti.processed_date,
                 ts.technician_id,
                 ti.batch_id,
-                ti.activated_date
+                ti.activated_date,
+                ti.customer_id
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
             WHERE ti.status = 'completed'
