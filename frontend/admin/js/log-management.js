@@ -168,7 +168,11 @@ function getLogFileDescription(filename) {
         'access.log': 'HTTP access logs with request details and response status codes',
         'performance.log': 'Performance metrics, slow queries, and system resource usage',
         'security.log': 'Security events, authentication attempts, and access control logs',
-        'database.log': 'Database queries, connections, and database-related operations'
+        'database.log': 'Database queries, connections, and database-related operations',
+        'nad-error.log': 'NAD application error logs and system exceptions',
+        'nad-out.log': 'NAD application output logs and general messages',
+        'combined.log': 'Combined logs from all application modules and components',
+        'exceptions.log': 'Detailed exception traces and stack dumps'
     };
     
     // Try exact match first
@@ -303,9 +307,12 @@ async function viewLogFile(filename) {
             logViewer.dataset.filename = filename;
             
             // Show success message with format info
-            const successMsg = data.formatted ? 
-                '✅ Log file loaded and formatted successfully' : 
-                '✅ Log file loaded successfully';
+            let successMsg = '✅ Log file loaded successfully';
+            if (data.formatted && data.formattedCount > 0) {
+                successMsg = `✅ Log file loaded and formatted successfully (${data.formattedCount}/${data.originalCount} lines formatted)`;
+            } else if (data.formattedCount === 0) {
+                successMsg = '✅ Log file loaded (no Pino JSON logs detected for formatting)';
+            }
             showAlert(successMsg, 'success', 'log-files-alert');
         } else {
             throw new Error(data.error || 'Failed to load log file');

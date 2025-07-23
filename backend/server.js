@@ -4285,6 +4285,7 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
         const logLines = allLines.slice(startIndex, endIndex);
         
         // Try to format Pino logs with pino-pretty
+        let formattedCount = 0;
         const formattedLines = logLines.map(line => {
             if (!line.trim()) return line;
             
@@ -4293,31 +4294,48 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
                 if (line.trim().startsWith('{') && line.trim().endsWith('}')) {
                     const logObj = JSON.parse(line);
                     
+                    // Verify this is actually a Pino log (has time and level)
+                    if (!logObj.time || logObj.level === undefined) {
+                        return line; // Not a Pino log, return as-is
+                    }
+                    
+                    formattedCount++;
+                    
                     // Create a readable format similar to pino-pretty
                     const timestamp = new Date(logObj.time).toLocaleString();
                     const level = getLevelName(logObj.level);
-                    const msg = logObj.msg || '';
-                    const module = logObj.module || '';
-                    const method = logObj.method || '';
-                    const path = logObj.path || '';
-                    const requestId = logObj.requestId || '';
+                    const msg = logObj.msg || logObj.message || '';
                     
-                    // Build formatted line
-                    let formatted = `[${timestamp}] ${level}`;
+                    // Build formatted line with color-like indicators
+                    let formatted = `[${timestamp}] ${level.padEnd(5)}`;
                     
-                    if (module) formatted += ` (${module})`;
-                    if (method && path) formatted += ` ${method} ${path}`;
-                    if (requestId) formatted += ` [${requestId}]`;
+                    // Add context information
+                    if (logObj.module) formatted += ` (${logObj.module})`;
+                    if (logObj.method && logObj.path) {
+                        formatted += ` ${logObj.method} ${logObj.path}`;
+                    }
+                    if (logObj.requestId) formatted += ` [${logObj.requestId}]`;
+                    
+                    // Add main message
                     if (msg) formatted += `: ${msg}`;
                     
-                    // Add additional fields if present
-                    const excludeFields = ['time', 'level', 'msg', 'module', 'method', 'path', 'requestId', 'hostname', 'pid'];
-                    const additionalFields = Object.keys(logObj)
-                        .filter(key => !excludeFields.includes(key))
-                        .map(key => `${key}=${JSON.stringify(logObj[key])}`)
-                        .join(' ');
+                    // Add additional context fields
+                    const excludeFields = ['time', 'level', 'msg', 'message', 'module', 'method', 'path', 'requestId', 'hostname', 'pid', 'name'];
+                    const additionalFields = [];
                     
-                    if (additionalFields) formatted += ` ${additionalFields}`;
+                    for (const [key, value] of Object.entries(logObj)) {
+                        if (!excludeFields.includes(key)) {
+                            if (typeof value === 'object') {
+                                additionalFields.push(`${key}=${JSON.stringify(value)}`);
+                            } else {
+                                additionalFields.push(`${key}=${value}`);
+                            }
+                        }
+                    }
+                    
+                    if (additionalFields.length > 0) {
+                        formatted += ` (${additionalFields.join(', ')})`;
+                    }
                     
                     return formatted;
                 } else {
@@ -4335,7 +4353,9 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
             filename: filename,
             lines: formattedLines,
             totalLines: allLines.length,
-            formatted: true
+            formatted: formattedCount > 0,
+            formattedCount: formattedCount,
+            originalCount: logLines.length
         });
     } catch (error) {
         console.error('Error reading log file:', error);
