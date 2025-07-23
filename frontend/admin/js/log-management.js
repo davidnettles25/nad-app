@@ -273,15 +273,6 @@ async function viewLogFile(filename) {
         }
         
         if (data.success) {
-            // DEBUG: Add temporary debugging
-            console.log('DEBUG: Log response data:', {
-                formatted: data.formatted,
-                formattedCount: data.formattedCount,
-                originalCount: data.originalCount,
-                linesLength: data.lines ? data.lines.length : 0,
-                firstLine: data.lines ? data.lines[0] : 'No lines'
-            });
-            
             // Update header with formatting info
             const formatInfo = data.formatted ? ' (formatted)' : '';
             currentLogFile.textContent = filename + formatInfo;
@@ -291,9 +282,7 @@ async function viewLogFile(filename) {
             logContent.textContent = logText;
             
             // Apply monospace font and better styling for formatted logs
-            console.log('DEBUG: About to apply formatting, data.formatted =', data.formatted);
             if (data.formatted) {
-                console.log('DEBUG: Applying formatted styles with !important');
                 // Use setProperty with !important to override any CSS conflicts
                 logContent.style.setProperty('font-family', 'Monaco, Consolas, "Courier New", monospace', 'important');
                 logContent.style.setProperty('font-size', '12px', 'important');
@@ -307,10 +296,7 @@ async function viewLogFile(filename) {
                 
                 // Also remove any classes that might be causing grey styling
                 logContent.className = '';
-                
-                console.log('DEBUG: Forced styles applied with !important');
             } else {
-                console.log('DEBUG: Applying non-formatted styles');
                 // Reset styles for non-formatted logs
                 logContent.style.fontFamily = 'monospace';
                 logContent.style.fontSize = '11px';
