@@ -3294,6 +3294,29 @@ app.get('/api/admin/debug-batch/:batchId', async (req, res) => {
             ORDER BY test_id
         `, [batchId]);
         
+        // Also check what the batch list query shows
+        const [batchListData] = await db.execute(`
+            SELECT 
+                batch_id,
+                COUNT(*) as test_count,
+                MIN(created_date) as created_date,
+                MAX(notes) as batch_notes,
+                GROUP_CONCAT(test_id ORDER BY test_id SEPARATOR ', ') as all_test_ids,
+                SUM(CASE WHEN status = 'activated' THEN 1 ELSE 0 END) as activated_count,
+                SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) as printed_count
+            FROM nad_test_ids
+            WHERE batch_id = ?
+            GROUP BY batch_id
+        `, [batchId]);
+        
+        // Check if batch exists with any case variations
+        const [allBatchIds] = await db.execute(`
+            SELECT DISTINCT batch_id, COUNT(*) as count
+            FROM nad_test_ids 
+            WHERE batch_id LIKE ?
+            GROUP BY batch_id
+        `, [`%${batchId}%`]);
+        
         const totalTests = batchInfo.length;
         const printedTests = batchInfo.filter(t => t.is_printed === 1).length;
         const unprintedTests = batchInfo.filter(t => t.is_printed === 0).length;
@@ -3308,6 +3331,8 @@ app.get('/api/admin/debug-batch/:batchId', async (req, res) => {
                 status: printedTests === 0 ? 'not_printed' : 
                        printedTests === totalTests ? 'fully_printed' : 'partially_printed'
             },
+            batch_list_data: batchListData[0] || null,
+            similar_batch_ids: allBatchIds,
             tests: batchInfo
         });
         
