@@ -2291,9 +2291,9 @@ app.post('/api/admin/create-test-batch', async (req, res) => {
             // Insert placeholder record to get auto-increment ID
             const [insertResult] = await connection.execute(
                 `INSERT INTO nad_test_ids (
-                    test_id, batch_id, batch_size, notes, generated_by, order_id, customer_id, created_date
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-                ['TEMP', batchId, quantity, notes, null, null, null]
+                    test_id, batch_id, batch_size, notes, created_date
+                ) VALUES (?, ?, ?, ?, NOW())`,
+                ['TEMP', batchId, quantity, notes || null]
             );
             
             const autoIncrementId = insertResult.insertId;
