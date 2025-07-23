@@ -155,6 +155,49 @@ async function refreshLogFiles() {
 }
 
 /**
+ * Get description for a log file based on its name
+ */
+function getLogFileDescription(filename) {
+    const descriptions = {
+        'app.log': 'General application logs including system events, startup, and operational messages',
+        'api.log': 'HTTP API request/response logs with performance metrics and endpoint activity',
+        'error.log': 'Error messages, exceptions, and critical system failures',
+        'customer.log': 'Customer portal activity, authentication, and user interactions',
+        'admin.log': 'Admin dashboard activity, administrative actions, and configuration changes',
+        'debug.log': 'Detailed debugging information when debug mode is enabled',
+        'access.log': 'HTTP access logs with request details and response status codes',
+        'performance.log': 'Performance metrics, slow queries, and system resource usage',
+        'security.log': 'Security events, authentication attempts, and access control logs',
+        'database.log': 'Database queries, connections, and database-related operations'
+    };
+    
+    // Try exact match first
+    if (descriptions[filename]) {
+        return descriptions[filename];
+    }
+    
+    // Try pattern matching for date-stamped files
+    if (filename.match(/^app\.\d{4}-\d{2}-\d{2}\.log$/)) {
+        return 'Archived general application logs from ' + filename.match(/\d{4}-\d{2}-\d{2}/)[0];
+    }
+    if (filename.match(/^api\.\d{4}-\d{2}-\d{2}\.log$/)) {
+        return 'Archived API request/response logs from ' + filename.match(/\d{4}-\d{2}-\d{2}/)[0];
+    }
+    if (filename.match(/^error\.\d{4}-\d{2}-\d{2}\.log$/)) {
+        return 'Archived error logs from ' + filename.match(/\d{4}-\d{2}-\d{2}/)[0];
+    }
+    if (filename.match(/^customer\.\d{4}-\d{2}-\d{2}\.log$/)) {
+        return 'Archived customer activity logs from ' + filename.match(/\d{4}-\d{2}-\d{2}/)[0];
+    }
+    if (filename.match(/^admin\.\d{4}-\d{2}-\d{2}\.log$/)) {
+        return 'Archived admin activity logs from ' + filename.match(/\d{4}-\d{2}-\d{2}/)[0];
+    }
+    
+    // Default description for unknown files
+    return 'Log file containing system or application messages';
+}
+
+/**
  * Display log files in the interface
  */
 function displayLogFiles(files) {
@@ -168,12 +211,16 @@ function displayLogFiles(files) {
     const html = files.map(file => {
         const sizeKB = Math.round(file.size / 1024);
         const modifiedDate = new Date(file.modified).toLocaleString();
+        const description = getLogFileDescription(file.name);
         
         return `
             <div class="log-file-item" style="border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 10px; background: #f9f9f9;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
+                    <div style="flex: 1; margin-right: 15px;">
                         <strong>${file.name}</strong>
+                        <div style="font-size: 13px; color: #555; margin: 4px 0; line-height: 1.3;">
+                            ${description}
+                        </div>
                         <div style="font-size: 12px; color: #666;">
                             ${sizeKB} KB • Modified: ${modifiedDate}
                         </div>
