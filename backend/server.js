@@ -696,6 +696,10 @@ async function migrateCustomerIdToVarchar() {
     try {
         console.log('🔧 Checking customer_id migration status...');
         
+        // First, clean up any existing backup tables that might be causing issues
+        console.log('🧹 Cleaning up any existing backup tables...');
+        await cleanupCustomerIdBackupTables();
+        
         // Check if migration has already been completed
         const [columnCheck] = await db.execute(`
             SELECT TABLE_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH
@@ -735,6 +739,28 @@ async function migrateCustomerIdToVarchar() {
             error: error.message,
             action: 'failed'
         };
+    }
+}
+
+async function cleanupCustomerIdBackupTables() {
+    try {
+        const tables = ['nad_test_ids', 'nad_test_scores', 'nad_user_roles', 'nad_user_supplements'];
+        
+        for (const table of tables) {
+            const backupTableName = `${table}_backup_customer_varchar`;
+            
+            try {
+                await db.execute(`DROP TABLE IF EXISTS ${backupTableName}`);
+                console.log(`🗑️  Dropped backup table: ${backupTableName}`);
+            } catch (dropError) {
+                console.log(`ℹ️  Backup table ${backupTableName} didn't exist or couldn't be dropped:`, dropError.message);
+            }
+        }
+        
+        console.log('✅ Backup table cleanup completed');
+    } catch (error) {
+        console.log('⚠️  Error during backup table cleanup:', error.message);
+        // Don't throw here - this is just cleanup
     }
 }
 
