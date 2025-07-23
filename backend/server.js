@@ -219,13 +219,44 @@ function backdoorAuthMiddleware(req, res, next) {
             success: false
         });
         
-        // Redirect to mynadtest.com with temporary redirect (302)
-        return res.status(302).redirect('https://mynadtest.com');
+        // Redirect to mynadtest.com with permanent redirect (301) and prevent caching
+        console.log(`🚫 Invalid bypass key attempt from ${clientIP}, redirecting to mynadtest.com`);
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+        return res.status(301).redirect('http://mynadtest.com');
     }
 }
 
 // Apply backdoor middleware before all authentication
 app.use(backdoorAuthMiddleware);
+
+// Test endpoint to verify bypass redirect works
+app.get('/test-redirect', (req, res) => {
+    res.json({ 
+        message: 'If you see this with ?bypass=wrongkey, the redirect is not working',
+        bypass_param: req.query.bypass,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Serve protected HTML files through Node.js to ensure bypass middleware runs
+app.get('/admin.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/admin.html'));
+});
+
+app.get('/customer-portal.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/customer-portal.html'));
+});
+
+// Also handle root paths
+app.get('/admin', (req, res) => {
+    res.redirect('/admin.html' + (req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''));
+});
+
+app.get('/customer', (req, res) => {
+    res.redirect('/customer-portal.html' + (req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''));
+});
 
 // ============================================================================
 // DATABASE CONNECTION
