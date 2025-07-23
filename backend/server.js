@@ -2939,6 +2939,7 @@ app.get('/api/admin/printable-batches', async (req, res) => {
                 batch_id,
                 COUNT(*) as test_count,
                 MIN(created_date) as created_date,
+                MAX(notes) as batch_notes,
                 GROUP_CONCAT(test_id ORDER BY test_id SEPARATOR ', ') as all_test_ids,
                 SUM(CASE WHEN status = 'activated' THEN 1 ELSE 0 END) as activated_count,
                 SUM(CASE WHEN is_printed = 1 THEN 1 ELSE 0 END) as printed_count
@@ -2968,7 +2969,7 @@ app.get('/api/admin/printable-batches', async (req, res) => {
                 print_status: printStatus,
                 print_percentage: totalTests > 0 ? Math.round((printedCount / totalTests) * 100) : 0,
                 sample_test_ids: testIds.slice(0, 3).join(', '),
-                batch_notes: `${batch.test_count} tests - ${batch.activated_count} activated, ${batch.printed_count} printed`,
+                batch_notes: batch.batch_notes,
                 created_date: batch.created_date,
                 test_ids: testIds,
                 activated_count: batch.activated_count,
@@ -2997,7 +2998,7 @@ app.get('/api/admin/batch-details/:batchId', async (req, res) => {
         
         // Get all tests for this batch
         const [tests] = await db.execute(`
-            SELECT test_id, created_date, status, is_printed
+            SELECT test_id, created_date, status, is_printed, notes
             FROM nad_test_ids
             WHERE batch_id = ?
             ORDER BY test_id
@@ -3028,7 +3029,7 @@ app.get('/api/admin/batch-details/:batchId', async (req, res) => {
                     batch_size: totalTests,
                     created_date: tests.length > 0 ? tests[0].created_date : null,
                     last_printed_date: null, // Will be null for now
-                    batch_notes: `${totalTests} tests - ${activatedTests} activated, ${printedTests} printed`
+                    batch_notes: tests.length > 0 ? tests[0].notes : null
                 },
                 test_ids: tests.map(test => ({
                     test_id: test.test_id,
