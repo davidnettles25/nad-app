@@ -5,6 +5,13 @@
         <p>Recently processed tests</p>
     </div>
     
+    <div class="search-container">
+        <div class="search-input-group">
+            <input type="text" id="recent-search" placeholder="Search by Test ID or Email..." class="search-input">
+            <button class="btn btn-clear" onclick="NADLab.clearRecentSearch()">✕</button>
+        </div>
+    </div>
+    
     <div class="recent-tests-container">
         <div id="recent-tests-list" class="tests-list">
             <div class="loading-spinner">

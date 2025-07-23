@@ -125,12 +125,23 @@ window.NADLab = {
         // Store tests data for modal access
         this.currentTests = tests;
         
-        if (tests.length === 0) {
-            container.innerHTML = '<p class="no-tests">No pending tests</p>';
+        // Apply search filter if active
+        const searchTerm = document.getElementById('pending-search')?.value?.toLowerCase() || '';
+        const filteredTests = searchTerm ? 
+            tests.filter(test => 
+                test.test_id.toLowerCase().includes(searchTerm) || 
+                (test.customer_id && test.customer_id.toLowerCase().includes(searchTerm))
+            ) : tests;
+        
+        if (filteredTests.length === 0) {
+            const message = searchTerm ? 
+                `No tests found matching "${searchTerm}"` : 
+                'No pending tests';
+            container.innerHTML = `<p class="no-tests">${message}</p>`;
             return;
         }
         
-        const testsHtml = tests.map(test => {
+        const testsHtml = filteredTests.map(test => {
             // Extract just the random string part from batch_id (e.g., "pd36p7" from "BATCH-1752630044576-pd36p7")
             const batchShort = test.batch_id ? test.batch_id.split('-').pop() : 'N/A';
             
@@ -181,12 +192,23 @@ window.NADLab = {
         // Store recent tests for edit functionality
         this.recentTests = tests;
         
-        if (tests.length === 0) {
-            container.innerHTML = '<p class="no-tests">No recent tests</p>';
+        // Apply search filter if active
+        const searchTerm = document.getElementById('recent-search')?.value?.toLowerCase() || '';
+        const filteredTests = searchTerm ? 
+            tests.filter(test => 
+                test.test_id.toLowerCase().includes(searchTerm) || 
+                (test.customer_id && test.customer_id.toLowerCase().includes(searchTerm))
+            ) : tests;
+        
+        if (filteredTests.length === 0) {
+            const message = searchTerm ? 
+                `No tests found matching "${searchTerm}"` : 
+                'No recent tests';
+            container.innerHTML = `<p class="no-tests">${message}</p>`;
             return;
         }
         
-        const testsHtml = tests.map(test => {
+        const testsHtml = filteredTests.map(test => {
             const batchShort = test.batch_id ? test.batch_id.split('-').pop() : 'N/A';
             
             return `
@@ -404,6 +426,56 @@ window.NADLab = {
             this.loadPendingTests();
             this.loadRecentTests();
         }, 60000);
+        
+        // Setup search functionality with debouncing
+        setTimeout(() => {
+            this.setupSearchListeners();
+        }, 1000);
+    },
+    
+    setupSearchListeners() {
+        const pendingSearch = document.getElementById('pending-search');
+        const recentSearch = document.getElementById('recent-search');
+        
+        if (pendingSearch) {
+            pendingSearch.addEventListener('input', this.debounce(() => {
+                this.renderPendingTests(this.currentTests || []);
+            }, 300));
+        }
+        
+        if (recentSearch) {
+            recentSearch.addEventListener('input', this.debounce(() => {
+                this.renderRecentTests(this.recentTests || []);
+            }, 300));
+        }
+    },
+    
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+    
+    clearPendingSearch() {
+        const searchInput = document.getElementById('pending-search');
+        if (searchInput) {
+            searchInput.value = '';
+            this.renderPendingTests(this.currentTests || []);
+        }
+    },
+    
+    clearRecentSearch() {
+        const searchInput = document.getElementById('recent-search');
+        if (searchInput) {
+            searchInput.value = '';
+            this.renderRecentTests(this.recentTests || []);
+        }
     },
     
     setupModalEventListeners() {
