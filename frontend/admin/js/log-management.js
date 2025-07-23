@@ -269,18 +269,44 @@ async function viewLogFile(filename) {
         }
         
         if (data.success) {
-            currentLogFile.textContent = filename;
-            logContent.textContent = data.lines.join('\n') || '(Empty log file)';
+            // Update header with formatting info
+            const formatInfo = data.formatted ? ' (formatted)' : '';
+            currentLogFile.textContent = filename + formatInfo;
+            
+            // Set log content with better formatting
+            const logText = data.lines.join('\n') || '(Empty log file)';
+            logContent.textContent = logText;
+            
+            // Apply monospace font and better styling for formatted logs
+            if (data.formatted) {
+                logContent.style.fontFamily = 'Monaco, Consolas, "Courier New", monospace';
+                logContent.style.fontSize = '12px';
+                logContent.style.lineHeight = '1.4';
+                logContent.style.backgroundColor = '#f8f9fa';
+                logContent.style.border = '1px solid #e9ecef';
+                logContent.style.borderRadius = '4px';
+                logContent.style.padding = '12px';
+            } else {
+                // Reset styles for non-formatted logs
+                logContent.style.fontFamily = 'monospace';
+                logContent.style.fontSize = '11px';
+                logContent.style.lineHeight = '1.3';
+                logContent.style.backgroundColor = '#f8f9fa';
+                logContent.style.border = '1px solid #e9ecef';
+                logContent.style.borderRadius = '4px';
+                logContent.style.padding = '10px';
+            }
+            
             logViewer.style.display = 'block';
             
             // Store current filename for refresh
             logViewer.dataset.filename = filename;
             
-            // Don't scroll - let the viewer appear in place
-            // logViewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            
-            showAlert('✅ Log file loaded successfully', 'success', 'log-files-alert');
-            // Log file loaded successfully (shown in UI alert)
+            // Show success message with format info
+            const successMsg = data.formatted ? 
+                '✅ Log file loaded and formatted successfully' : 
+                '✅ Log file loaded successfully';
+            showAlert(successMsg, 'success', 'log-files-alert');
         } else {
             throw new Error(data.error || 'Failed to load log file');
         }

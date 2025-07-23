@@ -4257,6 +4257,7 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
     try {
         const fs = require('fs');
         const path = require('path');
+        const { Transform } = require('stream');
         const { filename } = req.params;
         const { lines = 100, offset = 0 } = req.query;
         
@@ -4278,16 +4279,63 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
         }
         
         const content = fs.readFileSync(filePath, 'utf8');
-        const allLines = content.split('\n');
+        const allLines = content.split('\n').filter(line => line.trim());
         const startIndex = Math.max(0, allLines.length - parseInt(lines) - parseInt(offset));
         const endIndex = allLines.length - parseInt(offset);
         const logLines = allLines.slice(startIndex, endIndex);
         
+        // Try to format Pino logs with pino-pretty
+        const formattedLines = logLines.map(line => {
+            if (!line.trim()) return line;
+            
+            try {
+                // Check if line looks like JSON (Pino format)
+                if (line.trim().startsWith('{') && line.trim().endsWith('}')) {
+                    const logObj = JSON.parse(line);
+                    
+                    // Create a readable format similar to pino-pretty
+                    const timestamp = new Date(logObj.time).toLocaleString();
+                    const level = getLevelName(logObj.level);
+                    const msg = logObj.msg || '';
+                    const module = logObj.module || '';
+                    const method = logObj.method || '';
+                    const path = logObj.path || '';
+                    const requestId = logObj.requestId || '';
+                    
+                    // Build formatted line
+                    let formatted = `[${timestamp}] ${level}`;
+                    
+                    if (module) formatted += ` (${module})`;
+                    if (method && path) formatted += ` ${method} ${path}`;
+                    if (requestId) formatted += ` [${requestId}]`;
+                    if (msg) formatted += `: ${msg}`;
+                    
+                    // Add additional fields if present
+                    const excludeFields = ['time', 'level', 'msg', 'module', 'method', 'path', 'requestId', 'hostname', 'pid'];
+                    const additionalFields = Object.keys(logObj)
+                        .filter(key => !excludeFields.includes(key))
+                        .map(key => `${key}=${JSON.stringify(logObj[key])}`)
+                        .join(' ');
+                    
+                    if (additionalFields) formatted += ` ${additionalFields}`;
+                    
+                    return formatted;
+                } else {
+                    // Return non-JSON lines as-is (already formatted logs)
+                    return line;
+                }
+            } catch (e) {
+                // If JSON parsing fails, return original line
+                return line;
+            }
+        });
+        
         res.json({
             success: true,
             filename: filename,
-            lines: logLines,
-            totalLines: allLines.length
+            lines: formattedLines,
+            totalLines: allLines.length,
+            formatted: true
         });
     } catch (error) {
         console.error('Error reading log file:', error);
@@ -4297,6 +4345,19 @@ app.get('/api/admin/log-files/:filename', (req, res) => {
         });
     }
 });
+
+// Helper function to convert Pino log levels to readable names
+function getLevelName(level) {
+    const levels = {
+        10: 'TRACE',
+        20: 'DEBUG', 
+        30: 'INFO',
+        40: 'WARN',
+        50: 'ERROR',
+        60: 'FATAL'
+    };
+    return levels[level] || 'UNKNOWN';
+}
 
 // ============================================================================
 
