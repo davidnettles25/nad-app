@@ -6,31 +6,7 @@
     <title>NAD+ Test Portal</title>
     
     <!-- Bypass parameter security check -->
-    <script>
-    (function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const bypassParam = urlParams.get('bypass');
-        
-        if (bypassParam) {
-            // Check if bypass parameter is valid
-            fetch('/api/admin/validate-bypass?bypass=' + encodeURIComponent(bypassParam), {
-                method: 'GET',
-                redirect: 'manual'
-            })
-            .then(response => {
-                if (!response.ok || response.status === 401) {
-                    // Invalid bypass - redirect
-                    window.location.href = 'http://mynadtest.com';
-                }
-                // If response is ok, bypass is valid, continue loading
-            })
-            .catch(() => {
-                // On error, assume invalid and redirect
-                window.location.href = 'http://mynadtest.com';
-            });
-        }
-    })();
-    </script>
+    <script src="shared/js/bypass-security.js"></script>
     
     <!-- Shared CSS -->
     <link rel="stylesheet" href="shared/css/variables.css">
