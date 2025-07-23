@@ -267,8 +267,8 @@ async function initializeDatabase() {
         // Run order_id cleanup to remove order_id column
         await cleanupOrderIdColumn();
         
-        // Run customer_id migration to VARCHAR
-        await migrateCustomerIdToVarchar();
+        // Run customer_id migration to VARCHAR - DISABLED to fix startup issues
+        // await migrateCustomerIdToVarchar();
         
         return true;
     } catch (error) {
