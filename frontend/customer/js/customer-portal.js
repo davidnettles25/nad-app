@@ -84,7 +84,6 @@ window.NADCustomer = {
     },
     
     initVerificationHandlers() {
-        console.log('initVerificationHandlers called');
         // Update user greeting
         const nameElement = document.getElementById('user-name');
         const emailElement = document.getElementById('user-email');
@@ -112,7 +111,6 @@ window.NADCustomer = {
         });
         
         // Load test history below the form
-        console.log('About to call loadTestHistorySection');
         this.loadTestHistorySection();
     },
     
@@ -1352,26 +1350,19 @@ window.NADCustomer = {
 
     // Test history section loading
     async loadTestHistorySection() {
-        console.log('loadTestHistorySection called');
         try {
             const testHistorySection = document.getElementById('test-history-section');
             const loadingMessage = document.getElementById('loading-tests');
             
-            console.log('Test history section element:', testHistorySection);
-            if (!testHistorySection) {
-                console.log('No test history section found in DOM');
-                return;
-            }
+            if (!testHistorySection) return;
             
             // Show loading
             if (loadingMessage) loadingMessage.style.display = 'block';
             
             // Load customer test history
             const customerId = this.userData.email;
-            console.log('Loading test history for:', customerId);
             const response = await fetch(`/api/customer/test-history?customer_id=${customerId}`);
             const data = await response.json();
-            console.log('Test history API response:', data);
             
             if (data.success && data.tests.length > 0) {
                 // Show the test history section
@@ -1387,12 +1378,7 @@ window.NADCustomer = {
                 if (completedTestsEl) completedTestsEl.textContent = data.summary.completed_tests;
                 
                 // Render test history chart if multiple tests exist
-                console.log('Checking if should render chart:', {
-                    test_count: data.tests.length,
-                    should_render: data.tests.length > 1
-                });
                 if (data.tests.length > 1) {
-                    console.log('Calling renderTestHistoryChart with tests:', data.tests);
                     this.renderTestHistoryChart(data.tests);
                 }
                 
@@ -1472,25 +1458,7 @@ window.NADCustomer = {
         const chartContainer = document.getElementById('test-history-chart-container');
         const chartCanvas = document.getElementById('test-history-chart');
         
-        if (!chartContainer || !chartCanvas) {
-            console.log('Chart container or canvas not found');
-            return;
-        }
-        
-        console.log('All tests:', tests);
-        
-        // Debug each test
-        tests.forEach((test, index) => {
-            console.log(`Test ${index + 1}:`, {
-                test_id: test.test_id,
-                status: test.status,
-                score: test.score,
-                score_type: typeof test.score,
-                score_date: test.score_date,
-                has_score: test.score !== null && test.score !== undefined,
-                full_test: test
-            });
-        });
+        if (!chartContainer || !chartCanvas) return;
         
         // Filter tests with completed status and NAD scores
         const completedTests = tests.filter(test => 
@@ -1500,16 +1468,11 @@ window.NADCustomer = {
             test.score_date
         );
         
-        console.log('Completed tests with scores:', completedTests);
-        
         // Only show chart if we have at least 2 completed tests
         if (completedTests.length < 2) {
-            console.log(`Not enough completed tests with scores: ${completedTests.length} (need at least 2)`);
             chartContainer.style.display = 'none';
             return;
         }
-        
-        console.log(`Showing chart with ${completedTests.length} tests`);
         
         // Sort tests by completion date
         completedTests.sort((a, b) => new Date(a.score_date) - new Date(b.score_date));
@@ -1526,8 +1489,13 @@ window.NADCustomer = {
         
         const nadScores = completedTests.map(test => parseFloat(test.score));
         
-        // Show the chart container
+        // Show the chart container - force visibility
         chartContainer.style.display = 'block';
+        // Also ensure parent containers are visible
+        const testHistorySection = document.getElementById('test-history-section');
+        if (testHistorySection) {
+            testHistorySection.style.display = 'block';
+        }
         
         // Destroy existing chart if it exists
         if (this.testHistoryChart) {
@@ -1658,6 +1626,5 @@ window.NADCustomer = {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing NADCustomer');
     window.NADCustomer.init();
 });
