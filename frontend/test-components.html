@@ -43,6 +43,10 @@
             transform: translateY(-5px);
         }
         
+        .test-card-full-width {
+            grid-column: 1 / -1;
+        }
+        
         .status-indicator {
             display: inline-block;
             width: 12px;
@@ -136,7 +140,7 @@
 
         <div class="test-grid">
             <!-- Console Log -->
-            <div class="test-card">
+            <div class="test-card test-card-full-width">
                 <h3>📋 Test Console</h3>
                 <div class="log-output" id="test-console">
 Ready for testing...
