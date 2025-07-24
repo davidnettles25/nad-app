@@ -506,7 +506,7 @@
                 <a href="#supplements" class="nav-link" data-section="supplements">💊 Supplements</a>
                 <a href="#analytics" class="nav-link" data-section="analytics">📈 Analytics</a>
                 <a href="#logs" class="nav-link" data-section="logs">📋 Log Management</a>
-                <a href="#system" class="nav-link" data-section="system">⚙️ System Health</a>
+                <a href="test-components.html" class="nav-link" target="_blank">🧪 System Testing</a>
             </div>
         </nav>
 
@@ -1043,29 +1043,6 @@
                 </div>
             </div>
 
-            <!-- System Health Section -->
-            <div id="system" class="content-section">
-                <h2 style="margin-bottom: 20px;">⚙️ System Health & Logs</h2>
-                
-                <!-- System Health Controls -->
-                <div class="card">
-                    <h3>System Health</h3>
-                    <div class="section-controls">
-                        <button class="btn btn-primary" onclick="testSystemHealth()">🔍 Test System Health</button>
-                        <button class="btn btn-secondary" onclick="testAPIEndpoints()">🌐 Test API Endpoints</button>
-                    </div>
-                    <div id="system-test-results"></div>
-                </div>
-
-                <!-- Note: Log Management has been moved to its own dedicated section -->
-                <div class="card">
-                    <h3>📋 Quick Links</h3>
-                    <p>Log management features have been moved to their own dedicated section for better organization.</p>
-                    <div class="section-controls">
-                        <button class="btn btn-primary" onclick="showSection('logs')">📋 Go to Log Management</button>
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
 
@@ -1942,41 +1919,6 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             }
         }
 
-        // System health functions
-        function testSystemHealth() {
-            // Testing system health...
-            showAlert('🔍 Running system health check...', 'info');
-        
-            const resultsDiv = document.getElementById('system-test-results');
-            if (resultsDiv) {
-                resultsDiv.innerHTML = `
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-top: 20px;">
-                        <h4 style="color: #28a745; margin-bottom: 15px;">✅ System Health Check</h4>
-                        <ul style="margin: 10px 0 0 20px; color: #155724;">
-                            <li>✅ API endpoints are responding</li>
-                            <li>✅ Database connections are stable</li>
-                            <li>✅ User management system is operational</li>
-                            <li>✅ Supplement management is functional</li>
-                            <li>✅ Test management is working</li>
-                            <li>✅ Analytics system is operational</li>
-                        </ul>
-                    </div>
-                `;
-            }
-        
-            setTimeout(() => {
-                showAlert('✅ System health check completed - all systems operational!', 'success');
-            }, 2000);
-        }
-
-        function testAPIEndpoints() {
-            // Testing API endpoints...
-            showAlert('🌐 Testing API connectivity...', 'info');
-        
-            setTimeout(() => {
-                showAlert('✅ API endpoints test completed!', 'success');
-            }, 2000);
-        }
 
         // Event listeners and initialization
         document.addEventListener('DOMContentLoaded', () => {
@@ -2029,8 +1971,6 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         window.showAddSupplementForm = showAddSupplementForm;
         window.editSupplement = editSupplement;
         window.toggleSupplement = toggleSupplement;
-        window.testSystemHealth = testSystemHealth;
-        window.testAPIEndpoints = testAPIEndpoints;
         window.setupSearchAndFilter = setupSearchAndFilter;
         window.clearFilters = clearFilters;
         window.applyFilters = applyFilters;
