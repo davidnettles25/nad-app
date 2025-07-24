@@ -113,8 +113,11 @@ function renderBatchCards() {
                 <button onclick="selectBatchForPrint('${batch.batch_id}')" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                     🖨️ Print
                 </button>
-                <button onclick="viewBatchDetails('${batch.batch_id}')" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                <button onclick="viewBatchDetails('${batch.batch_id}')" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                     👁️ Details
+                </button>
+                <button onclick="downloadBatchCSV('${batch.batch_id}')" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    📊 CSV
                 </button>
             </div>
         </div>
@@ -181,6 +184,9 @@ function createBatchCard(batch) {
                 </button>
                 <button class="btn secondary" onclick="viewBatchDetails('${batch.batch_id}')" style="flex: 1; padding: 6px 12px; font-size: 13px;">
                     👁️ Details
+                </button>
+                <button class="btn success" onclick="downloadBatchCSV('${batch.batch_id}')" style="flex: 1; padding: 6px 12px; font-size: 13px; background: #28a745; color: white; border: none; border-radius: 4px;">
+                    📊 CSV
                 </button>
             </div>
         </div>
@@ -792,6 +798,116 @@ function closePrintHistoryModal() {
     }
 }
 
+// CSV Download functionality
+async function downloadBatchCSV(batchId) {
+    try {
+        // Show loading alert
+        if (typeof showAlert === 'function') {
+            showAlert('📊 Generating CSV file...', 'info');
+        }
+        
+        // Fetch batch details from API
+        const response = await fetch(`${API_BASE}/api/admin/batch-details/${batchId}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to fetch batch details');
+        }
+        
+        const batchData = result.data;
+        
+        // Generate CSV content
+        const csvContent = generateBatchCSV(batchData);
+        
+        // Create and download CSV file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Generate filename with batch ID and current date
+        const currentDate = new Date().toISOString().split('T')[0];
+        const batchShortId = batchId.split('-').pop();
+        a.download = `NAD_Batch_${batchShortId}_${currentDate}.csv`;
+        
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        if (typeof showAlert === 'function') {
+            showAlert('✅ CSV file downloaded successfully!', 'success');
+        }
+        
+    } catch (error) {
+        if (typeof showAlert === 'function') {
+            showAlert(`❌ Failed to download CSV: ${error.message}`, 'error');
+        }
+    }
+}
+
+function generateBatchCSV(batchData) {
+    let csv = '';
+    
+    // CSV Header with batch information
+    csv += 'NAD+ Test Batch Export\n';
+    csv += `Generated: ${new Date().toLocaleString()}\n`;
+    csv += '\n';
+    
+    // Batch Summary
+    csv += 'BATCH SUMMARY\n';
+    csv += 'Property,Value\n';
+    csv += `Batch ID,${batchData.batch_id}\n`;
+    csv += `Total Tests,${batchData.total_tests}\n`;
+    csv += `Print Status,${batchData.print_status}\n`;
+    csv += `Created Date,${new Date(batchData.created_date).toLocaleString()}\n`;
+    
+    if (batchData.last_printed_date) {
+        csv += `Last Printed,${new Date(batchData.last_printed_date).toLocaleString()}\n`;
+    }
+    
+    if (batchData.batch_notes) {
+        csv += `Notes,"${batchData.batch_notes.replace(/"/g, '""')}"\n`;
+    }
+    
+    // Print progress if available
+    if (batchData.print_status === 'partially_printed') {
+        csv += `Print Progress,${batchData.print_percentage}%\n`;
+        csv += `Printed Tests,${batchData.printed_tests}\n`;
+    }
+    
+    csv += '\n';
+    
+    // Print History if available
+    if (batchData.print_history && batchData.print_history.length > 0) {
+        csv += 'PRINT HISTORY\n';
+        csv += 'Date,Format,Test Count,Printer,Job ID,Notes\n';
+        
+        batchData.print_history.forEach(entry => {
+            const date = new Date(entry.printed_date).toLocaleString();
+            const format = entry.print_format.replace(/_/g, ' ');
+            const notes = entry.notes ? `"${entry.notes.replace(/"/g, '""')}"` : '';
+            
+            csv += `"${date}","${format}",${entry.test_count},"${entry.printer_name || 'Default'}","${entry.print_job_id}",${notes}\n`;
+        });
+        
+        csv += '\n';
+    }
+    
+    // Test IDs
+    csv += 'TEST IDS\n';
+    csv += 'Test ID,Status,Created Date\n';
+    
+    batchData.test_ids.forEach(test => {
+        const status = test.is_printed ? 'Printed' : 'Pending';
+        const createdDate = test.created_date ? new Date(test.created_date).toLocaleString() : 'N/A';
+        
+        csv += `${test.test_id},${status},"${createdDate}"\n`;
+    });
+    
+    return csv;
+}
+
 // Global functions
 window.loadPrintableBatches = loadPrintableBatches;
 window.selectBatchForPrint = selectBatchForPrint;
@@ -804,6 +920,7 @@ window.showPrintHistory = showPrintHistory;
 window.closePrintHistoryModal = closePrintHistoryModal;
 window.closeBatchDetailsModal = closeBatchDetailsModal;
 window.initBatchPrinting = initBatchPrinting;
+window.downloadBatchCSV = downloadBatchCSV;
 
 // Batch Printing functionality loaded
 
