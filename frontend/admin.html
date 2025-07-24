@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NAD Test Admin Dashboard</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="shared/assets/favicon.ico">
+    
     <!-- Bypass parameter security check -->
     <script src="shared/js/bypass-security.js"></script>
     <!-- Load Shared CSS -->
@@ -514,9 +517,12 @@
         <main class="main-content">
             <!-- Header -->
             <div class="header">
-                <div>
-                    <h1 style="color: #333; font-size: 2.2em; margin-bottom: 5px;">🔧 NAD Admin Dashboard</h1>
-                    <p style="color: #666; margin: 0;">Real-time management dashboard</p>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <img src="shared/assets/logo.png" alt="NAD Logo" style="height: 40px; width: auto;">
+                    <div>
+                        <h1 style="color: #333; font-size: 2.2em; margin-bottom: 5px;">🔧 NAD Admin Dashboard</h1>
+                        <p style="color: #666; margin: 0;">Real-time management dashboard</p>
+                    </div>
                 </div>
                 <div style="display: flex; gap: 15px; align-items: center;">
                     <button class="btn btn-secondary" onclick="refreshData()">🔄 Refresh</button>
