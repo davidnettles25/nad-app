@@ -135,6 +135,18 @@
         </div>
 
         <div class="test-grid">
+            <!-- Console Log -->
+            <div class="test-card">
+                <h3>📋 Test Console</h3>
+                <div class="log-output" id="test-console">
+Ready for testing...
+Starting component system initialization...
+                </div>
+                <button class="btn btn-test" onclick="clearConsole()">Clear Console</button>
+                <button class="btn btn-success" onclick="exportLogs()">Export Logs</button>
+                <button class="btn btn-test" onclick="toggleAutoScroll()">Toggle Auto-scroll</button>
+            </div>
+
             <!-- File Structure Test -->
             <div class="test-card">
                 <h3>📁 File Structure</h3>
@@ -232,17 +244,6 @@
             </div>
         </div>
 
-        <!-- Console Log -->
-        <div class="test-card">
-            <h3>📋 Test Console</h3>
-            <div class="log-output" id="test-console">
-Ready for testing...
-Starting component system initialization...
-            </div>
-            <button class="btn btn-test" onclick="clearConsole()">Clear Console</button>
-            <button class="btn btn-success" onclick="exportLogs()">Export Logs</button>
-            <button class="btn btn-test" onclick="toggleAutoScroll()">Toggle Auto-scroll</button>
-        </div>
     </div>
 
     <!-- CORRECTED: No /nad-app/ in script src -->
