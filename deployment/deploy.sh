@@ -32,11 +32,31 @@ mkdir -p "$BACKUP_DIR"
 log "📥 Downloading latest code..."
 git clone "$REPO_URL" "$TEMP_DIR"
 
+# Get deployment info from git
+log "📋 Recording deployment information..."
+cd "$TEMP_DIR"
+COMMIT_HASH=$(git rev-parse HEAD | cut -c1-7)
+COMMIT_DATE=$(git log -1 --format=%ci)
+COMMIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+DEPLOY_TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+
+# Create deployment info file
+cat > deployment-info.json << EOF
+{
+  "commit": "$COMMIT_HASH",
+  "date": "$COMMIT_DATE",
+  "branch": "$COMMIT_BRANCH",
+  "deployTime": "$DEPLOY_TIME",
+  "deployedBy": "deploy.sh"
+}
+EOF
+
 # Deploy backend
 log "🚀 Deploying backend..."
 pm2 stop nad-api || true
 [ -f "$BACKEND_TARGET/.env" ] && cp "$BACKEND_TARGET/.env" "$TEMP_DIR/backend/.env"
 cp -r "$TEMP_DIR/backend/"* "$BACKEND_TARGET/"
+cp "$TEMP_DIR/deployment-info.json" "$BACKEND_TARGET/"
 cd "$BACKEND_TARGET"
 npm install --production
 
@@ -52,6 +72,7 @@ pm2 start ecosystem.config.js || pm2 restart nad-api
 log "🎨 Deploying frontend..."
 mkdir -p "$FRONTEND_TARGET"
 cp -r "$TEMP_DIR/frontend/"* "$FRONTEND_TARGET/"
+cp "$TEMP_DIR/deployment-info.json" "$FRONTEND_TARGET/"
 chown -R bitnami:bitnami "$FRONTEND_TARGET"
 chmod -R 755 "$FRONTEND_TARGET"
 

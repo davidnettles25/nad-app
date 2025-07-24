@@ -4118,40 +4118,81 @@ app.get('/api/deployment-info', async (req, res) => {
         let workingDirectory = process.cwd();
         
         try {
-            // Try different working directories
-            const possibleDirs = [
-                process.cwd(),
-                path.join(process.cwd(), '..'),
-                '/opt/nad-app',
-                '/opt/bitnami/apache/htdocs'
+            const fs = require('fs');
+            
+            // First try to read deployment info from a file created during deployment
+            const possibleDeploymentFiles = [
+                '/opt/nad-app/deployment-info.json',
+                path.join(process.cwd(), 'deployment-info.json'),
+                '/opt/bitnami/apache/htdocs/deployment-info.json'
             ];
             
-            let gitWorked = false;
-            for (const dir of possibleDirs) {
+            let deploymentFileFound = false;
+            for (const filePath of possibleDeploymentFiles) {
                 try {
-                    deployedCommit = execSync('git rev-parse HEAD', { 
-                        encoding: 'utf8', 
-                        cwd: dir 
-                    }).trim().substring(0, 7);
-                    deployedDate = execSync('git log -1 --format=%ci', { 
-                        encoding: 'utf8', 
-                        cwd: dir 
-                    }).trim();
-                    deployedBranch = execSync('git rev-parse --abbrev-ref HEAD', { 
-                        encoding: 'utf8', 
-                        cwd: dir 
-                    }).trim();
-                    workingDirectory = dir;
-                    gitWorked = true;
-                    break;
-                } catch (dirError) {
-                    // Try next directory
-                    continue;
+                    if (fs.existsSync(filePath)) {
+                        const deploymentInfo = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                        deployedCommit = deploymentInfo.commit || 'unknown';
+                        deployedDate = deploymentInfo.date || 'unknown';
+                        deployedBranch = deploymentInfo.branch || 'unknown';
+                        workingDirectory = path.dirname(filePath);
+                        deploymentFileFound = true;
+                        break;
+                    }
+                } catch (fileError) {
+                    // Continue to next file
                 }
             }
             
-            if (!gitWorked) {
-                gitError = 'Git commands failed in all attempted directories';
+            if (!deploymentFileFound) {
+                // Fallback: try git commands in case server has git repos
+                const possibleDirs = [
+                    process.cwd(),
+                    path.join(process.cwd(), '..'),
+                    '/opt/nad-app',
+                    '/opt/bitnami/apache/htdocs'
+                ];
+                
+                let gitWorked = false;
+                let dirErrors = [];
+                
+                for (const dir of possibleDirs) {
+                    try {
+                        if (!fs.existsSync(dir)) {
+                            dirErrors.push(`${dir}: Directory does not exist`);
+                            continue;
+                        }
+                        
+                        if (!fs.existsSync(path.join(dir, '.git'))) {
+                            dirErrors.push(`${dir}: Not a git repository (.git not found)`);
+                            continue;
+                        }
+                        
+                        // Try git commands
+                        deployedCommit = execSync('git rev-parse HEAD', { 
+                            encoding: 'utf8', 
+                            cwd: dir 
+                        }).trim().substring(0, 7);
+                        deployedDate = execSync('git log -1 --format=%ci', { 
+                            encoding: 'utf8', 
+                            cwd: dir 
+                        }).trim();
+                        deployedBranch = execSync('git rev-parse --abbrev-ref HEAD', { 
+                            encoding: 'utf8', 
+                            cwd: dir 
+                        }).trim();
+                        workingDirectory = dir;
+                        gitWorked = true;
+                        break;
+                    } catch (dirError) {
+                        dirErrors.push(`${dir}: ${dirError.message}`);
+                        continue;
+                    }
+                }
+                
+                if (!gitWorked) {
+                    gitError = `No deployment-info.json file found and git commands failed. Deploy directories are not git repositories - this is expected. Add deployment-info.json creation to deploy.sh script.`;
+                }
             }
         } catch (error) {
             gitError = error.message;
