@@ -1157,7 +1157,7 @@ function generateTestId() {
 }
 
 function generateRandomSuffix() {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
     for (let i = 0; i < 6; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -1356,7 +1356,7 @@ app.post('/api/tests/verify', async (req, res) => {
             SELECT ti.*, ts.score
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-            WHERE ti.test_id = ?
+            WHERE UPPER(ti.test_id) = UPPER(?)
         `, [test_id]);
         
         if (testRows.length === 0) {
@@ -1430,7 +1430,7 @@ app.post('/api/tests/:testId/supplements', async (req, res) => {
         
         const [testRows] = await db.execute(`
             SELECT test_id, status, customer_id, batch_id, created_date, activated_date 
-            FROM nad_test_ids WHERE test_id = ? AND status IN ('activated', 'completed')
+            FROM nad_test_ids WHERE UPPER(test_id) = UPPER(?) AND status IN ('activated', 'completed')
         `, [testId]);
         
         if (testRows.length === 0) {
@@ -1528,7 +1528,7 @@ app.post('/api/tests/score', upload.single('image'), async (req, res) => {
         
         const [testRows] = await db.execute(`
             SELECT test_id, status, customer_id, batch_id, created_date, activated_date 
-            FROM nad_test_ids WHERE test_id = ?
+            FROM nad_test_ids WHERE UPPER(test_id) = UPPER(?)
         `, [test_id]);
         
         if (testRows.length === 0) {
@@ -2093,7 +2093,7 @@ app.put('/api/lab/update-test/:testId', upload.none(), async (req, res) => {
         try {
             // Get the original score for audit
             const [original] = await connection.execute(`
-                SELECT score FROM nad_test_scores WHERE test_id = ?
+                SELECT score FROM nad_test_scores WHERE UPPER(test_id) = UPPER(?)
             `, [testId]);
             
             const originalScore = original.length > 0 ? original[0].score : null;
@@ -2104,7 +2104,7 @@ app.put('/api/lab/update-test/:testId', upload.none(), async (req, res) => {
                 SET score = ?, 
                     technician_id = ?,
                     updated_date = NOW()
-                WHERE test_id = ?
+                WHERE UPPER(test_id) = UPPER(?)
             `, [parseFloat(nadScore), technicianEmail || 'lab-tech@example.com', testId]);
             
             // Create audit log entry
@@ -2233,7 +2233,7 @@ app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (re
                 UPDATE nad_test_ids 
                 SET status = 'completed', 
                     processed_date = NOW()
-                WHERE test_id = ?
+                WHERE UPPER(test_id) = UPPER(?)
             `, [testId]);
             
             // Prepare file path if file was uploaded
@@ -2470,7 +2470,7 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
         }
         
         req.logger.debugArea('analytics', 'Checking test existence', { testId });
-        const [existing] = await db.execute(`SELECT test_id, status FROM nad_test_ids WHERE test_id = ?`, [testId]);
+        const [existing] = await db.execute(`SELECT test_id, status FROM nad_test_ids WHERE UPPER(test_id) = UPPER(?)`, [testId]);
         
         if (existing.length === 0) {
             req.logger.warn('Test activation failed: test not found', { testId });
@@ -2500,7 +2500,7 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
         const [updateResult] = await db.execute(`
             UPDATE nad_test_ids 
             SET status = 'activated', activated_date = NOW()
-            WHERE test_id = ?
+            WHERE UPPER(test_id) = UPPER(?)
         `, [testId]);
         
         if (updateResult.affectedRows === 0) {
@@ -2516,7 +2516,7 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
         }
         
         // Verify the update
-        const [verifyResult] = await db.execute(`SELECT test_id, status, activated_date FROM nad_test_ids WHERE test_id = ?`, [testId]);
+        const [verifyResult] = await db.execute(`SELECT test_id, status, activated_date FROM nad_test_ids WHERE UPPER(test_id) = UPPER(?)`, [testId]);
         
         const processingTime = Date.now() - startTime;
         req.logger.info('Test activated successfully', {
@@ -2572,7 +2572,7 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
         }
         
         req.logger.debugArea('analytics', 'Checking test existence for deactivation', { testId });
-        const [existing] = await db.execute(`SELECT test_id, status FROM nad_test_ids WHERE test_id = ?`, [testId]);
+        const [existing] = await db.execute(`SELECT test_id, status FROM nad_test_ids WHERE UPPER(test_id) = UPPER(?)`, [testId]);
         
         if (existing.length === 0) {
             req.logger.warn('Test deactivation failed: test not found', { testId });
@@ -2602,7 +2602,7 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
         const [updateResult] = await db.execute(`
             UPDATE nad_test_ids 
             SET status = 'pending', activated_date = NULL
-            WHERE test_id = ?
+            WHERE UPPER(test_id) = UPPER(?)
         `, [testId]);
         
         if (updateResult.affectedRows === 0) {
@@ -2618,7 +2618,7 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
         }
         
         // Verify the update
-        const [verifyResult] = await db.execute(`SELECT test_id, status, activated_date FROM nad_test_ids WHERE test_id = ?`, [testId]);
+        const [verifyResult] = await db.execute(`SELECT test_id, status, activated_date FROM nad_test_ids WHERE UPPER(test_id) = UPPER(?)`, [testId]);
         
         const processingTime = Date.now() - startTime;
         req.logger.info('Test deactivated successfully', {
@@ -3416,7 +3416,7 @@ app.post('/api/customer/verify-test', async (req, res) => {
         const [testRows] = await db.execute(`
             SELECT test_id, status, activated_date, customer_id, batch_id
             FROM nad_test_ids 
-            WHERE test_id = ?
+            WHERE UPPER(test_id) = UPPER(?)
         `, [testId]);
         
         if (testRows.length === 0) {
@@ -3485,7 +3485,7 @@ app.post('/api/customer/activate-test', async (req, res) => {
         const [testRows] = await db.execute(`
             SELECT test_id, status, activated_date, customer_id, batch_id
             FROM nad_test_ids 
-            WHERE test_id = ?
+            WHERE UPPER(test_id) = UPPER(?)
         `, [testId]);
         
         if (testRows.length === 0) {
@@ -3516,7 +3516,7 @@ app.post('/api/customer/activate-test', async (req, res) => {
             updateParams.push(customerId);
         }
         
-        updateQuery += ` WHERE test_id = ?`;
+        updateQuery += ` WHERE UPPER(test_id) = UPPER(?)`;
         updateParams.push(testId);
         
         const [result] = await db.execute(updateQuery, updateParams);
@@ -3555,7 +3555,7 @@ app.post('/api/customer/activate-test', async (req, res) => {
                 const [verifyRows] = await db.execute(`
                     SELECT test_id, customer_id, supplements_with_dose 
                     FROM nad_user_supplements 
-                    WHERE test_id = ? AND customer_id = ?
+                    WHERE UPPER(test_id) = UPPER(?) AND customer_id = ?
                 `, [testId, customerIdToUse]);
                 
                 console.log(`🔍 Verification query result for ${testId}:`, {
@@ -3851,7 +3851,7 @@ app.get('/api/customer/test-detail/:testId', async (req, res) => {
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
             LEFT JOIN nad_user_supplements us ON ti.test_id = us.test_id  
-            WHERE ti.test_id = ? AND ti.customer_id = ?
+            WHERE UPPER(ti.test_id) = UPPER(?) AND ti.customer_id = ?
         `, [testId, customerId]);
 
         if (testRows.length === 0) {
@@ -4601,14 +4601,14 @@ app.get('/api/debug/supplements/:testId', async (req, res) => {
         const [supplementRows] = await db.execute(`
             SELECT test_id, customer_id, supplements_with_dose, habits_notes, created_at, updated_at
             FROM nad_user_supplements 
-            WHERE test_id = ?
+            WHERE UPPER(test_id) = UPPER(?)
         `, [testId]);
         
         // Check nad_test_ids table
         const [testRows] = await db.execute(`
             SELECT test_id, customer_id, status, created_date, activated_date
             FROM nad_test_ids 
-            WHERE test_id = ?
+            WHERE UPPER(test_id) = UPPER(?)
         `, [testId]);
         
         console.log(`📊 Debug results for ${testId}:`, {
