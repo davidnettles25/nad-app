@@ -345,8 +345,8 @@ Starting component system initialization...
                 NADComponents.config.baseUrl = API_BASE;
                 logToConsole('✅ Component system configured');
                 
-                // Test component loading
-                NADComponents.load('test-component', { title: 'Test Component' })
+                // Test component loading (using available loadSection method)
+                NADComponents.loadSection('overview', '#component-demo')
                     .then(() => {
                         logToConsole('✅ Test component loaded successfully');
                         updateStatus('js-status', '✅ Working');
