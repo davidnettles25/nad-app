@@ -847,65 +847,8 @@ async function downloadBatchCSV(batchId) {
 }
 
 function generateBatchCSV(batchData) {
-    let csv = '';
-    
-    // CSV Header with batch information
-    csv += 'NAD+ Test Batch Export\n';
-    csv += `Generated: ${new Date().toLocaleString()}\n`;
-    csv += '\n';
-    
-    // Batch Summary
-    csv += 'BATCH SUMMARY\n';
-    csv += 'Property,Value\n';
-    csv += `Batch ID,${batchData.batch_id}\n`;
-    csv += `Total Tests,${batchData.total_tests}\n`;
-    csv += `Print Status,${batchData.print_status}\n`;
-    csv += `Created Date,${new Date(batchData.created_date).toLocaleString()}\n`;
-    
-    if (batchData.last_printed_date) {
-        csv += `Last Printed,${new Date(batchData.last_printed_date).toLocaleString()}\n`;
-    }
-    
-    if (batchData.batch_notes) {
-        csv += `Notes,"${batchData.batch_notes.replace(/"/g, '""')}"\n`;
-    }
-    
-    // Print progress if available
-    if (batchData.print_status === 'partially_printed') {
-        csv += `Print Progress,${batchData.print_percentage}%\n`;
-        csv += `Printed Tests,${batchData.printed_tests}\n`;
-    }
-    
-    csv += '\n';
-    
-    // Print History if available
-    if (batchData.print_history && batchData.print_history.length > 0) {
-        csv += 'PRINT HISTORY\n';
-        csv += 'Date,Format,Test Count,Printer,Job ID,Notes\n';
-        
-        batchData.print_history.forEach(entry => {
-            const date = new Date(entry.printed_date).toLocaleString();
-            const format = entry.print_format.replace(/_/g, ' ');
-            const notes = entry.notes ? `"${entry.notes.replace(/"/g, '""')}"` : '';
-            
-            csv += `"${date}","${format}",${entry.test_count},"${entry.printer_name || 'Default'}","${entry.print_job_id}",${notes}\n`;
-        });
-        
-        csv += '\n';
-    }
-    
-    // Test IDs
-    csv += 'TEST IDS\n';
-    csv += 'Test ID,Status,Created Date\n';
-    
-    batchData.test_ids.forEach(test => {
-        const status = test.is_printed ? 'Printed' : 'Pending';
-        const createdDate = test.created_date ? new Date(test.created_date).toLocaleString() : 'N/A';
-        
-        csv += `${test.test_id},${status},"${createdDate}"\n`;
-    });
-    
-    return csv;
+    // Only return test IDs, one per line, no headers
+    return batchData.test_ids.map(test => test.test_id).join('\n');
 }
 
 // Global functions
