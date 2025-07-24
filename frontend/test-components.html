@@ -309,43 +309,129 @@ Starting component system initialization...
         
         // Test Functions
         async function testFileStructure() {
-            logToConsole('Testing file structure...');
+            logToConsole('Testing comprehensive file structure...');
             
             const filesToTest = [
-                { url: '/shared/css/base.css', type: 'CSS', statusId: 'css-files-status' },
-                { url: '/shared/js/components.js', type: 'JS', statusId: 'js-files-status' },
-                { url: '/admin.html', type: 'HTML', statusId: 'html-files-status' },
-                { url: '/customer-portal.html', type: 'HTML', statusId: 'html-files-status' }
+                // Core CSS Files
+                { url: '/shared/css/base.css', type: 'CSS', statusId: 'css-files-status', category: 'Core CSS' },
+                { url: '/shared/css/variables.css', type: 'CSS', statusId: 'css-files-status', category: 'Core CSS' },
+                { url: '/shared/css/components.css', type: 'CSS', statusId: 'css-files-status', category: 'Core CSS' },
+                
+                // Admin CSS Files
+                { url: '/admin/css/admin-dashboard.css', type: 'CSS', statusId: 'css-files-status', category: 'Admin CSS' },
+                { url: '/admin/css/batch-printing.css', type: 'CSS', statusId: 'css-files-status', category: 'Admin CSS' },
+                
+                // Customer CSS Files
+                { url: '/customer/css/customer-portal.css', type: 'CSS', statusId: 'css-files-status', category: 'Customer CSS' },
+                
+                // Core JavaScript Files
+                { url: '/shared/js/components.js', type: 'JS', statusId: 'js-files-status', category: 'Core JS' },
+                { url: '/shared/js/bypass-security.js', type: 'JS', statusId: 'js-files-status', category: 'Core JS' },
+                
+                // Admin JavaScript Files
+                { url: '/admin/js/admin-dashboard.js', type: 'JS', statusId: 'js-files-status', category: 'Admin JS' },
+                { url: '/admin/js/batch-printing.js', type: 'JS', statusId: 'js-files-status', category: 'Admin JS' },
+                
+                // Customer JavaScript Files
+                { url: '/customer/js/customer-portal.js', type: 'JS', statusId: 'js-files-status', category: 'Customer JS' },
+                
+                // Main HTML Pages
+                { url: '/admin.html', type: 'HTML', statusId: 'html-files-status', category: 'Main Pages' },
+                { url: '/customer-portal.html', type: 'HTML', statusId: 'html-files-status', category: 'Main Pages' },
+                { url: '/lab-interface.html', type: 'HTML', statusId: 'html-files-status', category: 'Main Pages' },
+                { url: '/test-interface.html', type: 'HTML', statusId: 'html-files-status', category: 'Main Pages' },
+                { url: '/test-components.html', type: 'HTML', statusId: 'html-files-status', category: 'Main Pages' },
+                
+                // Section HTML Files
+                { url: '/customer/sections/verification.html', type: 'HTML', statusId: 'html-files-status', category: 'Sections' },
+                { url: '/admin/sections/overview.html', type: 'HTML', statusId: 'html-files-status', category: 'Sections' },
+                
+                // Shared Assets
+                { url: '/shared/assets/logo.png', type: 'Asset', statusId: 'shared-assets-status', category: 'Images', optional: true },
+                { url: '/shared/assets/favicon.ico', type: 'Asset', statusId: 'shared-assets-status', category: 'Images', optional: true }
             ];
             
-            for (const file of filesToTest) {
-                try {
-                    const response = await fetch(file.url, { method: 'HEAD' });
-                    if (response.ok) {
-                        updateStatus(file.statusId, '✅ Found');
-                        logToConsole(`✅ ${file.type}: ${file.url} exists`);
-                    } else {
-                        updateStatus(file.statusId, `❌ ${response.status}`);
-                        logToConsole(`❌ ${file.type}: ${file.url} returned ${response.status}`, 'error');
-                        
-                        if (response.status === 404) {
-                            addFixCommand(`# Create missing file: ${file.url}`);
-                            if (file.type === 'CSS') {
-                                addFixCommand(`mkdir -p /opt/bitnami/apache/htdocs/shared/css`);
-                                addFixCommand(`# Create ${file.url} with basic styles`);
-                            } else if (file.type === 'JS') {
-                                addFixCommand(`mkdir -p /opt/bitnami/apache/htdocs/shared/js`);
-                                addFixCommand(`# Create ${file.url} with component system`);
+            let totalFiles = filesToTest.length;
+            let foundFiles = 0;
+            let missingFiles = 0;
+            let optionalMissing = 0;
+            
+            // Group files by category for better logging
+            const categories = {};
+            filesToTest.forEach(file => {
+                if (!categories[file.category]) {
+                    categories[file.category] = [];
+                }
+                categories[file.category].push(file);
+            });
+            
+            // Test each category
+            for (const [categoryName, categoryFiles] of Object.entries(categories)) {
+                logToConsole(`\n--- Testing ${categoryName} ---`);
+                
+                for (const file of categoryFiles) {
+                    try {
+                        const response = await fetch(file.url, { method: 'HEAD' });
+                        if (response.ok) {
+                            foundFiles++;
+                            logToConsole(`✅ ${file.category}: ${file.url.split('/').pop()} exists`);
+                        } else {
+                            if (file.optional) {
+                                optionalMissing++;
+                                logToConsole(`⚠️ ${file.category}: ${file.url} missing (optional)`);
+                            } else {
+                                missingFiles++;
+                                logToConsole(`❌ ${file.category}: ${file.url} returned ${response.status}`, 'error');
+                                
+                                if (response.status === 404) {
+                                    addFixCommand(`# Create missing ${file.type}: ${file.url}`);
+                                    const dirPath = file.url.substring(0, file.url.lastIndexOf('/'));
+                                    addFixCommand(`mkdir -p /opt/bitnami/apache/htdocs${dirPath}`);
+                                    
+                                    if (file.type === 'CSS') {
+                                        addFixCommand(`# Create ${file.url} with appropriate styles`);
+                                    } else if (file.type === 'JS') {
+                                        addFixCommand(`# Create ${file.url} with required functionality`);
+                                    } else if (file.type === 'HTML') {
+                                        addFixCommand(`# Create ${file.url} with proper structure`);
+                                    }
+                                }
                             }
                         }
+                    } catch (error) {
+                        if (file.optional) {
+                            optionalMissing++;
+                            logToConsole(`⚠️ ${file.category}: ${file.url} - ${error.message} (optional)`);
+                        } else {
+                            missingFiles++;
+                            logToConsole(`❌ ${file.category}: ${file.url} - ${error.message}`, 'error');
+                            addFixCommand(`# Fix network/access issue for: ${file.url}`);
+                        }
                     }
-                } catch (error) {
-                    updateStatus(file.statusId, '❌ Error');
-                    logToConsole(`❌ ${file.type}: ${file.url} failed - ${error.message}`, 'error');
                 }
             }
             
-            updateStatus('shared-assets-status', '✅ Checked');
+            // Update status indicators based on results
+            const criticalFiles = totalFiles - optionalMissing;
+            const criticalFound = foundFiles;
+            
+            if (missingFiles === 0) {
+                updateStatus('css-files-status', '✅ All Found');
+                updateStatus('js-files-status', '✅ All Found');
+                updateStatus('html-files-status', '✅ All Found');
+                updateStatus('shared-assets-status', optionalMissing > 0 ? '⚠️ Some Optional Missing' : '✅ All Found');
+            } else {
+                const percentage = Math.round((criticalFound / criticalFiles) * 100);
+                updateStatus('css-files-status', `⚠️ ${percentage}% Found`);
+                updateStatus('js-files-status', `⚠️ ${percentage}% Found`);
+                updateStatus('html-files-status', `⚠️ ${percentage}% Found`);
+                updateStatus('shared-assets-status', `⚠️ ${percentage}% Found`);
+            }
+            
+            logToConsole(`\n📊 File Structure Summary:`);
+            logToConsole(`Found: ${foundFiles}/${totalFiles} files`);
+            logToConsole(`Missing Critical: ${missingFiles}`);
+            logToConsole(`Missing Optional: ${optionalMissing}`);
             
             if (fixCommands.length > 0) {
                 showQuickFix();
