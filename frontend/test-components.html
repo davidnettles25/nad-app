@@ -219,6 +219,20 @@ Starting component system initialization...
                 <button class="btn btn-test" onclick="testAllInterfaces()">Test All Links</button>
             </div>
 
+            <!-- Deployment Status -->
+            <div class="test-card">
+                <h3>🚀 Deployment Status</h3>
+                <p>Shows sync status between repository and deployed application.</p>
+                <div id="deployment-status">
+                    <div><span class="status-indicator status-info"></span>Repository: <span id="repo-status">Loading...</span></div>
+                    <div><span class="status-indicator status-info"></span>Frontend: <span id="frontend-status">Loading...</span></div>
+                    <div><span class="status-indicator status-info"></span>Backend: <span id="backend-status">Loading...</span></div>
+                    <div><span class="status-indicator status-info"></span>Last Deploy: <span id="last-deploy">Loading...</span></div>
+                </div>
+                <button class="btn btn-test" onclick="checkDeploymentStatus()">Check Status</button>
+                <button class="btn btn-success" onclick="refreshDeployment()">Refresh Deploy</button>
+            </div>
+
             <!-- System Information -->
             <div class="test-card">
                 <h3>📊 System Info</h3>
@@ -485,6 +499,61 @@ Starting component system initialization...
             }
         }
         
+        async function checkDeploymentStatus() {
+            logToConsole('Checking deployment status...');
+            
+            try {
+                // Check repository status via GitHub API
+                const repoResponse = await fetch('https://api.github.com/repos/davidnettles25/nad-app/commits/main');
+                if (repoResponse.ok) {
+                    const repoData = await repoResponse.json();
+                    const repoCommit = repoData.sha.substring(0, 7);
+                    const repoDate = new Date(repoData.commit.committer.date).toLocaleString();
+                    updateStatus('repo-status', `✅ ${repoCommit}`);
+                    updateStatus('last-deploy', repoDate);
+                    logToConsole(`✅ Repository latest commit: ${repoCommit}`);
+                } else {
+                    updateStatus('repo-status', '❌ Error');
+                    logToConsole('❌ Failed to fetch repository status', 'error');
+                }
+                
+                // Check frontend deployment (test for a specific frontend file)
+                const frontendResponse = await fetch('/admin.html', { method: 'HEAD' });
+                if (frontendResponse.ok) {
+                    updateStatus('frontend-status', '✅ Online');
+                    logToConsole('✅ Frontend deployment accessible');
+                } else {
+                    updateStatus('frontend-status', '❌ Offline');
+                    logToConsole('❌ Frontend deployment not accessible', 'error');
+                }
+                
+                // Check backend deployment
+                const backendResponse = await fetch(`${API_BASE}/api/deployment-test`);
+                if (backendResponse.ok) {
+                    const backendData = await backendResponse.json();
+                    updateStatus('backend-status', '✅ Online');
+                    logToConsole('✅ Backend deployment accessible');
+                } else {
+                    updateStatus('backend-status', '❌ Offline');
+                    logToConsole('❌ Backend deployment not accessible', 'error');
+                }
+                
+            } catch (error) {
+                logToConsole('❌ Deployment status check failed: ' + error.message, 'error');
+            }
+        }
+        
+        function refreshDeployment() {
+            logToConsole('Refreshing deployment status...');
+            // Reset all status indicators
+            updateStatus('repo-status', 'Loading...');
+            updateStatus('frontend-status', 'Loading...');
+            updateStatus('backend-status', 'Loading...');
+            updateStatus('last-deploy', 'Loading...');
+            // Recheck after a brief delay
+            setTimeout(() => checkDeploymentStatus(), 1000);
+        }
+
         async function testAllInterfaces() {
             logToConsole('Testing all interface links...');
             
