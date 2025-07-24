@@ -4105,6 +4105,42 @@ app.get('/api/deployment-test', (req, res) => {
     });
 });
 
+app.get('/api/deployment-info', async (req, res) => {
+    try {
+        const { execSync } = require('child_process');
+        
+        // Get current deployed commit hash
+        let deployedCommit = 'unknown';
+        let deployedDate = 'unknown';
+        let deployedBranch = 'unknown';
+        
+        try {
+            deployedCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim().substring(0, 7);
+            deployedDate = execSync('git log -1 --format=%ci', { encoding: 'utf8' }).trim();
+            deployedBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+        } catch (gitError) {
+            req.logger?.warn('Git commands failed in deployment-info', { error: gitError.message });
+        }
+        
+        res.json({
+            success: true,
+            deployment: {
+                commit: deployedCommit,
+                date: deployedDate,
+                branch: deployedBranch,
+                serverTime: new Date().toISOString(),
+                environment: process.env.NODE_ENV || 'development'
+            }
+        });
+    } catch (error) {
+        req.logger?.error('Deployment info request failed', { error: error.message });
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get deployment information'
+        });
+    }
+});
+
 // ERROR LOGGING TEST - This should force an error for testing
 app.get('/api/test-error-logging', (req, res) => {
     try {

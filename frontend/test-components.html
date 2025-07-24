@@ -586,14 +586,17 @@ Starting component system initialization...
         }
         
         async function checkDeploymentStatus() {
-            logToConsole('Checking deployment status...');
+            logToConsole('Checking deployment sync status...');
+            
+            let repoCommit = null;
+            let deployedCommit = null;
             
             try {
                 // Check repository status via GitHub API
                 const repoResponse = await fetch('https://api.github.com/repos/davidnettles25/nad-app/commits/main');
                 if (repoResponse.ok) {
                     const repoData = await repoResponse.json();
-                    const repoCommit = repoData.sha.substring(0, 7);
+                    repoCommit = repoData.sha.substring(0, 7);
                     const repoDate = new Date(repoData.commit.committer.date).toLocaleString();
                     updateStatus('repo-status', `✅ ${repoCommit}`);
                     updateStatus('last-deploy', repoDate);
@@ -603,25 +606,65 @@ Starting component system initialization...
                     logToConsole('❌ Failed to fetch repository status', 'error');
                 }
                 
+                // Check deployed version via backend
+                const deploymentResponse = await fetch(`${API_BASE}/api/deployment-info`);
+                if (deploymentResponse.ok) {
+                    const deploymentData = await deploymentResponse.json();
+                    if (deploymentData.success) {
+                        deployedCommit = deploymentData.deployment.commit;
+                        
+                        // Compare repository vs deployed commits
+                        if (repoCommit && deployedCommit && repoCommit !== 'unknown' && deployedCommit !== 'unknown') {
+                            if (repoCommit === deployedCommit) {
+                                updateStatus('backend-status', `✅ In Sync (${deployedCommit})`);
+                                logToConsole(`✅ Backend deployment in sync: ${deployedCommit}`);
+                            } else {
+                                updateStatus('backend-status', `⚠️ Behind (${deployedCommit})`);
+                                logToConsole(`⚠️ Backend deployment behind repository!`, 'error');
+                                logToConsole(`   Repository: ${repoCommit}`);
+                                logToConsole(`   Deployed:   ${deployedCommit}`);
+                                addFixCommand('# Backend deployment is behind repository');
+                                addFixCommand('# Run deployment process to sync with latest commit');
+                                addFixCommand(`# Repository commit: ${repoCommit}`);
+                                addFixCommand(`# Deployed commit:  ${deployedCommit}`);
+                            }
+                        } else {
+                            updateStatus('backend-status', '✅ Online (Version Unknown)');
+                            logToConsole('✅ Backend online but version comparison unavailable');
+                        }
+                    } else {
+                        updateStatus('backend-status', '❌ Info Error');
+                        logToConsole('❌ Failed to get backend deployment info', 'error');
+                    }
+                } else {
+                    updateStatus('backend-status', '❌ Offline');
+                    logToConsole('❌ Backend deployment not accessible', 'error');
+                }
+                
                 // Check frontend deployment (test for a specific frontend file)
                 const frontendResponse = await fetch('/admin.html', { method: 'HEAD' });
                 if (frontendResponse.ok) {
-                    updateStatus('frontend-status', '✅ Online');
-                    logToConsole('✅ Frontend deployment accessible');
+                    // Frontend sync is harder to detect, so we assume it's in sync if backend is
+                    if (repoCommit && deployedCommit && repoCommit === deployedCommit) {
+                        updateStatus('frontend-status', '✅ In Sync');
+                        logToConsole('✅ Frontend deployment appears in sync');
+                    } else if (repoCommit && deployedCommit && repoCommit !== deployedCommit) {
+                        updateStatus('frontend-status', '⚠️ May Be Behind');
+                        logToConsole('⚠️ Frontend may be behind repository (check manually)');
+                    } else {
+                        updateStatus('frontend-status', '✅ Online');
+                        logToConsole('✅ Frontend deployment accessible');
+                    }
                 } else {
                     updateStatus('frontend-status', '❌ Offline');
                     logToConsole('❌ Frontend deployment not accessible', 'error');
                 }
                 
-                // Check backend deployment
-                const backendResponse = await fetch(`${API_BASE}/api/deployment-test`);
-                if (backendResponse.ok) {
-                    const backendData = await backendResponse.json();
-                    updateStatus('backend-status', '✅ Online');
-                    logToConsole('✅ Backend deployment accessible');
-                } else {
-                    updateStatus('backend-status', '❌ Offline');
-                    logToConsole('❌ Backend deployment not accessible', 'error');
+                // Show sync summary
+                if (repoCommit && deployedCommit && repoCommit !== deployedCommit) {
+                    logToConsole(`\n🚨 DEPLOYMENT SYNC WARNING:`);
+                    logToConsole(`Repository has newer changes that haven't been deployed to server.`);
+                    showQuickFix();
                 }
                 
             } catch (error) {
