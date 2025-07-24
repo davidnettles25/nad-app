@@ -644,16 +644,18 @@ Starting component system initialization...
                 // Check frontend deployment (test for a specific frontend file)
                 const frontendResponse = await fetch('/admin.html', { method: 'HEAD' });
                 if (frontendResponse.ok) {
-                    // Frontend sync is harder to detect, so we assume it's in sync if backend is
-                    if (repoCommit && deployedCommit && repoCommit === deployedCommit) {
-                        updateStatus('frontend-status', '✅ In Sync');
-                        logToConsole('✅ Frontend deployment appears in sync');
-                    } else if (repoCommit && deployedCommit && repoCommit !== deployedCommit) {
-                        updateStatus('frontend-status', '⚠️ May Be Behind');
-                        logToConsole('⚠️ Frontend may be behind repository (check manually)');
+                    // Frontend files are deployed with backend, so sync status matches backend
+                    if (repoCommit && deployedCommit && repoCommit !== 'unknown' && deployedCommit !== 'unknown') {
+                        if (repoCommit === deployedCommit) {
+                            updateStatus('frontend-status', '✅ In Sync');
+                            logToConsole('✅ Frontend deployment in sync with repository');
+                        } else {
+                            updateStatus('frontend-status', '⚠️ Behind');
+                            logToConsole('⚠️ Frontend deployment behind repository');
+                        }
                     } else {
                         updateStatus('frontend-status', '✅ Online');
-                        logToConsole('✅ Frontend deployment accessible');
+                        logToConsole('✅ Frontend deployment accessible (version unknown)');
                     }
                 } else {
                     updateStatus('frontend-status', '❌ Offline');
