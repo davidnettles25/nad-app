@@ -157,7 +157,6 @@
                     Component will load here...
                 </div>
                 <button class="btn btn-test" onclick="testComponentSystem()">Test Components</button>
-                <button class="btn btn-success" onclick="loadDemoComponent()">Load Demo</button>
             </div>
 
             <!-- API Connection Test -->
@@ -366,22 +365,6 @@ Starting component system initialization...
             }
         }
         
-        function loadDemoComponent() {
-            logToConsole('Loading demo component...');
-            
-            const demoContainer = document.querySelector('[data-component="test-component"]');
-            if (demoContainer && typeof NADComponents !== 'undefined') {
-                const component = NADComponents.createTestComponent(
-                    'Demo Component',
-                    'This is a dynamically loaded test component showing the system works correctly.'
-                );
-                demoContainer.innerHTML = '';
-                demoContainer.appendChild(component);
-                logToConsole('✅ Demo component loaded in container');
-            } else {
-                logToConsole('❌ Cannot load demo component - NADComponents not available', 'error');
-            }
-        }
         
         async function testAPIConnection() {
             logToConsole('Testing API connection...');
