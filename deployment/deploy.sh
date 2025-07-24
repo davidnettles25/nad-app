@@ -85,6 +85,16 @@ else
     log "⚠️ API health check inconclusive"
 fi
 
+# Update deploy script itself
+log "🔄 Updating deploy script..."
+if [ -f "$TEMP_DIR/deployment/deploy.sh" ]; then
+    cp "$TEMP_DIR/deployment/deploy.sh" ~/deploy.sh
+    chmod +x ~/deploy.sh
+    log "✅ Deploy script updated to latest version"
+else
+    log "⚠️ Deploy script not found in repository - skipping update"
+fi
+
 # Cleanup
 rm -rf "$TEMP_DIR"
 
