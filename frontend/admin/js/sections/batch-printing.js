@@ -835,8 +835,11 @@ async function downloadBatchCSV(batchId) {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
+        // Mark batch as fully printed after successful CSV download
+        await markBatchAsFullyPrinted(batchId);
+        
         if (typeof showAlert === 'function') {
-            showAlert('✅ CSV file downloaded successfully!', 'success');
+            showAlert('✅ CSV file downloaded and batch marked as fully printed!', 'success');
         }
         
     } catch (error) {
@@ -849,6 +852,41 @@ async function downloadBatchCSV(batchId) {
 function generateBatchCSV(batchData) {
     // Only return test IDs, one per line, no headers
     return batchData.test_ids.map(test => test.test_id).join('\n');
+}
+
+async function markBatchAsFullyPrinted(batchId) {
+    try {
+        // Use the existing print-batch endpoint to mark the batch as printed
+        const response = await fetch(`${API_BASE}/api/admin/print-batch`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                batch_id: batchId,
+                print_format: 'csv_export',
+                printer_name: 'CSV Export',
+                notes: 'Batch exported to CSV file'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to mark batch as printed');
+        }
+        
+        // Refresh the batch display to show updated status
+        if (typeof loadPrintableBatches === 'function') {
+            loadPrintableBatches();
+        }
+        
+    } catch (error) {
+        console.error('Failed to mark batch as fully printed:', error);
+        if (typeof showAlert === 'function') {
+            showAlert(`⚠️ CSV downloaded but failed to update batch status: ${error.message}`, 'warning');
+        }
+    }
 }
 
 // Global functions

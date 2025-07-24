@@ -3261,6 +3261,16 @@ app.post('/api/admin/print-batch', async (req, res) => {
                 };
                 break;
                 
+            case 'csv_export':
+                printData = {
+                    print_format: 'csv_export',
+                    batch_id: batch_id,
+                    export_title: `CSV Export - ${batchShortId}`,
+                    test_count: tests.length,
+                    test_ids: tests.map(t => t.test_id)
+                };
+                break;
+                
             default:
                 return res.status(400).json({
                     success: false,
