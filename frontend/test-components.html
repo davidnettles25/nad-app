@@ -341,10 +341,8 @@ Starting component system initialization...
                 logToConsole('✅ NADComponents is available');
                 
                 // Test component configuration
-                NADComponents.configure({
-                    debug: true,
-                    apiBase: API_BASE
-                });
+                NADComponents.config.debugMode = true;
+                NADComponents.config.baseUrl = API_BASE;
                 logToConsole('✅ Component system configured');
                 
                 // Test component loading
