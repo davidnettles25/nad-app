@@ -346,7 +346,7 @@ Starting component system initialization...
                 logToConsole('✅ Component system configured');
                 
                 // Test component loading (using available loadSection method)
-                NADComponents.loadSection('overview', '#component-demo')
+                NADComponents.loadSection('overview', '.component-demo')
                     .then(() => {
                         logToConsole('✅ Test component loaded successfully');
                         updateStatus('js-status', '✅ Working');
