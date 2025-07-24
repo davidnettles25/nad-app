@@ -169,7 +169,6 @@
                 </div>
                 <button class="btn btn-test" onclick="testAPIConnection()">Test API</button>
                 <button class="btn btn-test" onclick="testDashboardStats()">Test Dashboard</button>
-                <button class="btn btn-test" onclick="testUserEndpoints()">Test Users</button>
             </div>
 
             <!-- URL Routing Test -->
@@ -439,26 +438,6 @@ Starting component system initialization...
             }
         }
         
-        async function testUserEndpoints() {
-            logToConsole('Testing user management endpoints...');
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/users`);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        logToConsole(`✅ Users endpoint working - Found ${data.users.length} users`);
-                    } else {
-                        throw new Error(data.error || 'Users endpoint returned success: false');
-                    }
-                } else {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-            } catch (error) {
-                logToConsole('❌ Users endpoint error: ' + error.message, 'error');
-            }
-        }
         
         function testURLRouting() {
             logToConsole('Testing URL routing...');
