@@ -197,10 +197,10 @@
                     <div><span class="status-indicator status-info"></span>Test: <span id="test-interface-status">Testing...</span></div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    <a href="/admin/" class="btn" target="_blank">🔧 Admin Dashboard</a>
-                    <a href="/portal/" class="btn" target="_blank">👤 Customer Portal</a>
-                    <a href="/lab/" class="btn" target="_blank">🔬 Lab Interface</a>
-                    <a href="/test/" class="btn" target="_blank">🧪 Test Interface</a>
+                    <a href="/admin.html" class="btn" target="_blank">🔧 Admin Dashboard</a>
+                    <a href="/customer-portal.html" class="btn" target="_blank">👤 Customer Portal</a>
+                    <a href="/lab-interface.html" class="btn" target="_blank">🔬 Lab Interface</a>
+                    <a href="/test-interface.html" class="btn" target="_blank">🧪 Test Interface</a>
                 </div>
                 <button class="btn btn-test" onclick="testAllInterfaces()">Test All Links</button>
             </div>
@@ -297,7 +297,7 @@ Starting component system initialization...
             const filesToTest = [
                 { url: '/shared/css/base.css', type: 'CSS', statusId: 'css-files-status' },
                 { url: '/shared/js/components.js', type: 'JS', statusId: 'js-files-status' },
-                { url: '/admin-dashboard.html', type: 'HTML', statusId: 'html-files-status' },
+                { url: '/admin.html', type: 'HTML', statusId: 'html-files-status' },
                 { url: '/customer-portal.html', type: 'HTML', statusId: 'html-files-status' }
             ];
             
@@ -524,10 +524,10 @@ Starting component system initialization...
             logToConsole('Testing all interface links...');
             
             const interfaces = [
-                { url: '/admin/', statusId: 'admin-status', name: 'Admin' },
-                { url: '/portal/', statusId: 'portal-status', name: 'Portal' },
-                { url: '/lab/', statusId: 'lab-status', name: 'Lab' },
-                { url: '/test/', statusId: 'test-interface-status', name: 'Test' }
+                { url: '/admin.html', statusId: 'admin-status', name: 'Admin' },
+                { url: '/customer-portal.html', statusId: 'portal-status', name: 'Portal' },
+                { url: '/lab-interface.html', statusId: 'lab-status', name: 'Lab' },
+                { url: '/test-interface.html', statusId: 'test-interface-status', name: 'Test' }
             ];
             
             for (const iface of interfaces) {
