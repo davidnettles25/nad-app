@@ -4108,18 +4108,57 @@ app.get('/api/deployment-test', (req, res) => {
 app.get('/api/deployment-info', async (req, res) => {
     try {
         const { execSync } = require('child_process');
+        const path = require('path');
         
         // Get current deployed commit hash
         let deployedCommit = 'unknown';
         let deployedDate = 'unknown';
         let deployedBranch = 'unknown';
+        let gitError = null;
+        let workingDirectory = process.cwd();
         
         try {
-            deployedCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim().substring(0, 7);
-            deployedDate = execSync('git log -1 --format=%ci', { encoding: 'utf8' }).trim();
-            deployedBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
-        } catch (gitError) {
-            req.logger?.warn('Git commands failed in deployment-info', { error: gitError.message });
+            // Try different working directories
+            const possibleDirs = [
+                process.cwd(),
+                path.join(process.cwd(), '..'),
+                '/opt/nad-app',
+                '/opt/bitnami/apache/htdocs'
+            ];
+            
+            let gitWorked = false;
+            for (const dir of possibleDirs) {
+                try {
+                    deployedCommit = execSync('git rev-parse HEAD', { 
+                        encoding: 'utf8', 
+                        cwd: dir 
+                    }).trim().substring(0, 7);
+                    deployedDate = execSync('git log -1 --format=%ci', { 
+                        encoding: 'utf8', 
+                        cwd: dir 
+                    }).trim();
+                    deployedBranch = execSync('git rev-parse --abbrev-ref HEAD', { 
+                        encoding: 'utf8', 
+                        cwd: dir 
+                    }).trim();
+                    workingDirectory = dir;
+                    gitWorked = true;
+                    break;
+                } catch (dirError) {
+                    // Try next directory
+                    continue;
+                }
+            }
+            
+            if (!gitWorked) {
+                gitError = 'Git commands failed in all attempted directories';
+            }
+        } catch (error) {
+            gitError = error.message;
+            req.logger?.warn('Git commands failed in deployment-info', { 
+                error: error.message,
+                workingDir: workingDirectory 
+            });
         }
         
         res.json({
@@ -4129,7 +4168,9 @@ app.get('/api/deployment-info', async (req, res) => {
                 date: deployedDate,
                 branch: deployedBranch,
                 serverTime: new Date().toISOString(),
-                environment: process.env.NODE_ENV || 'development'
+                environment: process.env.NODE_ENV || 'development',
+                workingDirectory: workingDirectory,
+                gitError: gitError
             }
         });
     } catch (error) {

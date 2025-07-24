@@ -613,6 +613,12 @@ Starting component system initialization...
                     if (deploymentData.success) {
                         deployedCommit = deploymentData.deployment.commit;
                         
+                        // Log debugging information
+                        if (deploymentData.deployment.gitError) {
+                            logToConsole(`⚠️ Git error on server: ${deploymentData.deployment.gitError}`);
+                            logToConsole(`   Working directory: ${deploymentData.deployment.workingDirectory}`);
+                        }
+                        
                         // Compare repository vs deployed commits
                         if (repoCommit && deployedCommit && repoCommit !== 'unknown' && deployedCommit !== 'unknown') {
                             if (repoCommit === deployedCommit) {
@@ -631,6 +637,9 @@ Starting component system initialization...
                         } else {
                             updateStatus('backend-status', '✅ Online (Version Unknown)');
                             logToConsole('✅ Backend online but version comparison unavailable');
+                            if (deployedCommit === 'unknown') {
+                                logToConsole('   Server git commands failed - check server deployment setup');
+                            }
                         }
                     } else {
                         updateStatus('backend-status', '❌ Info Error');
