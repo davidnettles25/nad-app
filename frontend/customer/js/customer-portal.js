@@ -1548,7 +1548,7 @@ window.NADCustomer = {
                             title: function(context) {
                                 const testIndex = context[0].dataIndex;
                                 const test = completedTests[testIndex];
-                                return `Test ${test.test_id}`;
+                                return test.test_id;
                             },
                             label: function(context) {
                                 return `NAD+ Level: ${context.parsed.y.toFixed(1)}`;
@@ -1556,13 +1556,56 @@ window.NADCustomer = {
                             afterLabel: function(context) {
                                 const testIndex = context.dataIndex;
                                 const test = completedTests[testIndex];
-                                const date = new Date(test.score_date);
-                                return `Completed: ${date.toLocaleDateString('en-US', { 
-                                    weekday: 'short',
-                                    year: 'numeric', 
-                                    month: 'short', 
-                                    day: 'numeric' 
-                                })}`;
+                                const lines = [];
+                                
+                                // Add activation date
+                                if (test.activated_date) {
+                                    const activationDate = new Date(test.activated_date);
+                                    lines.push(`Activation Date: ${activationDate.toLocaleDateString('en-US', { 
+                                        year: 'numeric', 
+                                        month: 'short', 
+                                        day: 'numeric' 
+                                    })}`);
+                                }
+                                
+                                // Add supplement data
+                                if (test.supplements) {
+                                    lines.push(''); // Empty line for spacing
+                                    lines.push('Supplements:');
+                                    
+                                    // Handle different supplement data structures
+                                    if (typeof test.supplements === 'object' && test.supplements.selected) {
+                                        // New structure: {selected: [...], other: "...", health_conditions: "..."}
+                                        if (test.supplements.selected && test.supplements.selected.length > 0) {
+                                            test.supplements.selected.forEach(supplement => {
+                                                const dose = supplement.amount || supplement.dose || '';
+                                                const unit = supplement.unit || 'mg';
+                                                const doseText = dose ? ` (${dose} ${unit})` : '';
+                                                lines.push(`• ${supplement.name}${doseText}`);
+                                            });
+                                        }
+                                        
+                                        // Add other supplements if present
+                                        if (test.supplements.other && test.supplements.other.trim() && test.supplements.other !== 'none') {
+                                            lines.push(`• Other: ${test.supplements.other}`);
+                                        }
+                                    } else if (Array.isArray(test.supplements)) {
+                                        // Old structure: array of supplements
+                                        test.supplements.forEach(supplement => {
+                                            const dose = supplement.amount || supplement.dose || '';
+                                            const unit = supplement.unit || 'mg';
+                                            const doseText = dose ? ` (${dose} ${unit})` : '';
+                                            lines.push(`• ${supplement.name}${doseText}`);
+                                        });
+                                    }
+                                    
+                                    // If no supplements found, show "None"
+                                    if (lines.length === 2) { // Only "Supplements:" was added
+                                        lines.push('• None recorded');
+                                    }
+                                }
+                                
+                                return lines;
                             }
                         }
                     }
