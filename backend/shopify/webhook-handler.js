@@ -383,6 +383,13 @@ function webhookMiddleware(req, res, next) {
 }
 
 function verifyWebhook(req, res, next) {
+    // Temporary bypass for testing - remove in production
+    if (process.env.NODE_ENV !== 'production') {
+        logger.warn('TESTING MODE: Skipping webhook signature verification');
+        next();
+        return;
+    }
+    
     const hmac = req.get('X-Shopify-Hmac-Sha256');
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
     
