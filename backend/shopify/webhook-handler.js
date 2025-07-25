@@ -92,7 +92,7 @@ async function processCustomerUpdate(customer, db = null) {
         );
         
         if (!activationMetafield && customer.id) {
-            console.log('[WEBHOOK DEBUG] Metafields not in payload, fetching from Shopify API...');
+            console.log(`[WEBHOOK DEBUG] Metafields not in payload, fetching from Shopify API for customer ID: ${customer.id}...`);
             activationMetafield = await fetchCustomerActivationMetafield(customer.id);
         }
         
