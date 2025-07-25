@@ -4909,8 +4909,13 @@ async function startServer() {
             process.exit(1);
         }
         
+        // DEBUG: Check if we reach this point in PM2
+        console.log('🔍 DEBUG: About to initialize Shopify integration - PM2 execution check');
+        process.stdout.write('🔍 DEBUG: Reached Shopify initialization section\n');
+        
         // Initialize Shopify integration
         try {
+            console.log('🔍 DEBUG: Inside Shopify try block');
             appLogger.info('Checking Shopify integration configuration...');
             appLogger.info('ENABLE_SHOPIFY_INTEGRATION:', process.env.ENABLE_SHOPIFY_INTEGRATION);
             
