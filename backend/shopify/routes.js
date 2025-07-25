@@ -31,9 +31,11 @@ router.post('/webhooks/customer-update',
         const customer = req.body;
         
         try {
-            logger.info(`Customer update webhook received for: ${customer.email}`);
+            logger.info(`Customer update webhook received for: ${customer.email || 'unknown'}`);
+            console.log('[WEBHOOK DEBUG] Full customer payload:', JSON.stringify(customer, null, 2));
             
             const db = req.app.locals.db;
+            console.log('[WEBHOOK DEBUG] Database connection available:', !!db);
             
             // Log webhook event
             await logWebhookEvent(headers, customer, false, null, db);
