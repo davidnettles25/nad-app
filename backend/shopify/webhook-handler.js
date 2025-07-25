@@ -86,10 +86,15 @@ async function processCustomerUpdate(customer, db = null) {
     const connection = await db.getConnection();
     
     try {
-        // Find test_kit_activation metafield
-        const activationMetafield = customer.metafields?.find(mf => 
+        // Fetch customer metafields if not included in webhook
+        let activationMetafield = customer.metafields?.find(mf => 
             mf.namespace === 'customer' && mf.key === 'test_kit_activation'
         );
+        
+        if (!activationMetafield && customer.id) {
+            console.log('[WEBHOOK DEBUG] Metafields not in payload, fetching from Shopify API...');
+            activationMetafield = await fetchCustomerActivationMetafield(customer.id);
+        }
         
         if (!activationMetafield) {
             logger.info(`No activation metafield found for customer ${customer.email}`);
@@ -337,6 +342,41 @@ async function createPollingSession(connection, sessionId, customer, testKitId, 
     });
     
     return portalToken;
+}
+
+async function fetchCustomerActivationMetafield(customerId) {
+    try {
+        const shopifyUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields.json`;
+        
+        const response = await fetch(shopifyUrl, {
+            method: 'GET',
+            headers: {
+                'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            logger.error('Failed to fetch customer metafields:', response.status, errorText);
+            return null;
+        }
+        
+        const result = await response.json();
+        const activationMetafield = result.metafields?.find(mf => 
+            mf.namespace === 'customer' && mf.key === 'test_kit_activation'
+        );
+        
+        if (activationMetafield) {
+            console.log('[WEBHOOK DEBUG] Found activation metafield via API:', activationMetafield);
+        }
+        
+        return activationMetafield;
+        
+    } catch (error) {
+        logger.error('Error fetching customer metafields:', error);
+        return null;
+    }
 }
 
 async function deleteMetafield(metafieldId) {
