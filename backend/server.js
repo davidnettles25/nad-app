@@ -4911,11 +4911,33 @@ async function startServer() {
         
         // Initialize Shopify integration
         try {
+            appLogger.info('Checking Shopify integration configuration...');
+            appLogger.info('ENABLE_SHOPIFY_INTEGRATION:', process.env.ENABLE_SHOPIFY_INTEGRATION);
+            
             if (process.env.ENABLE_SHOPIFY_INTEGRATION === 'true') {
-                initializeShopifyIntegration(app, db);
-                appLogger.info('Shopify integration initialized');
+                appLogger.info('Shopify integration is enabled, attempting to initialize...');
+                
+                // Check required environment variables
+                const requiredVars = ['SHOPIFY_STORE_URL', 'SHOPIFY_ACCESS_TOKEN', 'SHOPIFY_WEBHOOK_SECRET'];
+                const missingVars = requiredVars.filter(varName => !process.env[varName]);
+                
+                if (missingVars.length > 0) {
+                    appLogger.error('Missing required Shopify environment variables:', missingVars);
+                    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+                }
+                
+                appLogger.info('All required environment variables present, initializing Shopify integration...');
+                const shopifyIntegration = initializeShopifyIntegration(app, db);
+                appLogger.info('Shopify integration initialized successfully');
+                
+                // Check if routes were mounted
+                const shopifyRoutes = app._router.stack.filter(layer => 
+                    layer.regexp.toString().includes('shopify')
+                );
+                appLogger.info(`Shopify routes mounted: ${shopifyRoutes.length} routes found`);
+                
             } else {
-                appLogger.info('Shopify integration disabled');
+                appLogger.info('Shopify integration disabled (ENABLE_SHOPIFY_INTEGRATION !== "true")');
             }
         } catch (error) {
             appLogger.error('Failed to initialize Shopify integration:', {
