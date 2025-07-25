@@ -384,7 +384,7 @@ function webhookMiddleware(req, res, next) {
 
 function verifyWebhook(req, res, next) {
     // Temporary bypass for testing - remove in production
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== 'production' || process.env.BYPASS_WEBHOOK_VERIFICATION === 'true') {
         logger.warn('TESTING MODE: Skipping webhook signature verification');
         next();
         return;
