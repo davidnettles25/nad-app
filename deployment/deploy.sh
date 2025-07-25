@@ -88,7 +88,7 @@ if [ -f "$BACKEND_TARGET/scripts/setup-logs.sh" ]; then
     sudo bash "$BACKEND_TARGET/scripts/setup-logs.sh"
 fi
 
-pm2 start ecosystem.config.js || pm2 restart nad-api
+export $(cat .env | xargs) && pm2 start ecosystem.config.js --update-env || pm2 restart nad-api --update-env
 
 # Deploy frontend  
 log "🎨 Deploying frontend..."
