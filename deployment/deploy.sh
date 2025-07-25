@@ -54,7 +54,13 @@ EOF
 # Deploy backend
 log "🚀 Deploying backend..."
 pm2 stop nad-api || true
-[ -f "$BACKEND_TARGET/.env" ] && cp "$BACKEND_TARGET/.env" "$TEMP_DIR/backend/.env"
+
+# Backup existing .env file
+ENV_BACKUP=""
+if [ -f "$BACKEND_TARGET/.env" ]; then
+    ENV_BACKUP="$BACKEND_TARGET/.env"
+    log "📋 Found existing .env file, will restore after deployment"
+fi
 
 # Remove old shopify directory to ensure clean update
 [ -d "$BACKEND_TARGET/shopify" ] && rm -rf "$BACKEND_TARGET/shopify"
@@ -62,6 +68,15 @@ pm2 stop nad-api || true
 # Copy all backend files (including hidden files and directories)
 rsync -av --delete --exclude='.env' --exclude='logs/' --exclude='node_modules/' "$TEMP_DIR/backend/" "$BACKEND_TARGET/"
 cp "$TEMP_DIR/deployment-info.json" "$BACKEND_TARGET/"
+
+# Restore .env file
+if [ -n "$ENV_BACKUP" ] && [ -f "$ENV_BACKUP" ]; then
+    cp "$ENV_BACKUP" "$BACKEND_TARGET/.env"
+    log "✅ Restored .env file to backend directory"
+else
+    log "⚠️ No .env file found - server will run without environment variables"
+fi
+
 cd "$BACKEND_TARGET"
 npm install --production
 
