@@ -8,6 +8,9 @@ const path = require('path');
 const fs = require('fs').promises;
 require('dotenv').config();
 
+// Shopify Integration
+const { initializeShopifyIntegration } = require('./shopify');
+
 // Initialize logger
 let logger;
 let createLogger;
@@ -3420,11 +3423,32 @@ app.post('/api/customer/verify-test', async (req, res) => {
             });
         }
         
-        console.log(`🔍 Customer verification attempt for test ID: ${testId}`);
+        // Authenticate customer (Shopify session or email)
+        let customer = null;
+        if (req.app.locals.sessionManager) {
+            customer = await req.app.locals.sessionManager.authenticateCustomer(req);
+        }
+        
+        // For legacy support, allow email-based verification
+        if (!customer && email) {
+            customer = {
+                type: 'email',
+                email: email,
+                firstName: firstName,
+                lastName: lastName,
+                authenticated: false
+            };
+        }
+        
+        console.log(`🔍 Customer verification attempt for test ID: ${testId}`, {
+            customerType: customer?.type,
+            email: customer?.email,
+            authenticated: customer?.authenticated
+        });
         
         // Check if test exists
         const [testRows] = await db.execute(`
-            SELECT test_id, status, activated_date, customer_id, batch_id
+            SELECT test_id, status, activated_date, customer_id, shopify_customer_id, batch_id
             FROM nad_test_ids 
             WHERE UPPER(test_id) = UPPER(?)
         `, [testId]);
@@ -3481,19 +3505,40 @@ app.post('/api/customer/activate-test', async (req, res) => {
             });
         }
         
-        // Normalize customer_id (use email from request or authentication)
-        let customerId = null;
-        if (email) {
-            customerId = normalizeCustomerId(email);
-        } else if (req.user && req.user.customer_id) {
-            customerId = req.user.customer_id; // From Multipass authentication
+        // Authenticate customer (Shopify session or email)
+        let customer = null;
+        if (req.app.locals.sessionManager) {
+            customer = await req.app.locals.sessionManager.authenticateCustomer(req);
         }
         
-        console.log(`🔍 Customer activation attempt for test ID: ${testId}`);
+        // For legacy support, allow email-based activation
+        if (!customer && email) {
+            customer = {
+                type: 'email',
+                customerId: email,
+                email: email,
+                firstName: firstName,
+                lastName: lastName,
+                authenticated: false
+            };
+        }
+        
+        if (!customer) {
+            return res.status(401).json({
+                success: false,
+                error: 'Customer authentication required'
+            });
+        }
+        
+        console.log(`🔍 Customer activation attempt for test ID: ${testId}`, {
+            customerType: customer.type,
+            email: customer.email,
+            authenticated: customer.authenticated
+        });
         
         // Check if test exists and is not already activated
         const [testRows] = await db.execute(`
-            SELECT test_id, status, activated_date, customer_id, batch_id
+            SELECT test_id, status, activated_date, customer_id, shopify_customer_id, batch_id
             FROM nad_test_ids 
             WHERE UPPER(test_id) = UPPER(?)
         `, [testId]);
@@ -3515,15 +3560,19 @@ app.post('/api/customer/activate-test', async (req, res) => {
             });
         }
         
-        // Activate the test and update customer_id if provided
+        // Activate the test and update customer data
         let updateQuery = `
             UPDATE nad_test_ids 
             SET status = 'activated', activated_date = NOW()`;
         let updateParams = [];
         
-        if (customerId) {
-            updateQuery += `, customer_id = ?`;
-            updateParams.push(customerId);
+        // Set customer data based on authentication type
+        if (customer.type === 'shopify') {
+            updateQuery += `, customer_id = ?, shopify_customer_id = ?, customer_name = ?`;
+            updateParams.push(customer.email, customer.customerId, `${customer.firstName} ${customer.lastName}`);
+        } else if (customer.email) {
+            updateQuery += `, customer_id = ?, customer_name = ?`;
+            updateParams.push(customer.email, `${customer.firstName || ''} ${customer.lastName || ''}`.trim());
         }
         
         updateQuery += ` WHERE UPPER(test_id) = UPPER(?)`;
@@ -4858,6 +4907,19 @@ async function startServer() {
         if (!dbConnected) {
             appLogger.fatal('Failed to connect to database. Exiting...');
             process.exit(1);
+        }
+        
+        // Initialize Shopify integration
+        try {
+            if (process.env.ENABLE_SHOPIFY_INTEGRATION === 'true') {
+                initializeShopifyIntegration(app);
+                appLogger.info('Shopify integration initialized');
+            } else {
+                appLogger.info('Shopify integration disabled');
+            }
+        } catch (error) {
+            appLogger.error('Failed to initialize Shopify integration:', error);
+            // Don't exit - allow server to run without Shopify integration
         }
         
         app.listen(PORT, () => {
