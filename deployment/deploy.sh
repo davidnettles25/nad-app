@@ -68,6 +68,13 @@ fi
 
 # Copy all backend files (including hidden files and directories)
 rsync -av --delete --exclude='.env' --exclude='logs/' --exclude='node_modules/' "$TEMP_DIR/backend/" "$BACKEND_TARGET/"
+
+# Ensure migrations directory exists and is copied
+mkdir -p "$BACKEND_TARGET/migrations"
+if [ -d "$TEMP_DIR/backend/migrations" ]; then
+    cp -r "$TEMP_DIR/backend/migrations/"* "$BACKEND_TARGET/migrations/" 2>/dev/null || true
+    log "✅ Migrations directory synchronized"
+fi
 cp "$TEMP_DIR/deployment-info.json" "$BACKEND_TARGET/"
 
 # Restore .env file from backup
