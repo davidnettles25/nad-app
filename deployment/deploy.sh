@@ -55,7 +55,12 @@ EOF
 log "🚀 Deploying backend..."
 pm2 stop nad-api || true
 [ -f "$BACKEND_TARGET/.env" ] && cp "$BACKEND_TARGET/.env" "$TEMP_DIR/backend/.env"
-cp -r "$TEMP_DIR/backend/"* "$BACKEND_TARGET/"
+
+# Remove old shopify directory to ensure clean update
+[ -d "$BACKEND_TARGET/shopify" ] && rm -rf "$BACKEND_TARGET/shopify"
+
+# Copy all backend files (including hidden files and directories)
+rsync -av --delete --exclude='.env' --exclude='logs/' --exclude='node_modules/' "$TEMP_DIR/backend/" "$BACKEND_TARGET/"
 cp "$TEMP_DIR/deployment-info.json" "$BACKEND_TARGET/"
 cd "$BACKEND_TARGET"
 npm install --production
