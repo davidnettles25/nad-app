@@ -4608,28 +4608,9 @@ function getLevelName(level) {
 // ============================================================================
 // ERROR HANDLING MIDDLEWARE
 // ============================================================================
+// ERROR HANDLERS - Moved to startServer() function after route registration
 
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        error: 'Endpoint not found',
-        path: req.path,
-        method: req.method,
-        available_endpoints: [
-            'GET /health',
-            'GET /api/dashboard/stats',
-            'GET /api/supplements',
-            'GET /api/tests/scores',
-            'GET /api/analytics/overview',
-            'GET /api/deployment-test',
-            'GET /api/admin/log-config',
-            'POST /api/admin/log-config',
-            'GET /api/admin/log-files',
-            'GET /api/admin/log-files/:filename'
-        ]
-    });
-});
-
+// Old error handler (moved to startServer function after Shopify routes)
 app.use((error, req, res, next) => {
     console.error('❌ Unhandled error:', error);
     
@@ -4962,6 +4943,44 @@ async function startServer() {
             console.error('Shopify integration error details:', error);
             // Don't exit - allow server to run without Shopify integration
         }
+        
+        // 404 handler - MUST be after all route registrations including Shopify
+        app.use((req, res) => {
+            res.status(404).json({
+                success: false,
+                error: 'Endpoint not found',
+                path: req.path,
+                method: req.method,
+                available_endpoints: [
+                    'GET /health',
+                    'GET /api/dashboard/stats',
+                    'GET /api/supplements',
+                    'GET /api/tests/scores',
+                    'GET /api/analytics/overview',
+                    'GET /api/deployment-test',
+                    'GET /api/admin/log-config',
+                    'POST /api/admin/log-config',
+                    'GET /api/admin/log-files',
+                    'GET /api/admin/log-files/:filename'
+                ]
+            });
+        });
+
+        // Error handler
+        app.use((error, req, res, next) => {
+            appLogger.error('Unhandled server error:', {
+                message: error.message,
+                stack: error.stack,
+                path: req.path,
+                method: req.method
+            });
+            
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error',
+                message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+            });
+        });
         
         // Add diagnostic endpoint for Shopify integration
         app.get('/api/shopify-debug', (req, res) => {
