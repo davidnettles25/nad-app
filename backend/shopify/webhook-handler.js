@@ -288,13 +288,12 @@ async function processTestKitActivation(connection, testKitId, customer) {
             console.log(`[WEBHOOK DEBUG] Creating score record for: ${testKitId}`);
             await connection.execute(`
                 INSERT INTO nad_test_scores 
-                (test_id, customer_id, activated_by, activation_date)
-                VALUES (?, ?, ?, NOW())
+                (test_id, activated_by, activation_date)
+                VALUES (?, ?, NOW())
                 ON DUPLICATE KEY UPDATE 
                     activation_date = NOW()
             `, [
                 testKitId,
-                customer.email,
                 `shopify_${customer.id}`
             ]);
             
