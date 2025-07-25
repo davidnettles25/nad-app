@@ -2,9 +2,21 @@ const express = require('express');
 const router = express.Router();
 const { webhookMiddleware, verifyWebhook, processCustomerUpdate, logWebhookEvent } = require('./webhook-handler');
 const { SessionManager } = require('./session-manager');
-const { createLogger } = require('../logger');
 
-const logger = createLogger({ module: 'shopify-routes' });
+// Initialize logger with fallback
+let logger;
+try {
+    const { createLogger } = require('../logger');
+    logger = createLogger({ module: 'shopify-routes' });
+} catch (error) {
+    // Fallback logger if main logger isn't ready
+    logger = {
+        info: (...args) => console.log('[SHOPIFY-ROUTES]', ...args),
+        error: (...args) => console.error('[SHOPIFY-ROUTES ERROR]', ...args),
+        warn: (...args) => console.warn('[SHOPIFY-ROUTES WARN]', ...args),
+        debug: (...args) => console.log('[SHOPIFY-ROUTES DEBUG]', ...args)
+    };
+}
 
 // ============================================================================
 // Webhook Routes

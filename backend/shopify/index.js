@@ -1,8 +1,20 @@
 const { SessionManager } = require('./session-manager');
 const shopifyRoutes = require('./routes');
-const { createLogger } = require('../logger');
 
-const logger = createLogger({ module: 'shopify' });
+// Initialize logger with fallback
+let logger;
+try {
+    const { createLogger } = require('../logger');
+    logger = createLogger({ module: 'shopify' });
+} catch (error) {
+    // Fallback logger if main logger isn't ready
+    logger = {
+        info: (...args) => console.log('[SHOPIFY]', ...args),
+        error: (...args) => console.error('[SHOPIFY ERROR]', ...args),
+        warn: (...args) => console.warn('[SHOPIFY WARN]', ...args),
+        debug: (...args) => console.log('[SHOPIFY DEBUG]', ...args)
+    };
+}
 
 // ============================================================================
 // Shopify Integration Module

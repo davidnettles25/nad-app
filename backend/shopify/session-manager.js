@@ -1,7 +1,19 @@
 const crypto = require('crypto');
-const { createLogger } = require('../logger');
 
-const logger = createLogger({ module: 'shopify-session' });
+// Initialize logger with fallback
+let logger;
+try {
+    const { createLogger } = require('../logger');
+    logger = createLogger({ module: 'shopify-session' });
+} catch (error) {
+    // Fallback logger if main logger isn't ready
+    logger = {
+        info: (...args) => console.log('[SHOPIFY-SESSION]', ...args),
+        error: (...args) => console.error('[SHOPIFY-SESSION ERROR]', ...args),
+        warn: (...args) => console.warn('[SHOPIFY-SESSION WARN]', ...args),
+        debug: (...args) => console.log('[SHOPIFY-SESSION DEBUG]', ...args)
+    };
+}
 
 // ============================================================================
 // Session Management for Shopify Integration

@@ -1,7 +1,19 @@
 const crypto = require('crypto');
-const { createLogger } = require('../logger');
 
-const logger = createLogger({ module: 'shopify-webhook' });
+// Initialize logger with fallback
+let logger;
+try {
+    const { createLogger } = require('../logger');
+    logger = createLogger({ module: 'shopify-webhook' });
+} catch (error) {
+    // Fallback logger if main logger isn't ready
+    logger = {
+        info: (...args) => console.log('[SHOPIFY-WEBHOOK]', ...args),
+        error: (...args) => console.error('[SHOPIFY-WEBHOOK ERROR]', ...args),
+        warn: (...args) => console.warn('[SHOPIFY-WEBHOOK WARN]', ...args),
+        debug: (...args) => console.log('[SHOPIFY-WEBHOOK DEBUG]', ...args)
+    };
+}
 
 // ============================================================================
 // Webhook Signature Verification
