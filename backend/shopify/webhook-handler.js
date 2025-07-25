@@ -88,7 +88,7 @@ async function processCustomerUpdate(customer, db = null) {
     try {
         // Fetch customer metafields if not included in webhook
         let activationMetafield = customer.metafields?.find(mf => 
-            mf.namespace === 'customer' && mf.key === 'test_kit_activation'
+            (mf.namespace === 'customer' || mf.namespace === 'custom') && mf.key === 'test_kit_activation'
         );
         
         if (!activationMetafield && customer.id) {
@@ -366,13 +366,13 @@ async function fetchCustomerActivationMetafield(customerId) {
         console.log('[WEBHOOK DEBUG] All metafields returned:', JSON.stringify(result.metafields, null, 2));
         
         const activationMetafield = result.metafields?.find(mf => 
-            mf.namespace === 'customer' && mf.key === 'test_kit_activation'
+            (mf.namespace === 'customer' || mf.namespace === 'custom') && mf.key === 'test_kit_activation'
         );
         
         if (activationMetafield) {
             console.log('[WEBHOOK DEBUG] Found activation metafield via API:', activationMetafield);
         } else {
-            console.log('[WEBHOOK DEBUG] No activation metafield found. Looking for namespace=customer, key=test_kit_activation');
+            console.log('[WEBHOOK DEBUG] No activation metafield found. Looking for namespace=customer/custom, key=test_kit_activation');
         }
         
         return activationMetafield;
