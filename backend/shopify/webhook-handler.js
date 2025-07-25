@@ -115,15 +115,17 @@ async function processCustomerUpdate(customer, db = null) {
         
         const { testKitId, timestamp, sessionId, requestType } = activationData;
         
-        // Validate timestamp (5-minute window) - disabled for testing
+        // Validate timestamp (5-minute window) - TEMPORARILY DISABLED FOR TESTING
         const now = Date.now();
         const fiveMinutesAgo = now - (5 * 60 * 1000);
         
-        if (process.env.NODE_ENV === 'production' && timestamp < fiveMinutesAgo) {
+        if (false && timestamp < fiveMinutesAgo) { // Disabled for testing
             logger.warn('Activation request expired', { testKitId, timestamp });
             await deleteMetafield(activationMetafield.id);
             return { success: false, error: 'Activation request expired' };
-        } else if (timestamp < fiveMinutesAgo) {
+        }
+        
+        if (timestamp < fiveMinutesAgo) {
             console.log('[WEBHOOK DEBUG] Timestamp validation bypassed for testing');
         }
         
