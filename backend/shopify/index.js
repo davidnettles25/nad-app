@@ -57,11 +57,15 @@ class ShopifyIntegration {
         }
         
         // Mount Shopify routes
+        console.log('[SHOPIFY] 🔍 DEBUG: About to mount routes, shopifyRoutes =', typeof shopifyRoutes, shopifyRoutes.constructor.name);
+        console.log('[SHOPIFY] 🔍 DEBUG: shopifyRoutes.stack length =', shopifyRoutes.stack ? shopifyRoutes.stack.length : 'no stack');
         this.app.use('/shopify', shopifyRoutes);
+        console.log('[SHOPIFY] 🔍 DEBUG: Routes mounted to app');
         
         // Schedule cleanup tasks
         this.scheduleCleanupTasks();
         
+        console.log('[SHOPIFY] 🔍 DEBUG: Shopify integration completed successfully');
         logger.info('Shopify integration initialized successfully');
         logger.info(`Webhook endpoint: ${process.env.API_BASE_URL || 'http://localhost:3000'}/shopify/webhooks/customer-update`);
         logger.info(`Polling endpoint: ${process.env.API_BASE_URL || 'http://localhost:3000'}/shopify/check-portal-access`);
