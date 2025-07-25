@@ -115,14 +115,16 @@ async function processCustomerUpdate(customer, db = null) {
         
         const { testKitId, timestamp, sessionId, requestType } = activationData;
         
-        // Validate timestamp (5-minute window)
+        // Validate timestamp (5-minute window) - disabled for testing
         const now = Date.now();
         const fiveMinutesAgo = now - (5 * 60 * 1000);
         
-        if (timestamp < fiveMinutesAgo) {
+        if (process.env.NODE_ENV === 'production' && timestamp < fiveMinutesAgo) {
             logger.warn('Activation request expired', { testKitId, timestamp });
             await deleteMetafield(activationMetafield.id);
             return { success: false, error: 'Activation request expired' };
+        } else if (timestamp < fiveMinutesAgo) {
+            console.log('[WEBHOOK DEBUG] Timestamp validation bypassed for testing');
         }
         
         // Store/update Shopify customer data
