@@ -4922,6 +4922,29 @@ async function startServer() {
             // Don't exit - allow server to run without Shopify integration
         }
         
+        // Add diagnostic endpoint for Shopify integration
+        app.get('/api/shopify-debug', (req, res) => {
+            const requiredVars = [
+                'ENABLE_SHOPIFY_INTEGRATION',
+                'SHOPIFY_STORE_URL',
+                'SHOPIFY_ACCESS_TOKEN',
+                'SHOPIFY_WEBHOOK_SECRET'
+            ];
+            
+            const envStatus = {};
+            requiredVars.forEach(varName => {
+                envStatus[varName] = process.env[varName] ? 'SET' : 'MISSING';
+            });
+            
+            res.json({
+                shopifyIntegrationEnabled: process.env.ENABLE_SHOPIFY_INTEGRATION === 'true',
+                environmentVariables: envStatus,
+                routesMounted: !!req.app._router.stack.find(layer => 
+                    layer.regexp.toString().includes('shopify')
+                )
+            });
+        });
+        
         app.listen(PORT, () => {
             process.stdout.write('✅ NAD Server started successfully with pino-pretty formatting!\n');
             appLogger.info('NAD Test Cycle API Server Started - USER MANAGEMENT REMOVED - PINO-PRETTY ENABLED', {
