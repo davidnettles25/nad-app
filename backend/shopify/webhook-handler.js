@@ -363,12 +363,16 @@ async function fetchCustomerActivationMetafield(customerId) {
         }
         
         const result = await response.json();
+        console.log('[WEBHOOK DEBUG] All metafields returned:', JSON.stringify(result.metafields, null, 2));
+        
         const activationMetafield = result.metafields?.find(mf => 
             mf.namespace === 'customer' && mf.key === 'test_kit_activation'
         );
         
         if (activationMetafield) {
             console.log('[WEBHOOK DEBUG] Found activation metafield via API:', activationMetafield);
+        } else {
+            console.log('[WEBHOOK DEBUG] No activation metafield found. Looking for namespace=customer, key=test_kit_activation');
         }
         
         return activationMetafield;
