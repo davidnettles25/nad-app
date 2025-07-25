@@ -276,13 +276,11 @@ async function processTestKitActivation(connection, testKitId, customer) {
                     status = 'activated',
                     activated_date = NOW(),
                     customer_id = ?,
-                    shopify_customer_id = ?,
-                    customer_name = ?
+                    shopify_customer_id = ?
                 WHERE UPPER(test_id) = UPPER(?)
             `, [
                 customer.email,
                 customer.id,
-                `${customer.first_name} ${customer.last_name}`,
                 testKitId
             ]);
             
