@@ -4918,7 +4918,12 @@ async function startServer() {
                 appLogger.info('Shopify integration disabled');
             }
         } catch (error) {
-            appLogger.error('Failed to initialize Shopify integration:', error);
+            appLogger.error('Failed to initialize Shopify integration:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+            console.error('Shopify integration error details:', error);
             // Don't exit - allow server to run without Shopify integration
         }
         
