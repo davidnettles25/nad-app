@@ -1,13 +1,13 @@
 const crypto = require('crypto');
-const { getConnection } = require('../db');
-const logger = require('../utils/logger');
+const logger = require('../logger');
 
 // ============================================================================
 // Session Management for Shopify Integration
 // ============================================================================
 
 class SessionManager {
-    constructor() {
+    constructor(db) {
+        this.db = db;
         // In production, use Redis instead of Map
         this.pollingSessions = new Map();
         
@@ -56,7 +56,7 @@ class SessionManager {
     // ============================================================================
     
     async createPortalSession(customerData, testKitId = null, hasNewActivation = false) {
-        const connection = await getConnection();
+        const connection = await this.db.getConnection();
         
         try {
             const token = crypto.randomBytes(32).toString('hex');
@@ -94,7 +94,7 @@ class SessionManager {
     }
     
     async validatePortalSession(token) {
-        const connection = await getConnection();
+        const connection = await this.db.getConnection();
         
         try {
             // Get session and update accessed_at
@@ -206,7 +206,7 @@ class SessionManager {
     }
     
     async cleanupExpiredPortalSessions() {
-        const connection = await getConnection();
+        const connection = await this.db.getConnection();
         
         try {
             const [result] = await connection.execute(`

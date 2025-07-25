@@ -1,6 +1,6 @@
 const { SessionManager } = require('./session-manager');
 const shopifyRoutes = require('./routes');
-const logger = require('../utils/logger');
+const logger = require('../logger');
 
 // ============================================================================
 // Shopify Integration Module
@@ -8,12 +8,14 @@ const logger = require('../utils/logger');
 // ============================================================================
 
 class ShopifyIntegration {
-    constructor(app) {
+    constructor(app, db) {
         this.app = app;
-        this.sessionManager = new SessionManager();
+        this.db = db;
+        this.sessionManager = new SessionManager(db);
         
-        // Store session manager in app locals for access in routes
+        // Store session manager and db in app locals for access in routes
         this.app.locals.sessionManager = this.sessionManager;
+        this.app.locals.db = this.db;
         
         // Store global reference for webhook handlers
         global.pollingSessions = this.sessionManager.pollingSessions;
@@ -153,8 +155,8 @@ class ShopifyIntegration {
 // Factory function to create and initialize Shopify integration
 // ============================================================================
 
-function initializeShopifyIntegration(app) {
-    const integration = new ShopifyIntegration(app);
+function initializeShopifyIntegration(app, db) {
+    const integration = new ShopifyIntegration(app, db);
     integration.initialize();
     
     // Handle graceful shutdown

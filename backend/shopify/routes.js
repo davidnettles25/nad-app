@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { webhookMiddleware, verifyWebhook, processCustomerUpdate, logWebhookEvent } = require('./webhook-handler');
 const { SessionManager } = require('./session-manager');
-const logger = require('../utils/logger');
+const logger = require('../logger');
 
 // ============================================================================
 // Webhook Routes
@@ -19,14 +19,16 @@ router.post('/webhooks/customer-update',
         try {
             logger.info(`Customer update webhook received for: ${customer.email}`);
             
+            const db = req.app.locals.db;
+            
             // Log webhook event
-            await logWebhookEvent(headers, customer, false);
+            await logWebhookEvent(headers, customer, false, null, db);
             
             // Process customer update
-            const result = await processCustomerUpdate(customer);
+            const result = await processCustomerUpdate(customer, db);
             
             // Update webhook log
-            await logWebhookEvent(headers, customer, true, result.error || null);
+            await logWebhookEvent(headers, customer, true, result.error || null, db);
             
             // Always return 200 to Shopify
             res.status(200).json({ 
@@ -38,7 +40,7 @@ router.post('/webhooks/customer-update',
             logger.error('Webhook processing error:', error);
             
             // Log error
-            await logWebhookEvent(headers, customer, false, error.message);
+            await logWebhookEvent(headers, customer, false, error.message, req.app.locals.db);
             
             // Still return 200 to prevent retries
             res.status(200).json({ 
@@ -60,7 +62,7 @@ router.post('/webhooks/order-create',
             logger.info(`Order creation webhook received: ${order.name}`);
             
             // Log webhook event
-            await logWebhookEvent(req.headers, order, true);
+            await logWebhookEvent(req.headers, order, true, null, req.app.locals.db);
             
             // TODO: Process order to link test kits
             // This would check line items for test kit products
@@ -214,8 +216,8 @@ if (process.env.NODE_ENV !== 'production') {
     // Test webhook replay (development only)
     router.post('/admin/replay-webhook/:webhookId', async (req, res) => {
         try {
-            const { getConnection } = require('../db');
-            const connection = await getConnection();
+            const db = req.app.locals.db;
+            const connection = await db.getConnection();
             
             const [webhooks] = await connection.execute(`
                 SELECT * FROM nad_shopify_webhooks 
@@ -253,8 +255,8 @@ if (process.env.NODE_ENV !== 'production') {
     // View recent webhooks (development only)
     router.get('/admin/webhooks', async (req, res) => {
         try {
-            const { getConnection } = require('../db');
-            const connection = await getConnection();
+            const db = req.app.locals.db;
+            const connection = await db.getConnection();
             
             const [webhooks] = await connection.execute(`
                 SELECT id, webhook_id, topic, shop_domain, processed, 

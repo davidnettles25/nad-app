@@ -1,6 +1,5 @@
 const crypto = require('crypto');
-const { getConnection } = require('../db');
-const logger = require('../utils/logger');
+const logger = require('../logger');
 
 // ============================================================================
 // Webhook Signature Verification
@@ -19,8 +18,12 @@ function verifyWebhookSignature(rawBody, signature, secret) {
 // Webhook Processing Functions
 // ============================================================================
 
-async function logWebhookEvent(headers, body, processed = false, error = null) {
-    const connection = await getConnection();
+async function logWebhookEvent(headers, body, processed = false, error = null, db = null) {
+    if (!db) {
+        logger.error('Database connection not provided to logWebhookEvent');
+        return;
+    }
+    const connection = await db.getConnection();
     try {
         await connection.execute(`
             INSERT INTO nad_shopify_webhooks 
@@ -43,8 +46,12 @@ async function logWebhookEvent(headers, body, processed = false, error = null) {
     }
 }
 
-async function processCustomerUpdate(customer) {
-    const connection = await getConnection();
+async function processCustomerUpdate(customer, db = null) {
+    if (!db) {
+        logger.error('Database connection not provided to processCustomerUpdate');
+        throw new Error('Database connection required');
+    }
+    const connection = await db.getConnection();
     
     try {
         // Find test_kit_activation metafield

@@ -4912,7 +4912,7 @@ async function startServer() {
         // Initialize Shopify integration
         try {
             if (process.env.ENABLE_SHOPIFY_INTEGRATION === 'true') {
-                initializeShopifyIntegration(app);
+                initializeShopifyIntegration(app, db);
                 appLogger.info('Shopify integration initialized');
             } else {
                 appLogger.info('Shopify integration disabled');
