@@ -287,6 +287,7 @@ async function processTestKitActivation(connection, testKitId, customer) {
             ]);
             
             // Create score record
+            console.log(`[WEBHOOK DEBUG] Creating score record for: ${testKitId}`);
             await connection.execute(`
                 INSERT INTO nad_test_scores 
                 (test_id, customer_id, activated_by, activation_date)
@@ -299,7 +300,9 @@ async function processTestKitActivation(connection, testKitId, customer) {
                 `shopify_${customer.id}`
             ]);
             
+            console.log(`[WEBHOOK DEBUG] Committing transaction`);
             await connection.commit();
+            console.log(`[WEBHOOK DEBUG] Transaction committed successfully`);
             
             logger.info(`Test Kit ${testKitId} activated successfully for ${customer.email}`);
             
@@ -311,11 +314,13 @@ async function processTestKitActivation(connection, testKitId, customer) {
             };
             
         } catch (error) {
+            console.log(`[WEBHOOK DEBUG] Transaction error:`, error);
             await connection.rollback();
             throw error;
         }
         
     } catch (error) {
+        console.log(`[WEBHOOK DEBUG] Test kit activation error:`, error);
         logger.error('Test kit activation error:', error);
         return { success: false, error: 'Failed to activate test kit' };
     }
