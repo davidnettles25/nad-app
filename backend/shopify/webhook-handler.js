@@ -288,8 +288,8 @@ async function processTestKitActivation(connection, testKitId, customer) {
             console.log(`[WEBHOOK DEBUG] Creating score record for: ${testKitId}`);
             await connection.execute(`
                 INSERT INTO nad_test_scores 
-                (test_id, technician_id, score)
-                VALUES (?, '', 0)
+                (test_id, technician_id, score, created_date, updated_date, status)
+                VALUES (?, '', 0, CURDATE(), CURDATE(), 'pending')
                 ON DUPLICATE KEY UPDATE 
                     test_id = VALUES(test_id)
             `, [
