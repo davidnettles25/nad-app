@@ -214,26 +214,35 @@ async function upsertShopifyCustomer(connection, customer) {
 
 async function processTestKitActivation(connection, testKitId, customer) {
     try {
+        console.log(`[WEBHOOK DEBUG] Processing test kit activation for: ${testKitId}`);
+        
         // Validate test kit format
         const testKitPattern = new RegExp(process.env.TEST_KIT_ID_PATTERN || '^[0-9]{4}-[0-9]{2}-[0-9]+-[A-Z0-9]{6}$');
+        console.log(`[WEBHOOK DEBUG] Test kit pattern: ${testKitPattern.source}`);
+        console.log(`[WEBHOOK DEBUG] Pattern test result: ${testKitPattern.test(testKitId)}`);
+        
         if (!testKitPattern.test(testKitId)) {
             return { success: false, error: 'Invalid Test Kit ID format' };
         }
         
         // Check if test kit exists and is not already activated
+        console.log(`[WEBHOOK DEBUG] Checking database for test ID: ${testKitId}`);
         const [existingTest] = await connection.execute(`
-            SELECT test_id, is_activated, customer_id, shopify_customer_id 
+            SELECT test_id, status, customer_id, shopify_customer_id 
             FROM nad_test_ids 
             WHERE UPPER(test_id) = UPPER(?)
         `, [testKitId]);
+        
+        console.log(`[WEBHOOK DEBUG] Database query result:`, existingTest);
         
         if (existingTest.length === 0) {
             return { success: false, error: 'Test Kit ID not found in system' };
         }
         
         const test = existingTest[0];
+        console.log(`[WEBHOOK DEBUG] Test record:`, test);
         
-        if (test.is_activated) {
+        if (test.status === 'activated') {
             // Check if activated by same customer
             if (test.shopify_customer_id === customer.id || test.customer_id === customer.email) {
                 return { success: false, error: 'This test kit is already activated by you' };
@@ -260,10 +269,11 @@ async function processTestKitActivation(connection, testKitId, customer) {
         
         try {
             // Update test_ids table
+            console.log(`[WEBHOOK DEBUG] Updating test_ids table for: ${testKitId}`);
             await connection.execute(`
                 UPDATE nad_test_ids 
                 SET 
-                    is_activated = 1,
+                    status = 'activated',
                     activated_date = NOW(),
                     customer_id = ?,
                     shopify_customer_id = ?,
