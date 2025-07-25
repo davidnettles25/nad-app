@@ -4916,32 +4916,41 @@ async function startServer() {
         // Initialize Shopify integration
         try {
             console.log('🔍 DEBUG: Inside Shopify try block');
+            console.log('🔍 DEBUG: ENABLE_SHOPIFY_INTEGRATION =', process.env.ENABLE_SHOPIFY_INTEGRATION);
             appLogger.info('Checking Shopify integration configuration...');
             appLogger.info('ENABLE_SHOPIFY_INTEGRATION:', process.env.ENABLE_SHOPIFY_INTEGRATION);
             
             if (process.env.ENABLE_SHOPIFY_INTEGRATION === 'true') {
+                console.log('🔍 DEBUG: Shopify integration is enabled, checking environment variables...');
                 appLogger.info('Shopify integration is enabled, attempting to initialize...');
                 
                 // Check required environment variables
                 const requiredVars = ['SHOPIFY_STORE_URL', 'SHOPIFY_ACCESS_TOKEN', 'SHOPIFY_WEBHOOK_SECRET'];
                 const missingVars = requiredVars.filter(varName => !process.env[varName]);
                 
+                console.log('🔍 DEBUG: Required vars check - missing:', missingVars);
+                
                 if (missingVars.length > 0) {
+                    console.log('🔍 DEBUG: ERROR - Missing environment variables:', missingVars);
                     appLogger.error('Missing required Shopify environment variables:', missingVars);
                     throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
                 }
                 
+                console.log('🔍 DEBUG: All environment variables present, calling initializeShopifyIntegration...');
                 appLogger.info('All required environment variables present, initializing Shopify integration...');
                 const shopifyIntegration = initializeShopifyIntegration(app, db);
+                console.log('🔍 DEBUG: initializeShopifyIntegration returned, checking routes...');
                 appLogger.info('Shopify integration initialized successfully');
                 
                 // Check if routes were mounted
                 const shopifyRoutes = app._router.stack.filter(layer => 
                     layer.regexp.toString().includes('shopify')
                 );
+                console.log('🔍 DEBUG: Routes check - found', shopifyRoutes.length, 'shopify routes');
                 appLogger.info(`Shopify routes mounted: ${shopifyRoutes.length} routes found`);
                 
             } else {
+                console.log('🔍 DEBUG: Shopify integration disabled - ENABLE_SHOPIFY_INTEGRATION =', process.env.ENABLE_SHOPIFY_INTEGRATION);
                 appLogger.info('Shopify integration disabled (ENABLE_SHOPIFY_INTEGRATION !== "true")');
             }
         } catch (error) {
