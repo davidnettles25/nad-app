@@ -1,5 +1,7 @@
 const crypto = require('crypto');
-const logger = require('../logger');
+const { createLogger } = require('../logger');
+
+const logger = createLogger({ module: 'shopify-session' });
 
 // ============================================================================
 // Session Management for Shopify Integration

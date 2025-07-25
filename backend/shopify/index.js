@@ -1,6 +1,8 @@
 const { SessionManager } = require('./session-manager');
 const shopifyRoutes = require('./routes');
-const logger = require('../logger');
+const { createLogger } = require('../logger');
+
+const logger = createLogger({ module: 'shopify' });
 
 // ============================================================================
 // Shopify Integration Module

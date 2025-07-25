@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { webhookMiddleware, verifyWebhook, processCustomerUpdate, logWebhookEvent } = require('./webhook-handler');
 const { SessionManager } = require('./session-manager');
-const logger = require('../logger');
+const { createLogger } = require('../logger');
+
+const logger = createLogger({ module: 'shopify-routes' });
 
 // ============================================================================
 // Webhook Routes
