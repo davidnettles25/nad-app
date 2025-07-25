@@ -33,13 +33,24 @@ function verifyWebhookSignature(rawBody, signature, secret) {
 // ============================================================================
 
 async function logWebhookEvent(headers, body, processed = false, error = null, db = null) {
+    console.log('[WEBHOOK DEBUG] logWebhookEvent called with:', {
+        hasDb: !!db,
+        processed,
+        error,
+        topic: headers['x-shopify-topic']
+    });
+    
     if (!db) {
         logger.error('Database connection not provided to logWebhookEvent');
         return;
     }
-    const connection = await db.getConnection();
+    
+    let connection;
     try {
-        await connection.execute(`
+        connection = await db.getConnection();
+        console.log('[WEBHOOK DEBUG] Got database connection');
+        
+        const result = await connection.execute(`
             INSERT INTO nad_shopify_webhooks 
             (webhook_id, topic, shop_domain, api_version, payload, processed, processed_at, error_message)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -53,10 +64,17 @@ async function logWebhookEvent(headers, body, processed = false, error = null, d
             processed ? new Date() : null,
             error
         ]);
+        
+        console.log('[WEBHOOK DEBUG] Webhook logged successfully, insertId:', result[0].insertId);
+        
     } catch (err) {
+        console.log('[WEBHOOK DEBUG] Failed to log webhook event:', err);
         logger.error('Failed to log webhook event:', err);
     } finally {
-        connection.release();
+        if (connection) {
+            connection.release();
+            console.log('[WEBHOOK DEBUG] Database connection released');
+        }
     }
 }
 
