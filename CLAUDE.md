@@ -6,6 +6,7 @@
 ## Deployment
 - The deployment scenario is in /development/deploy.sh
 - There is no remote git repository for this project
+- deployment on the server is done with the /deployment/deploy.sh script
 
 ## Logging
 - remember that we implemented the Pino logging system
