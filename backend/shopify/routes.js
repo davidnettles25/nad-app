@@ -34,12 +34,21 @@ router.post('/webhooks/customer-update',
     },
     express.raw({ type: 'application/json', limit: '1mb' }), // Capture raw body for HMAC
     (req, res, next) => {
+        console.log('[WEBHOOK DEBUG] Raw body middleware starting');
+        console.log('[WEBHOOK DEBUG] req.body type:', typeof req.body);
+        console.log('[WEBHOOK DEBUG] req.body length:', req.body?.length || 0);
+        console.log('[WEBHOOK DEBUG] req.body is Buffer:', Buffer.isBuffer(req.body));
+        
         // Parse JSON after capturing raw body
         req.rawBody = req.body;
         try {
-            req.body = JSON.parse(req.body.toString());
+            const bodyString = req.body.toString();
+            console.log('[WEBHOOK DEBUG] Converting to string, length:', bodyString.length);
+            req.body = JSON.parse(bodyString);
+            console.log('[WEBHOOK DEBUG] JSON parsing successful');
             next();
         } catch (error) {
+            console.log('[WEBHOOK DEBUG] JSON parsing failed:', error.message);
             return res.status(400).json({ error: 'Invalid JSON' });
         }
     },
