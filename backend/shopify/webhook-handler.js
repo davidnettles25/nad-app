@@ -639,25 +639,33 @@ function verifyWebhook(req, res, next) {
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
     
     console.log('[WEBHOOK DEBUG] HMAC header exists:', !!hmac);
+    console.log('[WEBHOOK DEBUG] HMAC header value:', hmac ? 'present' : 'missing');
     console.log('[WEBHOOK DEBUG] Webhook secret exists:', !!secret);
+    console.log('[WEBHOOK DEBUG] Raw body type:', typeof req.rawBody);
     console.log('[WEBHOOK DEBUG] Raw body length:', req.rawBody?.length || 0);
+    console.log('[WEBHOOK DEBUG] Raw body is Buffer:', Buffer.isBuffer(req.rawBody));
     
     if (!hmac || !secret) {
-        console.log('[WEBHOOK DEBUG] Missing HMAC or secret - rejecting');
+        console.log('[WEBHOOK DEBUG] Missing HMAC or secret - rejecting with 401');
         logger.error('Missing webhook signature or secret');
         return res.status(401).json({ error: 'Unauthorized' });
     }
     
-    const isValid = verifyWebhookSignature(req.rawBody, hmac, secret);
+    // Convert Buffer to string for HMAC verification
+    const rawBodyString = Buffer.isBuffer(req.rawBody) ? req.rawBody.toString('utf8') : req.rawBody;
+    console.log('[WEBHOOK DEBUG] Raw body string length:', rawBodyString?.length || 0);
+    
+    const isValid = verifyWebhookSignature(rawBodyString, hmac, secret);
     console.log('[WEBHOOK DEBUG] HMAC verification result:', isValid);
     
     if (!isValid) {
-        console.log('[WEBHOOK DEBUG] Invalid signature - rejecting');
+        console.log('[WEBHOOK DEBUG] Invalid signature - rejecting with 401');
+        console.log('[WEBHOOK DEBUG] Expected vs received HMAC debug info logged');
         logger.error('Invalid webhook signature');
         return res.status(401).json({ error: 'Invalid signature' });
     }
     
-    console.log('[WEBHOOK DEBUG] HMAC verification passed');
+    console.log('[WEBHOOK DEBUG] HMAC verification passed - proceeding');
     logger.info('Valid Shopify webhook signature');
     next();
 }
