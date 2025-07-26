@@ -24,7 +24,7 @@ try {
 
 // Customer update webhook (handles metafield activation requests)
 router.post('/webhooks/customer-update', 
-    express.json({ limit: '1mb' }), // Use express JSON parser instead of custom middleware
+    webhookMiddleware, // Custom middleware to capture raw body for HMAC verification
     verifyWebhook,
     async (req, res) => {
         const headers = req.headers;
@@ -69,7 +69,7 @@ router.post('/webhooks/customer-update',
 
 // Order creation webhook (for linking test kits to orders)
 router.post('/webhooks/order-create',
-    express.json({ limit: '1mb' }),
+    webhookMiddleware,
     verifyWebhook,
     async (req, res) => {
         const order = req.body;
