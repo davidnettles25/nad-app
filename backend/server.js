@@ -4103,6 +4103,312 @@ app.post('/api/batch/activate-tests', async (req, res) => {
 });
 
 // ============================================================================
+// CUSTOMER DASHBOARD API ENDPOINTS
+// ============================================================================
+
+// Get customer tests for dashboard
+app.post('/api/customer/tests', async (req, res) => {
+    try {
+        const { email, customerId } = req.body;
+        
+        if (!email && !customerId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email or customer ID is required'
+            });
+        }
+        
+        logger.info(`Loading tests for customer: ${email || customerId}`);
+        
+        // Build query based on available identifiers
+        let query = `
+            SELECT ti.test_id, ti.status, ti.created_date, ti.updated_date, 
+                   ti.activated_date, ti.customer_id, ti.shopify_customer_id,
+                   ts.score, ts.updated_date as score_date
+            FROM nad_test_ids ti
+            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            WHERE 1=1
+        `;
+        const params = [];
+        
+        if (email) {
+            query += ` AND ti.customer_id = ?`;
+            params.push(email);
+        }
+        
+        if (customerId) {
+            query += ` AND ti.shopify_customer_id = ?`;
+            params.push(customerId);
+        }
+        
+        query += ` ORDER BY ti.created_date DESC`;
+        
+        const [tests] = await db.execute(query, params);
+        
+        logger.info(`Found ${tests.length} tests for customer`);
+        
+        res.json({
+            success: true,
+            data: {
+                tests: tests,
+                count: tests.length
+            }
+        });
+        
+    } catch (error) {
+        logger.error('Failed to load customer tests:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load tests'
+        });
+    }
+});
+
+// Activate test for customer
+app.post('/api/customer/activate', async (req, res) => {
+    try {
+        const { testId, email, customerId } = req.body;
+        
+        if (!testId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Test ID is required'
+            });
+        }
+        
+        if (!email && !customerId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email or customer ID is required'
+            });
+        }
+        
+        logger.info(`Activating test ${testId} for customer: ${email || customerId}`);
+        
+        // Validate test kit format
+        const testKitPattern = new RegExp(process.env.TEST_KIT_ID_PATTERN || '^[0-9]{4}-[0-9]{2}-[0-9]+-[A-Za-z0-9]{6}$', 'i');
+        if (!testKitPattern.test(testId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid Test Kit ID format'
+            });
+        }
+        
+        // Check if test kit exists and is available
+        const [existingTest] = await db.execute(`
+            SELECT test_id, status, customer_id, shopify_customer_id 
+            FROM nad_test_ids 
+            WHERE UPPER(test_id) = UPPER(?)
+        `, [testId]);
+        
+        if (existingTest.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Test Kit ID not found in system'
+            });
+        }
+        
+        const test = existingTest[0];
+        
+        if (test.status === 'activated') {
+            return res.status(400).json({
+                success: false,
+                error: 'This test kit has already been activated'
+            });
+        }
+        
+        // Validate test kit age
+        const testYear = parseInt(testId.substring(0, 4));
+        const currentYear = new Date().getFullYear();
+        const maxAge = parseInt(process.env.TEST_KIT_MAX_AGE_YEARS || '2');
+        
+        if (testYear > currentYear) {
+            return res.status(400).json({
+                success: false,
+                error: 'Test Kit ID appears to be from the future'
+            });
+        }
+        
+        if (testYear < currentYear - maxAge) {
+            return res.status(400).json({
+                success: false,
+                error: `Test Kit ID has expired (older than ${maxAge} years)`
+            });
+        }
+        
+        // Activate the test kit
+        await db.beginTransaction();
+        
+        try {
+            // Update test_ids table
+            await db.execute(`
+                UPDATE nad_test_ids 
+                SET 
+                    status = 'activated',
+                    activated_date = NOW(),
+                    customer_id = ?,
+                    shopify_customer_id = ?
+                WHERE UPPER(test_id) = UPPER(?)
+            `, [
+                email || test.customer_id,
+                customerId || test.shopify_customer_id,
+                testId
+            ]);
+            
+            // Create score record
+            await db.execute(`
+                INSERT INTO nad_test_scores 
+                (test_id, technician_id, score, created_date, updated_date)
+                VALUES (?, '', 0, CURDATE(), CURDATE())
+                ON DUPLICATE KEY UPDATE 
+                    test_id = VALUES(test_id)
+            `, [testId]);
+            
+            await db.commit();
+            
+            logger.info(`Test Kit ${testId} activated successfully for ${email || customerId}`);
+            
+            res.json({
+                success: true,
+                message: 'Test kit activated successfully',
+                data: {
+                    testId: testId,
+                    activatedDate: new Date(),
+                    status: 'activated'
+                }
+            });
+            
+        } catch (error) {
+            await db.rollback();
+            throw error;
+        }
+        
+    } catch (error) {
+        logger.error('Test activation failed:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to activate test kit'
+        });
+    }
+});
+
+// Get customer dashboard statistics
+app.post('/api/customer/stats', async (req, res) => {
+    try {
+        const { email, customerId } = req.body;
+        
+        if (!email && !customerId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email or customer ID is required'
+            });
+        }
+        
+        // Build query based on available identifiers
+        let query = `
+            SELECT 
+                COUNT(*) as total_tests,
+                SUM(CASE WHEN ti.status = 'completed' THEN 1 ELSE 0 END) as completed_tests,
+                SUM(CASE WHEN ti.status = 'pending' THEN 1 ELSE 0 END) as pending_tests,
+                SUM(CASE WHEN ti.status = 'activated' THEN 1 ELSE 0 END) as activated_tests,
+                AVG(CASE WHEN ts.score > 0 THEN ts.score ELSE NULL END) as avg_score
+            FROM nad_test_ids ti
+            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            WHERE 1=1
+        `;
+        const params = [];
+        
+        if (email) {
+            query += ` AND ti.customer_id = ?`;
+            params.push(email);
+        }
+        
+        if (customerId) {
+            query += ` AND ti.shopify_customer_id = ?`;
+            params.push(customerId);
+        }
+        
+        const [stats] = await db.execute(query, params);
+        
+        res.json({
+            success: true,
+            data: {
+                totalTests: stats[0].total_tests || 0,
+                completedTests: stats[0].completed_tests || 0,
+                pendingTests: stats[0].pending_tests || 0,
+                activatedTests: stats[0].activated_tests || 0,
+                avgScore: Math.round(stats[0].avg_score || 0)
+            }
+        });
+        
+    } catch (error) {
+        logger.error('Failed to load customer stats:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load statistics'
+        });
+    }
+});
+
+// Get test results for customer
+app.post('/api/customer/results', async (req, res) => {
+    try {
+        const { email, customerId, testId } = req.body;
+        
+        if (!email && !customerId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email or customer ID is required'
+            });
+        }
+        
+        // Build query for results
+        let query = `
+            SELECT ti.test_id, ti.status, ti.activated_date, ti.updated_date,
+                   ts.score, ts.created_date as score_date, ts.technician_id
+            FROM nad_test_ids ti
+            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            WHERE ti.status = 'completed' AND ts.score IS NOT NULL
+        `;
+        const params = [];
+        
+        if (email) {
+            query += ` AND ti.customer_id = ?`;
+            params.push(email);
+        }
+        
+        if (customerId) {
+            query += ` AND ti.shopify_customer_id = ?`;
+            params.push(customerId);
+        }
+        
+        if (testId) {
+            query += ` AND ti.test_id = ?`;
+            params.push(testId);
+        }
+        
+        query += ` ORDER BY ts.created_date DESC`;
+        
+        const [results] = await db.execute(query, params);
+        
+        res.json({
+            success: true,
+            data: {
+                results: results,
+                count: results.length
+            }
+        });
+        
+    } catch (error) {
+        logger.error('Failed to load customer results:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load results'
+        });
+    }
+});
+
+// ============================================================================
 // NOTIFICATION ENDPOINTS
 // ============================================================================
 

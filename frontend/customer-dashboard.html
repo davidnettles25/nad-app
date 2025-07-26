@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAD+ Customer Dashboard</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/shared/assets/favicon.ico">
+    
+    <!-- CSS Framework -->
+    <link rel="stylesheet" href="shared/css/variables.css">
+    <link rel="stylesheet" href="shared/css/base.css">
+    <link rel="stylesheet" href="customer/css/customer-dashboard.css">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>Loading your dashboard...</p>
+    </div>
+
+    <!-- Authentication Error -->
+    <div id="auth-error" class="auth-error" style="display: none;">
+        <div class="error-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h2>Authentication Required</h2>
+            <p>Please access your dashboard through your Shopify account or verify your email.</p>
+            <button onclick="window.location.href='/customer-portal.html'" class="btn-primary">
+                Go to Login Portal
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard-container" class="dashboard-container" style="display: none;">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="/shared/assets/logo.png" alt="NAD+ Test" class="logo">
+                    <h1>NAD+ Dashboard</h1>
+                </div>
+                <div class="user-section">
+                    <div class="user-info">
+                        <span class="user-name" id="user-name">Loading...</span>
+                        <span class="user-email" id="user-email">Loading...</span>
+                    </div>
+                    <div class="user-menu">
+                        <button class="menu-btn" onclick="NADDashboard.toggleUserMenu()">
+                            <i class="fas fa-user-circle"></i>
+                        </button>
+                        <div id="user-menu-dropdown" class="user-menu-dropdown">
+                            <a href="#" onclick="NADDashboard.viewProfile()">
+                                <i class="fas fa-user"></i> Profile
+                            </a>
+                            <a href="#" onclick="NADDashboard.viewSettings()">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                            <a href="#" onclick="NADDashboard.logout()">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Navigation Sidebar -->
+            <nav class="dashboard-nav">
+                <ul class="nav-menu">
+                    <li class="nav-item active">
+                        <a href="#dashboard" onclick="NADDashboard.showSection('dashboard')">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#tests" onclick="NADDashboard.showSection('tests')">
+                            <i class="fas fa-vial"></i>
+                            <span>My Tests</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#results" onclick="NADDashboard.showSection('results')">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Results</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#supplements" onclick="NADDashboard.showSection('supplements')">
+                            <i class="fas fa-pills"></i>
+                            <span>Supplements</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#help" onclick="NADDashboard.showSection('help')">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Help</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Content Area -->
+            <div class="dashboard-content">
+                <!-- Dashboard Overview Section -->
+                <section id="section-dashboard" class="content-section active">
+                    <div class="section-header">
+                        <h2>Welcome back!</h2>
+                        <p class="last-login">Last login: <span id="last-login-time">Loading...</span></p>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-vial"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="total-tests">-</div>
+                                <div class="stat-label">Total Tests</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="completed-tests">-</div>
+                                <div class="stat-label">Completed</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="pending-tests">-</div>
+                                <div class="stat-label">Pending</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="avg-score">-</div>
+                                <div class="stat-label">Avg Score</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <button class="action-btn primary" onclick="NADDashboard.activateNewTest()">
+                            <i class="fas fa-plus"></i>
+                            Activate New Test
+                        </button>
+                        <button class="action-btn secondary" onclick="NADDashboard.viewAllTests()">
+                            <i class="fas fa-list"></i>
+                            View All Tests
+                        </button>
+                        <button class="action-btn secondary" onclick="NADDashboard.downloadResults()">
+                            <i class="fas fa-download"></i>
+                            Download Results
+                        </button>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="dashboard-cards">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Recent Tests</h3>
+                                <button class="btn-link" onclick="NADDashboard.showSection('tests')">
+                                    View All
+                                </button>
+                            </div>
+                            <div class="card-content">
+                                <div id="recent-tests-list" class="recent-tests-list">
+                                    <!-- Populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>NAD+ Trends</h3>
+                                <div class="trend-period">
+                                    <select id="trend-period" onchange="NADDashboard.updateTrendChart()">
+                                        <option value="30">Last 30 days</option>
+                                        <option value="90">Last 3 months</option>
+                                        <option value="365">Last year</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <canvas id="trend-chart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tests Section -->
+                <section id="section-tests" class="content-section">
+                    <div class="section-header">
+                        <h2>My Tests</h2>
+                        <button class="btn-primary" onclick="NADDashboard.activateNewTest()">
+                            <i class="fas fa-plus"></i>
+                            Activate New Test
+                        </button>
+                    </div>
+
+                    <!-- Test Filters -->
+                    <div class="filters-bar">
+                        <div class="filter-group">
+                            <label>Status:</label>
+                            <select id="test-status-filter" onchange="NADDashboard.filterTests()">
+                                <option value="">All</option>
+                                <option value="pending">Pending</option>
+                                <option value="activated">Activated</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Search:</label>
+                            <input type="text" id="test-search" placeholder="Search test ID..." 
+                                   onkeyup="NADDashboard.filterTests()">
+                        </div>
+                    </div>
+
+                    <!-- Tests List -->
+                    <div id="tests-list" class="tests-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Results Section -->
+                <section id="section-results" class="content-section">
+                    <div class="section-header">
+                        <h2>Test Results</h2>
+                        <button class="btn-secondary" onclick="NADDashboard.exportAllResults()">
+                            <i class="fas fa-file-export"></i>
+                            Export All
+                        </button>
+                    </div>
+
+                    <div id="results-content" class="results-content">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Supplements Section -->
+                <section id="section-supplements" class="content-section">
+                    <div class="section-header">
+                        <h2>Supplement Recommendations</h2>
+                        <p class="section-description">
+                            Based on your NAD+ test results, here are personalized supplement recommendations.
+                        </p>
+                    </div>
+
+                    <div id="supplements-content" class="supplements-content">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Help Section -->
+                <section id="section-help" class="content-section">
+                    <div class="section-header">
+                        <h2>Help & Support</h2>
+                    </div>
+
+                    <div class="help-content">
+                        <div class="help-cards">
+                            <div class="help-card">
+                                <i class="fas fa-question-circle"></i>
+                                <h3>FAQ</h3>
+                                <p>Find answers to common questions about NAD+ testing.</p>
+                                <button class="btn-link">View FAQ</button>
+                            </div>
+                            <div class="help-card">
+                                <i class="fas fa-envelope"></i>
+                                <h3>Contact Support</h3>
+                                <p>Get help from our support team.</p>
+                                <button class="btn-link">Contact Us</button>
+                            </div>
+                            <div class="help-card">
+                                <i class="fas fa-book"></i>
+                                <h3>User Guide</h3>
+                                <p>Learn how to use your dashboard effectively.</p>
+                                <button class="btn-link">View Guide</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="shared/js/core.js"></script>
+    <script src="shared/js/api-client.js"></script>
+    <script src="customer/js/customer-dashboard.js"></script>
+    
+    <script>
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            NADDashboard.init();
+        });
+    </script>
+</body>
+</html>
