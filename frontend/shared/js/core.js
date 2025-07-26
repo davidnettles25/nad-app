@@ -95,21 +95,29 @@ NAD.events = {
     }
 };
 
-// Logger
-NAD.logger = {
-    debug(...args) {
-        // Debug logging disabled
-    },
-    info(...args) {
-        // Info logging disabled
-    },
-    warn(...args) {
-        // Warning logging disabled
-    },
-    error(...args) {
-        // Error logging disabled
-    }
-};
+// Environment-based logger
+NAD.logger = (() => {
+    const isDevelopment = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.includes('dev') ||
+                         window.location.search.includes('debug=true');
+    
+    return {
+        debug(...args) {
+            if (isDevelopment) console.log('[NAD DEBUG]', ...args);
+        },
+        info(...args) {
+            if (isDevelopment) console.info('[NAD INFO]', ...args);
+        },
+        warn(...args) {
+            if (isDevelopment) console.warn('[NAD WARN]', ...args);
+        },
+        error(...args) {
+            // Always show errors, even in production
+            console.error('[NAD ERROR]', ...args);
+        }
+    };
+})();
 
 // Initialize
 // NAD Core utilities loaded

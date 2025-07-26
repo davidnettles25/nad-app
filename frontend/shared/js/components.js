@@ -2,7 +2,11 @@
 window.NADComponents = {
     config: {
         baseUrl: '',
-        debugMode: true
+        // Environment-based debug control: only enable in development
+        debugMode: window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' ||
+                   window.location.hostname.includes('dev') ||
+                   window.location.search.includes('debug=true')
     },
 
     async loadSection(sectionName, targetSelector = '.main-content') {
@@ -67,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         window.location.pathname.includes('admin');
     
     if (isAdminPage && document.querySelector('.main-content')) {
-        console.log('🔄 Auto-loading admin sections...');
+        window.NADComponents.log('Auto-loading admin sections...');
         await window.NADComponents.loadAllSections();
         
         // Initialize admin dashboard after sections are loaded
@@ -75,6 +79,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.initializeAdminDashboard();
         }
     } else if (document.querySelector('.main-content')) {
-        console.log('✅ Non-admin page detected, skipping admin section loading');
+        window.NADComponents.log('Non-admin page detected, skipping admin section loading');
     }
 });

@@ -181,7 +181,11 @@ const NAD_CONFIG = {
     // Environment Configuration
     ENVIRONMENT: {
         NAME: 'production',
-        DEBUG: false,
+        // Environment-based debug control
+        DEBUG: window.location.hostname === 'localhost' || 
+               window.location.hostname === '127.0.0.1' ||
+               window.location.hostname.includes('dev') ||
+               window.location.search.includes('debug=true'),
         API_TIMEOUT: 30000,     // 30 seconds
         RETRY_ATTEMPTS: 3,
         RETRY_DELAY: 1000       // 1 second
