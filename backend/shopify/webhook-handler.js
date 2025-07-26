@@ -141,6 +141,16 @@ async function processCustomerUpdate(customer, db = null) {
                 // Log successful activation
                 await logMetafieldOperation(connection, customer.id, activationMetafield.id, 
                     'customer', 'test_kit_activation', 'delete', true);
+                
+                // Create test kit log metafield
+                await createTestKitLogMetafield(customer.id, {
+                    action: 'activation',
+                    testKitId: testKitId,
+                    timestamp: Date.now(),
+                    status: 'success',
+                    message: 'Test kit successfully activated',
+                    activationDate: result.activationDate
+                });
             }
         } else if (requestType === 'portal_only') {
             result = { 
@@ -420,6 +430,50 @@ async function deleteMetafield(metafieldId) {
         }
     } catch (error) {
         logger.error('Error deleting metafield:', error);
+    }
+}
+
+async function createTestKitLogMetafield(customerId, logData) {
+    if (!customerId) return;
+    
+    try {
+        const shopifyUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields.json`;
+        
+        const metafieldData = {
+            metafield: {
+                namespace: 'customer',
+                key: 'test_kit_log',
+                type: 'json',
+                value: JSON.stringify({
+                    action: logData.action,
+                    testKitId: logData.testKitId,
+                    timestamp: logData.timestamp,
+                    status: logData.status,
+                    message: logData.message,
+                    activationDate: logData.activationDate ? logData.activationDate.toISOString() : null
+                })
+            }
+        };
+        
+        const response = await fetch(shopifyUrl, {
+            method: 'POST',
+            headers: {
+                'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(metafieldData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            logger.info(`Created test kit log metafield for customer ${customerId}:`, logData.testKitId);
+            console.log(`[WEBHOOK DEBUG] Created test kit log metafield: ${result.metafield.id}`);
+        } else {
+            const errorText = await response.text();
+            logger.error('Failed to create test kit log metafield:', response.status, errorText);
+        }
+    } catch (error) {
+        logger.error('Error creating test kit log metafield:', error);
     }
 }
 
