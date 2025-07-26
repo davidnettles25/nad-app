@@ -434,10 +434,18 @@ async function deleteMetafield(metafieldId) {
 }
 
 async function createTestKitLogMetafield(customerId, logData) {
-    if (!customerId) return;
+    if (!customerId) {
+        console.log('[WEBHOOK DEBUG] No customerId provided to createTestKitLogMetafield');
+        return;
+    }
     
     try {
+        console.log(`[WEBHOOK DEBUG] Creating test kit log metafield for customer: ${customerId}`);
+        console.log(`[WEBHOOK DEBUG] SHOPIFY_STORE_URL: ${process.env.SHOPIFY_STORE_URL}`);
+        console.log(`[WEBHOOK DEBUG] SHOPIFY_ACCESS_TOKEN exists: ${!!process.env.SHOPIFY_ACCESS_TOKEN}`);
+        
         const shopifyUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields.json`;
+        console.log(`[WEBHOOK DEBUG] Shopify URL: ${shopifyUrl}`);
         
         const metafieldData = {
             metafield: {
@@ -455,6 +463,8 @@ async function createTestKitLogMetafield(customerId, logData) {
             }
         };
         
+        console.log(`[WEBHOOK DEBUG] Metafield data:`, JSON.stringify(metafieldData, null, 2));
+        
         const response = await fetch(shopifyUrl, {
             method: 'POST',
             headers: {
@@ -464,15 +474,20 @@ async function createTestKitLogMetafield(customerId, logData) {
             body: JSON.stringify(metafieldData)
         });
         
+        console.log(`[WEBHOOK DEBUG] Response status: ${response.status}`);
+        
         if (response.ok) {
             const result = await response.json();
             logger.info(`Created test kit log metafield for customer ${customerId}:`, logData.testKitId);
             console.log(`[WEBHOOK DEBUG] Created test kit log metafield: ${result.metafield.id}`);
+            console.log(`[WEBHOOK DEBUG] Full response:`, JSON.stringify(result, null, 2));
         } else {
             const errorText = await response.text();
+            console.log(`[WEBHOOK DEBUG] Error response text:`, errorText);
             logger.error('Failed to create test kit log metafield:', response.status, errorText);
         }
     } catch (error) {
+        console.log(`[WEBHOOK DEBUG] Exception in createTestKitLogMetafield:`, error);
         logger.error('Error creating test kit log metafield:', error);
     }
 }
