@@ -32,9 +32,18 @@ router.post('/webhooks/customer-update',
         console.log('[WEBHOOK DEBUG] User-Agent:', req.get('user-agent'));
         next();
     },
-    express.json({ limit: '1mb' }), // Temporarily use express.json() to bypass HMAC issues
-    // webhookMiddleware, // Custom middleware to capture raw body for HMAC verification
-    // verifyWebhook, // Temporarily disable HMAC verification
+    express.raw({ type: 'application/json', limit: '1mb' }), // Capture raw body for HMAC
+    (req, res, next) => {
+        // Parse JSON after capturing raw body
+        req.rawBody = req.body;
+        try {
+            req.body = JSON.parse(req.body.toString());
+            next();
+        } catch (error) {
+            return res.status(400).json({ error: 'Invalid JSON' });
+        }
+    },
+    verifyWebhook, // Re-enable HMAC verification
     async (req, res) => {
         const headers = req.headers;
         const customer = req.body;
