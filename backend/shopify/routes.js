@@ -24,14 +24,6 @@ try {
 
 // Customer update webhook (handles metafield activation requests)
 router.post('/webhooks/customer-update', 
-    (req, res, next) => {
-        console.log('[WEBHOOK DEBUG] Webhook request received at:', new Date().toISOString());
-        console.log('[WEBHOOK DEBUG] Request method:', req.method);
-        console.log('[WEBHOOK DEBUG] Request URL:', req.url);
-        console.log('[WEBHOOK DEBUG] Content-Type:', req.get('content-type'));
-        console.log('[WEBHOOK DEBUG] User-Agent:', req.get('user-agent'));
-        next();
-    },
     webhookMiddleware, // Captures raw body for HMAC verification
     verifyWebhook,     // Verifies HMAC signature
     async (req, res) => {
@@ -40,10 +32,8 @@ router.post('/webhooks/customer-update',
         
         try {
             logger.info(`Customer update webhook received for: ${customer.email || 'unknown'}`);
-            console.log('[WEBHOOK DEBUG] Full customer payload:', JSON.stringify(customer, null, 2));
             
             const db = req.app.locals.db;
-            console.log('[WEBHOOK DEBUG] Database connection available:', !!db);
             
             // Log webhook event
             await logWebhookEvent(headers, customer, false, null, db);

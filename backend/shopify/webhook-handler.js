@@ -33,13 +33,6 @@ function verifyWebhookSignature(rawBody, signature, secret) {
 // ============================================================================
 
 async function logWebhookEvent(headers, body, processed = false, error = null, db = null) {
-    console.log('[WEBHOOK DEBUG] logWebhookEvent called with:', {
-        hasDb: !!db,
-        processed,
-        error,
-        topic: headers['x-shopify-topic']
-    });
-    
     if (!db) {
         logger.error('Database connection not provided to logWebhookEvent');
         return;
@@ -48,7 +41,6 @@ async function logWebhookEvent(headers, body, processed = false, error = null, d
     let connection;
     try {
         connection = await db.getConnection();
-        console.log('[WEBHOOK DEBUG] Got database connection');
         
         const result = await connection.execute(`
             INSERT INTO nad_shopify_webhooks 
@@ -65,15 +57,13 @@ async function logWebhookEvent(headers, body, processed = false, error = null, d
             error
         ]);
         
-        console.log('[WEBHOOK DEBUG] Webhook logged successfully, insertId:', result[0].insertId);
+        logger.debug(`Webhook logged: ${headers['x-shopify-topic']}, ID: ${result[0].insertId}`);
         
     } catch (err) {
-        console.log('[WEBHOOK DEBUG] Failed to log webhook event:', err);
         logger.error('Failed to log webhook event:', err);
     } finally {
         if (connection) {
             connection.release();
-            console.log('[WEBHOOK DEBUG] Database connection released');
         }
     }
 }
@@ -92,7 +82,7 @@ async function processCustomerUpdate(customer, db = null) {
         );
         
         if (!activationMetafield && customer.id) {
-            console.log(`[WEBHOOK DEBUG] Metafields not in payload, fetching from Shopify API for customer ID: ${customer.id}...`);
+            logger.debug(`Fetching metafields from Shopify API for customer: ${customer.id}`);
             activationMetafield = await fetchCustomerActivationMetafield(customer.id);
         }
         
@@ -220,33 +210,27 @@ async function upsertShopifyCustomer(connection, customer) {
 
 async function processTestKitActivation(connection, testKitId, customer) {
     try {
-        console.log(`[WEBHOOK DEBUG] Processing test kit activation for: ${testKitId}`);
+        logger.info(`Processing test kit activation: ${testKitId} for ${customer.email}`);
         
         // Validate test kit format (case-insensitive to match database behavior)
         const testKitPattern = new RegExp(process.env.TEST_KIT_ID_PATTERN || '^[0-9]{4}-[0-9]{2}-[0-9]+-[A-Za-z0-9]{6}$', 'i');
-        console.log(`[WEBHOOK DEBUG] Test kit pattern: ${testKitPattern.source}`);
-        console.log(`[WEBHOOK DEBUG] Pattern test result: ${testKitPattern.test(testKitId)}`);
         
         if (!testKitPattern.test(testKitId)) {
             return { success: false, error: 'Invalid Test Kit ID format' };
         }
         
         // Check if test kit exists and is not already activated
-        console.log(`[WEBHOOK DEBUG] Checking database for test ID: ${testKitId}`);
         const [existingTest] = await connection.execute(`
             SELECT test_id, status, customer_id, shopify_customer_id 
             FROM nad_test_ids 
             WHERE UPPER(test_id) = UPPER(?)
         `, [testKitId]);
         
-        console.log(`[WEBHOOK DEBUG] Database query result:`, existingTest);
-        
         if (existingTest.length === 0) {
             return { success: false, error: 'Test Kit ID not found in system' };
         }
         
         const test = existingTest[0];
-        console.log(`[WEBHOOK DEBUG] Test record:`, test);
         
         if (test.status === 'activated') {
             // Check if activated by same customer
@@ -275,7 +259,6 @@ async function processTestKitActivation(connection, testKitId, customer) {
         
         try {
             // Update test_ids table
-            console.log(`[WEBHOOK DEBUG] Updating test_ids table for: ${testKitId}`);
             await connection.execute(`
                 UPDATE nad_test_ids 
                 SET 
@@ -291,7 +274,6 @@ async function processTestKitActivation(connection, testKitId, customer) {
             ]);
             
             // Create score record
-            console.log(`[WEBHOOK DEBUG] Creating score record for: ${testKitId}`);
             await connection.execute(`
                 INSERT INTO nad_test_scores 
                 (test_id, technician_id, score, created_date, updated_date)
@@ -302,9 +284,7 @@ async function processTestKitActivation(connection, testKitId, customer) {
                 testKitId
             ]);
             
-            console.log(`[WEBHOOK DEBUG] Committing transaction`);
             await connection.commit();
-            console.log(`[WEBHOOK DEBUG] Transaction committed successfully`);
             
             logger.info(`Test Kit ${testKitId} activated successfully for ${customer.email}`);
             
@@ -316,13 +296,11 @@ async function processTestKitActivation(connection, testKitId, customer) {
             };
             
         } catch (error) {
-            console.log(`[WEBHOOK DEBUG] Transaction error:`, error);
             await connection.rollback();
             throw error;
         }
         
     } catch (error) {
-        console.log(`[WEBHOOK DEBUG] Test kit activation error:`, error);
         logger.error('Test kit activation error:', error);
         return { success: false, error: 'Failed to activate test kit' };
     }
@@ -384,16 +362,13 @@ async function fetchCustomerActivationMetafield(customerId) {
         }
         
         const result = await response.json();
-        console.log('[WEBHOOK DEBUG] All metafields returned:', JSON.stringify(result.metafields, null, 2));
         
         const activationMetafield = result.metafields?.find(mf => 
             (mf.namespace === 'customer' || mf.namespace === 'custom') && mf.key === 'test_kit_activation'
         );
         
         if (activationMetafield) {
-            console.log('[WEBHOOK DEBUG] Found activation metafield via API:', activationMetafield);
-        } else {
-            console.log('[WEBHOOK DEBUG] No activation metafield found. Looking for namespace=customer/custom, key=test_kit_activation');
+            logger.debug(`Found activation metafield for customer ${customerId}`);
         }
         
         return activationMetafield;
@@ -431,14 +406,12 @@ async function deleteMetafield(metafieldId) {
 
 async function createTestKitLogMetafield(customerId, logData) {
     if (!customerId) {
-        console.log('[WEBHOOK DEBUG] No customerId provided to createTestKitLogMetafield');
+        logger.warn('No customerId provided to createTestKitLogMetafield');
         return;
     }
     
     try {
-        console.log(`[WEBHOOK DEBUG] Creating test kit log metafield for customer: ${customerId}`);
-        console.log(`[WEBHOOK DEBUG] SHOPIFY_STORE_URL: ${process.env.SHOPIFY_STORE_URL}`);
-        console.log(`[WEBHOOK DEBUG] SHOPIFY_ACCESS_TOKEN exists: ${!!process.env.SHOPIFY_ACCESS_TOKEN}`);
+        logger.debug(`Creating test kit log metafield for customer: ${customerId}`);
         
         // First, check if a test_kit_log metafield already exists
         const getUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields.json`;
@@ -456,7 +429,6 @@ async function createTestKitLogMetafield(customerId, logData) {
             existingMetafield = metafields.metafields?.find(mf => 
                 mf.namespace === 'custom' && mf.key === 'test_kit_log'
             );
-            console.log(`[WEBHOOK DEBUG] Existing test_kit_log metafield:`, existingMetafield?.id || 'none');
         }
         
         const logEntry = {
@@ -476,11 +448,10 @@ async function createTestKitLogMetafield(customerId, logData) {
                 const logArray = Array.isArray(existingValue) ? existingValue : [existingValue];
                 logArray.push(logEntry);
                 finalValue = JSON.stringify(logArray);
-                console.log(`[WEBHOOK DEBUG] Appending to existing log array, new length: ${logArray.length}`);
             } catch (error) {
                 // If existing value isn't valid JSON, start fresh
                 finalValue = JSON.stringify([logEntry]);
-                console.log(`[WEBHOOK DEBUG] Existing value invalid, starting fresh array`);
+                logger.warn('Existing metafield value invalid, starting fresh array');
             }
             
             // Update existing metafield
@@ -494,7 +465,6 @@ async function createTestKitLogMetafield(customerId, logData) {
                 }
             };
             
-            console.log(`[WEBHOOK DEBUG] Updating metafield ${existingMetafield.id}`);
             const response = await fetch(updateUrl, {
                 method: 'PUT',
                 headers: {
@@ -504,37 +474,10 @@ async function createTestKitLogMetafield(customerId, logData) {
                 body: JSON.stringify(updateData)
             });
             
-            console.log(`[WEBHOOK DEBUG] Update response status: ${response.status}`);
-            
             if (response.ok) {
-                const result = await response.json();
-                logger.info(`Updated test kit log metafield for customer ${customerId}:`, logData.testKitId);
-                console.log(`[WEBHOOK DEBUG] Updated metafield successfully`);
-                console.log(`[WEBHOOK DEBUG] Update result:`, JSON.stringify(result, null, 2));
-                
-                // Verify the update by fetching the metafield again
-                const verifyResponse = await fetch(getUrl, {
-                    method: 'GET',
-                    headers: {
-                        'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (verifyResponse.ok) {
-                    const verifyData = await verifyResponse.json();
-                    const updatedMetafield = verifyData.metafields?.find(mf => 
-                        mf.namespace === 'customer' && mf.key === 'test_kit_log'
-                    );
-                    console.log(`[WEBHOOK DEBUG] Verification: metafield exists after update:`, !!updatedMetafield);
-                    if (updatedMetafield) {
-                        console.log(`[WEBHOOK DEBUG] Verification: metafield value length:`, updatedMetafield.value.length);
-                        console.log(`[WEBHOOK DEBUG] Verification: metafield updated_at:`, updatedMetafield.updated_at);
-                    }
-                }
+                logger.info(`Updated test kit log metafield for customer ${customerId}: ${logData.testKitId}`);
             } else {
                 const errorText = await response.text();
-                console.log(`[WEBHOOK DEBUG] Update error response:`, errorText);
                 logger.error('Failed to update test kit log metafield:', response.status, errorText);
             }
         } else {
@@ -552,9 +495,6 @@ async function createTestKitLogMetafield(customerId, logData) {
                 }
             };
             
-            console.log(`[WEBHOOK DEBUG] Creating new metafield`);
-            console.log(`[WEBHOOK DEBUG] Metafield data:`, JSON.stringify(metafieldData, null, 2));
-            
             const response = await fetch(shopifyUrl, {
                 method: 'POST',
                 headers: {
@@ -564,20 +504,15 @@ async function createTestKitLogMetafield(customerId, logData) {
                 body: JSON.stringify(metafieldData)
             });
             
-            console.log(`[WEBHOOK DEBUG] Create response status: ${response.status}`);
-            
             if (response.ok) {
                 const result = await response.json();
-                logger.info(`Created test kit log metafield for customer ${customerId}:`, logData.testKitId);
-                console.log(`[WEBHOOK DEBUG] Created test kit log metafield: ${result.metafield.id}`);
+                logger.info(`Created test kit log metafield for customer ${customerId}: ${logData.testKitId}`);
             } else {
                 const errorText = await response.text();
-                console.log(`[WEBHOOK DEBUG] Create error response:`, errorText);
                 logger.error('Failed to create test kit log metafield:', response.status, errorText);
             }
         }
     } catch (error) {
-        console.log(`[WEBHOOK DEBUG] Exception in createTestKitLogMetafield:`, error);
         logger.error('Error creating test kit log metafield:', error);
     }
 }
@@ -600,73 +535,51 @@ async function logMetafieldOperation(connection, customerId, metafieldId, namesp
 
 function webhookMiddleware(req, res, next) {
     // Store raw body for signature verification
-    console.log('[WEBHOOK DEBUG] Webhook middleware starting');
     let rawBody = '';
     
     req.on('data', chunk => {
         rawBody += chunk.toString('utf8');
-        console.log('[WEBHOOK DEBUG] Received chunk, total length:', rawBody.length);
     });
     
     req.on('end', () => {
-        console.log('[WEBHOOK DEBUG] Request stream ended, total body length:', rawBody.length);
         req.rawBody = rawBody;
         
         try {
             req.body = JSON.parse(rawBody);
-            console.log('[WEBHOOK DEBUG] JSON parsing successful');
         } catch (error) {
-            console.log('[WEBHOOK DEBUG] JSON parsing failed:', error.message);
+            logger.error('Webhook JSON parsing failed:', error.message);
             return res.status(400).json({ error: 'Invalid JSON' });
         }
         
-        console.log('[WEBHOOK DEBUG] Calling next() from webhook middleware');
         next();
     });
     
     req.on('error', (error) => {
-        console.log('[WEBHOOK DEBUG] Request stream error:', error);
+        logger.error('Webhook request stream error:', error);
         res.status(500).json({ error: 'Request processing failed' });
     });
 }
 
 function verifyWebhook(req, res, next) {
-    // HMAC verification enabled for security
-    console.log('[WEBHOOK DEBUG] HMAC verification starting');
-    console.log('[WEBHOOK DEBUG] Headers received:', Object.keys(req.headers));
-    
     const hmac = req.get('X-Shopify-Hmac-Sha256');
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
     
-    console.log('[WEBHOOK DEBUG] HMAC header exists:', !!hmac);
-    console.log('[WEBHOOK DEBUG] HMAC header value:', hmac ? 'present' : 'missing');
-    console.log('[WEBHOOK DEBUG] Webhook secret exists:', !!secret);
-    console.log('[WEBHOOK DEBUG] Raw body type:', typeof req.rawBody);
-    console.log('[WEBHOOK DEBUG] Raw body length:', req.rawBody?.length || 0);
-    console.log('[WEBHOOK DEBUG] Raw body is Buffer:', Buffer.isBuffer(req.rawBody));
-    
     if (!hmac || !secret) {
-        console.log('[WEBHOOK DEBUG] Missing HMAC or secret - rejecting with 401');
         logger.error('Missing webhook signature or secret');
         return res.status(401).json({ error: 'Unauthorized' });
     }
     
     // Convert Buffer to string for HMAC verification
     const rawBodyString = Buffer.isBuffer(req.rawBody) ? req.rawBody.toString('utf8') : req.rawBody;
-    console.log('[WEBHOOK DEBUG] Raw body string length:', rawBodyString?.length || 0);
     
     const isValid = verifyWebhookSignature(rawBodyString, hmac, secret);
-    console.log('[WEBHOOK DEBUG] HMAC verification result:', isValid);
     
     if (!isValid) {
-        console.log('[WEBHOOK DEBUG] Invalid signature - rejecting with 401');
-        console.log('[WEBHOOK DEBUG] Expected vs received HMAC debug info logged');
         logger.error('Invalid webhook signature');
         return res.status(401).json({ error: 'Invalid signature' });
     }
     
-    console.log('[WEBHOOK DEBUG] HMAC verification passed - proceeding');
-    logger.info('Valid Shopify webhook signature');
+    logger.debug('Valid Shopify webhook signature verified');
     next();
 }
 
