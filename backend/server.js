@@ -49,8 +49,22 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Apply JSON/URL parsing to all routes except Shopify webhooks (which need raw body for HMAC)
+app.use((req, res, next) => {
+    if (req.path.startsWith('/shopify/webhooks/')) {
+        // Skip JSON parsing for Shopify webhooks - they handle their own body parsing
+        return next();
+    }
+    express.json({ limit: '10mb' })(req, res, next);
+});
+
+app.use((req, res, next) => {
+    if (req.path.startsWith('/shopify/webhooks/')) {
+        // Skip URL encoding parsing for Shopify webhooks
+        return next();
+    }
+    express.urlencoded({ extended: true, limit: '10mb' })(req, res, next);
+});
 // Note: In production, uploads are served directly by the web server from htdocs/nad-app/uploads
 // This static middleware is only used in development
 if (process.env.NODE_ENV !== 'production') {

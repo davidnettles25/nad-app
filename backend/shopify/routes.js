@@ -32,9 +32,8 @@ router.post('/webhooks/customer-update',
         console.log('[WEBHOOK DEBUG] User-Agent:', req.get('user-agent'));
         next();
     },
-    express.json({ limit: '1mb' }), // Use standard JSON parsing for now
-    // TODO: Implement proper HMAC verification later
-    // The issue is that some upstream middleware is consuming the body before express.raw() can capture it
+    webhookMiddleware, // Captures raw body for HMAC verification
+    verifyWebhook,     // Verifies HMAC signature
     async (req, res) => {
         const headers = req.headers;
         const customer = req.body;
