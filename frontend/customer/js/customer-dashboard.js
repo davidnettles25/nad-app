@@ -218,6 +218,8 @@ window.NADDashboard = {
             ];
             NAD.logger.info('📊 Mock data loaded: ', this.tests.length, 'tests');
             this.updateTestsDisplay();
+            // Recalculate and update statistics with mock data
+            this.loadCustomerStats();
         } else {
             NAD.logger.warn('❌ No mock data available for user:', this.user?.email || 'unknown');
             this.tests = this.tests || [];
