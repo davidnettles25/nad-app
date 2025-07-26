@@ -458,7 +458,7 @@ async function createTestKitLogMetafield(customerId, logData) {
         if (getResponse.ok) {
             const metafields = await getResponse.json();
             existingMetafield = metafields.metafields?.find(mf => 
-                mf.namespace === 'customer' && mf.key === 'test_kit_log'
+                mf.namespace === 'custom' && mf.key === 'test_kit_log'
             );
             console.log(`[WEBHOOK DEBUG] Existing test_kit_log metafield:`, existingMetafield?.id || 'none');
         }
@@ -548,7 +548,7 @@ async function createTestKitLogMetafield(customerId, logData) {
             const shopifyUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields.json`;
             const metafieldData = {
                 metafield: {
-                    namespace: 'customer',
+                    namespace: 'custom',
                     key: 'test_kit_log',
                     type: 'multi_line_text_field',
                     value: finalValue,
