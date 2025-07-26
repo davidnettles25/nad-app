@@ -45,10 +45,25 @@ NAD.API = {
             NAD.logger.debug(`API Request: ${method} ${url}`);
             
             const response = await fetch(url, fetchConfig);
-            const responseData = await response.json();
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            let responseData;
+            
+            if (contentType && contentType.includes('application/json')) {
+                responseData = await response.json();
+            } else {
+                // Non-JSON response (likely HTML error page)
+                const textData = await response.text();
+                responseData = { 
+                    success: false, 
+                    error: `Server returned non-JSON response: ${response.status} ${response.statusText}`,
+                    responseText: textData.substring(0, 100) + '...' // First 100 chars for debugging
+                };
+            }
             
             if (!response.ok) {
-                throw new Error(responseData.error || `HTTP ${response.status}`);
+                throw new Error(responseData.error || `HTTP ${response.status} ${response.statusText}`);
             }
             
             return responseData;
