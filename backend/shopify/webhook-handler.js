@@ -620,20 +620,32 @@ function webhookMiddleware(req, res, next) {
 
 function verifyWebhook(req, res, next) {
     // HMAC verification enabled for security
+    console.log('[WEBHOOK DEBUG] HMAC verification starting');
+    console.log('[WEBHOOK DEBUG] Headers received:', Object.keys(req.headers));
     
     const hmac = req.get('X-Shopify-Hmac-Sha256');
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
     
+    console.log('[WEBHOOK DEBUG] HMAC header exists:', !!hmac);
+    console.log('[WEBHOOK DEBUG] Webhook secret exists:', !!secret);
+    console.log('[WEBHOOK DEBUG] Raw body length:', req.rawBody?.length || 0);
+    
     if (!hmac || !secret) {
+        console.log('[WEBHOOK DEBUG] Missing HMAC or secret - rejecting');
         logger.error('Missing webhook signature or secret');
         return res.status(401).json({ error: 'Unauthorized' });
     }
     
-    if (!verifyWebhookSignature(req.rawBody, hmac, secret)) {
+    const isValid = verifyWebhookSignature(req.rawBody, hmac, secret);
+    console.log('[WEBHOOK DEBUG] HMAC verification result:', isValid);
+    
+    if (!isValid) {
+        console.log('[WEBHOOK DEBUG] Invalid signature - rejecting');
         logger.error('Invalid webhook signature');
         return res.status(401).json({ error: 'Invalid signature' });
     }
     
+    console.log('[WEBHOOK DEBUG] HMAC verification passed');
     logger.info('Valid Shopify webhook signature');
     next();
 }
