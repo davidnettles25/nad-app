@@ -275,7 +275,7 @@ body {
 }
 
 .content-section.active {
-    display: block;
+    display: block !important;
 }
 
 .section-header {
