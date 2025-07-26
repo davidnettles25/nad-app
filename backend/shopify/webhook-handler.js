@@ -444,47 +444,116 @@ async function createTestKitLogMetafield(customerId, logData) {
         console.log(`[WEBHOOK DEBUG] SHOPIFY_STORE_URL: ${process.env.SHOPIFY_STORE_URL}`);
         console.log(`[WEBHOOK DEBUG] SHOPIFY_ACCESS_TOKEN exists: ${!!process.env.SHOPIFY_ACCESS_TOKEN}`);
         
-        const shopifyUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields.json`;
-        console.log(`[WEBHOOK DEBUG] Shopify URL: ${shopifyUrl}`);
-        
-        const metafieldData = {
-            metafield: {
-                namespace: 'customer',
-                key: 'test_kit_log',
-                type: 'json',
-                value: JSON.stringify({
-                    action: logData.action,
-                    testKitId: logData.testKitId,
-                    timestamp: logData.timestamp,
-                    status: logData.status,
-                    message: logData.message,
-                    activationDate: logData.activationDate ? logData.activationDate.toISOString() : null
-                })
-            }
-        };
-        
-        console.log(`[WEBHOOK DEBUG] Metafield data:`, JSON.stringify(metafieldData, null, 2));
-        
-        const response = await fetch(shopifyUrl, {
-            method: 'POST',
+        // First, check if a test_kit_log metafield already exists
+        const getUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields.json`;
+        const getResponse = await fetch(getUrl, {
+            method: 'GET',
             headers: {
                 'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN,
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(metafieldData)
+            }
         });
         
-        console.log(`[WEBHOOK DEBUG] Response status: ${response.status}`);
+        let existingMetafield = null;
+        if (getResponse.ok) {
+            const metafields = await getResponse.json();
+            existingMetafield = metafields.metafields?.find(mf => 
+                mf.namespace === 'customer' && mf.key === 'test_kit_log'
+            );
+            console.log(`[WEBHOOK DEBUG] Existing test_kit_log metafield:`, existingMetafield?.id || 'none');
+        }
         
-        if (response.ok) {
-            const result = await response.json();
-            logger.info(`Created test kit log metafield for customer ${customerId}:`, logData.testKitId);
-            console.log(`[WEBHOOK DEBUG] Created test kit log metafield: ${result.metafield.id}`);
-            console.log(`[WEBHOOK DEBUG] Full response:`, JSON.stringify(result, null, 2));
+        const logEntry = {
+            action: logData.action,
+            testKitId: logData.testKitId,
+            timestamp: logData.timestamp,
+            status: logData.status,
+            message: logData.message,
+            activationDate: logData.activationDate ? logData.activationDate.toISOString() : null
+        };
+        
+        let finalValue;
+        if (existingMetafield) {
+            // Update existing metafield by appending to log array
+            try {
+                const existingValue = JSON.parse(existingMetafield.value);
+                const logArray = Array.isArray(existingValue) ? existingValue : [existingValue];
+                logArray.push(logEntry);
+                finalValue = JSON.stringify(logArray);
+                console.log(`[WEBHOOK DEBUG] Appending to existing log array, new length: ${logArray.length}`);
+            } catch (error) {
+                // If existing value isn't valid JSON, start fresh
+                finalValue = JSON.stringify([logEntry]);
+                console.log(`[WEBHOOK DEBUG] Existing value invalid, starting fresh array`);
+            }
+            
+            // Update existing metafield
+            const updateUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/metafields/${existingMetafield.id}.json`;
+            const updateData = {
+                metafield: {
+                    id: existingMetafield.id,
+                    value: finalValue
+                }
+            };
+            
+            console.log(`[WEBHOOK DEBUG] Updating metafield ${existingMetafield.id}`);
+            const response = await fetch(updateUrl, {
+                method: 'PUT',
+                headers: {
+                    'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            });
+            
+            console.log(`[WEBHOOK DEBUG] Update response status: ${response.status}`);
+            
+            if (response.ok) {
+                const result = await response.json();
+                logger.info(`Updated test kit log metafield for customer ${customerId}:`, logData.testKitId);
+                console.log(`[WEBHOOK DEBUG] Updated metafield successfully`);
+            } else {
+                const errorText = await response.text();
+                console.log(`[WEBHOOK DEBUG] Update error response:`, errorText);
+                logger.error('Failed to update test kit log metafield:', response.status, errorText);
+            }
         } else {
-            const errorText = await response.text();
-            console.log(`[WEBHOOK DEBUG] Error response text:`, errorText);
-            logger.error('Failed to create test kit log metafield:', response.status, errorText);
+            // Create new metafield with array containing single log entry
+            finalValue = JSON.stringify([logEntry]);
+            
+            const shopifyUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields.json`;
+            const metafieldData = {
+                metafield: {
+                    namespace: 'customer',
+                    key: 'test_kit_log',
+                    type: 'json',
+                    value: finalValue
+                }
+            };
+            
+            console.log(`[WEBHOOK DEBUG] Creating new metafield`);
+            console.log(`[WEBHOOK DEBUG] Metafield data:`, JSON.stringify(metafieldData, null, 2));
+            
+            const response = await fetch(shopifyUrl, {
+                method: 'POST',
+                headers: {
+                    'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(metafieldData)
+            });
+            
+            console.log(`[WEBHOOK DEBUG] Create response status: ${response.status}`);
+            
+            if (response.ok) {
+                const result = await response.json();
+                logger.info(`Created test kit log metafield for customer ${customerId}:`, logData.testKitId);
+                console.log(`[WEBHOOK DEBUG] Created test kit log metafield: ${result.metafield.id}`);
+            } else {
+                const errorText = await response.text();
+                console.log(`[WEBHOOK DEBUG] Create error response:`, errorText);
+                logger.error('Failed to create test kit log metafield:', response.status, errorText);
+            }
         }
     } catch (error) {
         console.log(`[WEBHOOK DEBUG] Exception in createTestKitLogMetafield:`, error);
