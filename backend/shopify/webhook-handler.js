@@ -512,6 +512,28 @@ async function createTestKitLogMetafield(customerId, logData) {
                 const result = await response.json();
                 logger.info(`Updated test kit log metafield for customer ${customerId}:`, logData.testKitId);
                 console.log(`[WEBHOOK DEBUG] Updated metafield successfully`);
+                console.log(`[WEBHOOK DEBUG] Update result:`, JSON.stringify(result, null, 2));
+                
+                // Verify the update by fetching the metafield again
+                const verifyResponse = await fetch(getUrl, {
+                    method: 'GET',
+                    headers: {
+                        'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (verifyResponse.ok) {
+                    const verifyData = await verifyResponse.json();
+                    const updatedMetafield = verifyData.metafields?.find(mf => 
+                        mf.namespace === 'customer' && mf.key === 'test_kit_log'
+                    );
+                    console.log(`[WEBHOOK DEBUG] Verification: metafield exists after update:`, !!updatedMetafield);
+                    if (updatedMetafield) {
+                        console.log(`[WEBHOOK DEBUG] Verification: metafield value length:`, updatedMetafield.value.length);
+                        console.log(`[WEBHOOK DEBUG] Verification: metafield updated_at:`, updatedMetafield.updated_at);
+                    }
+                }
             } else {
                 const errorText = await response.text();
                 console.log(`[WEBHOOK DEBUG] Update error response:`, errorText);
