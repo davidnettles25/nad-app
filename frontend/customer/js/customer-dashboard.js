@@ -188,7 +188,8 @@ window.NADDashboard = {
             NAD.logger.error('Failed to load customer tests:', error);
             
             // Use mock data for testing when API is unavailable
-            if (this.user.email === 'john.doe@example.com') {
+            NAD.logger.debug('User email for mock data check:', this.user.email);
+            if (this.user && this.user.email === 'john.doe@example.com') {
                 NAD.logger.info('Using mock data for John Doe');
                 this.tests = [
                     {
@@ -211,8 +212,10 @@ window.NADDashboard = {
                         created_date: '2025-07-10'
                     }
                 ];
+                NAD.logger.info('Mock data loaded, updating displays...');
                 this.updateTestsDisplay();
             } else {
+                NAD.logger.warn('No mock data available for user:', this.user);
                 this.tests = [];
             }
         }
@@ -813,9 +816,17 @@ window.NADDashboard = {
     }
 };
 
-// Initialize when DOM is loaded
+// Initialize when DOM is loaded (prevent double initialization)
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => NADDashboard.init());
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!window.nadDashboardInitialized) {
+            window.nadDashboardInitialized = true;
+            NADDashboard.init();
+        }
+    });
 } else {
-    NADDashboard.init();
+    if (!window.nadDashboardInitialized) {
+        window.nadDashboardInitialized = true;
+        NADDashboard.init();
+    }
 }
