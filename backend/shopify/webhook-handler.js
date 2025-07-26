@@ -600,21 +600,33 @@ async function logMetafieldOperation(connection, customerId, metafieldId, namesp
 
 function webhookMiddleware(req, res, next) {
     // Store raw body for signature verification
+    console.log('[WEBHOOK DEBUG] Webhook middleware starting');
     let rawBody = '';
+    
     req.on('data', chunk => {
         rawBody += chunk.toString('utf8');
+        console.log('[WEBHOOK DEBUG] Received chunk, total length:', rawBody.length);
     });
     
     req.on('end', () => {
+        console.log('[WEBHOOK DEBUG] Request stream ended, total body length:', rawBody.length);
         req.rawBody = rawBody;
         
         try {
             req.body = JSON.parse(rawBody);
+            console.log('[WEBHOOK DEBUG] JSON parsing successful');
         } catch (error) {
+            console.log('[WEBHOOK DEBUG] JSON parsing failed:', error.message);
             return res.status(400).json({ error: 'Invalid JSON' });
         }
         
+        console.log('[WEBHOOK DEBUG] Calling next() from webhook middleware');
         next();
+    });
+    
+    req.on('error', (error) => {
+        console.log('[WEBHOOK DEBUG] Request stream error:', error);
+        res.status(500).json({ error: 'Request processing failed' });
     });
 }
 
