@@ -142,7 +142,7 @@ app.use((req, res, next) => {
 });
 
 // Request logging middleware (now enhanced above)
-// app.use(requestLoggingMiddleware);
+app.use(requestLoggingMiddleware);
 
 // ============================================================================
 // BACKDOOR AUTHENTICATION MIDDLEWARE
