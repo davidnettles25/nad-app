@@ -4169,6 +4169,11 @@ app.get('/shopify/portal', async (req, res) => {
     }
 });
 
+// Test endpoint to verify API is working
+app.get('/api/test', (req, res) => {
+    res.json({ success: true, message: 'API is working', timestamp: new Date().toISOString() });
+});
+
 // Get customer tests for dashboard
 app.post('/api/customer/tests', async (req, res) => {
     try {
@@ -4302,10 +4307,17 @@ app.post('/api/customer/tests', async (req, res) => {
         });
         
     } catch (error) {
-        req.logger.error('Failed to load customer tests:', error);
+        console.error('Failed to load customer tests:', error);
+        console.error('Error stack:', error.stack);
+        
+        // Use fallback logger
+        const logger = req.logger || console;
+        logger.error('Failed to load customer tests:', error);
+        
         res.status(500).json({
             success: false,
-            error: 'Failed to load tests'
+            error: 'Failed to load tests',
+            details: error.message
         });
     }
 });
