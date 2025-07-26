@@ -4106,6 +4106,69 @@ app.post('/api/batch/activate-tests', async (req, res) => {
 // CUSTOMER DASHBOARD API ENDPOINTS
 // ============================================================================
 
+// Test endpoint to simulate Shopify portal authentication
+app.get('/test/portal/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+        
+        // Generate a test token
+        const testToken = 'test_' + Buffer.from(email).toString('base64');
+        
+        // Mock customer data
+        const mockCustomer = {
+            firstName: 'Test',
+            lastName: 'Customer',
+            email: email,
+            customerId: 'test_' + Date.now(),
+            type: 'shopify'
+        };
+        
+        // Redirect to dashboard with token
+        const dashboardUrl = `/customer-dashboard.html?t=${testToken}`;
+        res.redirect(dashboardUrl);
+        
+    } catch (error) {
+        console.error('Error in test portal:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Mock Shopify portal validation for testing
+app.get('/shopify/portal', async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, error: 'No token provided' });
+        }
+        
+        const token = authHeader.substring(7);
+        
+        // For test tokens, decode the email
+        if (token.startsWith('test_')) {
+            const emailB64 = token.substring(5);
+            const email = Buffer.from(emailB64, 'base64').toString();
+            
+            return res.json({
+                success: true,
+                data: {
+                    firstName: 'Test',
+                    lastName: 'Customer',
+                    email: email,
+                    customerId: 'test_' + Date.now(),
+                    type: 'shopify'
+                }
+            });
+        }
+        
+        // For real tokens, this would validate with Shopify
+        res.status(401).json({ success: false, error: 'Invalid token' });
+        
+    } catch (error) {
+        console.error('Error validating portal token:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Get customer tests for dashboard
 app.post('/api/customer/tests', async (req, res) => {
     try {
