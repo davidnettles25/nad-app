@@ -226,8 +226,8 @@ async function processTestKitActivation(connection, testKitId, customer) {
     try {
         console.log(`[WEBHOOK DEBUG] Processing test kit activation for: ${testKitId}`);
         
-        // Validate test kit format
-        const testKitPattern = new RegExp(process.env.TEST_KIT_ID_PATTERN || '^[0-9]{4}-[0-9]{2}-[0-9]+-[A-Z0-9]{6}$');
+        // Validate test kit format (case-insensitive to match database behavior)
+        const testKitPattern = new RegExp(process.env.TEST_KIT_ID_PATTERN || '^[0-9]{4}-[0-9]{2}-[0-9]+-[A-Za-z0-9]{6}$', 'i');
         console.log(`[WEBHOOK DEBUG] Test kit pattern: ${testKitPattern.source}`);
         console.log(`[WEBHOOK DEBUG] Pattern test result: ${testKitPattern.test(testKitId)}`);
         
