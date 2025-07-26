@@ -115,18 +115,14 @@ async function processCustomerUpdate(customer, db = null) {
         
         const { testKitId, timestamp, sessionId, requestType } = activationData;
         
-        // Validate timestamp (5-minute window) - TEMPORARILY DISABLED FOR TESTING
+        // Validate timestamp (5-minute window)
         const now = Date.now();
         const fiveMinutesAgo = now - (5 * 60 * 1000);
         
-        if (false && timestamp < fiveMinutesAgo) { // Disabled for testing
+        if (timestamp < fiveMinutesAgo) {
             logger.warn('Activation request expired', { testKitId, timestamp });
             await deleteMetafield(activationMetafield.id);
             return { success: false, error: 'Activation request expired' };
-        }
-        
-        if (timestamp < fiveMinutesAgo) {
-            console.log('[WEBHOOK DEBUG] Timestamp validation bypassed for testing');
         }
         
         // Store/update Shopify customer data
@@ -623,12 +619,7 @@ function webhookMiddleware(req, res, next) {
 }
 
 function verifyWebhook(req, res, next) {
-    // Temporary bypass for testing - remove in production
-    if (process.env.NODE_ENV !== 'production' || process.env.BYPASS_WEBHOOK_VERIFICATION === 'true') {
-        logger.warn('TESTING MODE: Skipping webhook signature verification');
-        next();
-        return;
-    }
+    // HMAC verification enabled for security
     
     const hmac = req.get('X-Shopify-Hmac-Sha256');
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
