@@ -4181,7 +4181,7 @@ app.post('/api/customer/tests', async (req, res) => {
             });
         }
         
-        logger.info(`Loading tests for customer: ${email || customerId}`);
+        req.logger.info(`Loading tests for customer: ${email || customerId}`);
         
         // Get database connection
         const db = req.app.locals.db;
@@ -4214,7 +4214,7 @@ app.post('/api/customer/tests', async (req, res) => {
         
         const [tests] = await db.execute(query, params);
         
-        logger.info(`Found ${tests.length} tests for customer`);
+        req.logger.info(`Found ${tests.length} tests for customer`);
         
         res.json({
             success: true,
@@ -4225,7 +4225,7 @@ app.post('/api/customer/tests', async (req, res) => {
         });
         
     } catch (error) {
-        logger.error('Failed to load customer tests:', error);
+        req.logger.error('Failed to load customer tests:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to load tests'
@@ -4252,7 +4252,7 @@ app.post('/api/customer/activate', async (req, res) => {
             });
         }
         
-        logger.info(`Activating test ${testId} for customer: ${email || customerId}`);
+        req.logger.info(`Activating test ${testId} for customer: ${email || customerId}`);
         
         // Get database connection
         const db = req.app.locals.db;
@@ -4343,7 +4343,7 @@ app.post('/api/customer/activate', async (req, res) => {
             await connection.commit();
             connection.release();
             
-            logger.info(`Test Kit ${testId} activated successfully for ${email || customerId}`);
+            req.logger.info(`Test Kit ${testId} activated successfully for ${email || customerId}`);
             
             res.json({
                 success: true,
@@ -4362,7 +4362,7 @@ app.post('/api/customer/activate', async (req, res) => {
         }
         
     } catch (error) {
-        logger.error('Test activation failed:', error);
+        req.logger.error('Test activation failed:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to activate test kit'
@@ -4426,7 +4426,7 @@ app.post('/api/customer/stats', async (req, res) => {
         });
         
     } catch (error) {
-        logger.error('Failed to load customer stats:', error);
+        req.logger.error('Failed to load customer stats:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to load statistics'
@@ -4490,7 +4490,7 @@ app.post('/api/customer/results', async (req, res) => {
         });
         
     } catch (error) {
-        logger.error('Failed to load customer results:', error);
+        req.logger.error('Failed to load customer results:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to load results'
