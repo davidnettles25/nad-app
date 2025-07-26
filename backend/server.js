@@ -4183,6 +4183,12 @@ app.post('/api/customer/tests', async (req, res) => {
         
         logger.info(`Loading tests for customer: ${email || customerId}`);
         
+        // Get database connection
+        const db = req.app.locals.db;
+        if (!db) {
+            throw new Error('Database connection not available');
+        }
+        
         // Build query based on available identifiers
         let query = `
             SELECT ti.test_id, ti.status, ti.created_date, ti.updated_date, 
@@ -4247,6 +4253,12 @@ app.post('/api/customer/activate', async (req, res) => {
         }
         
         logger.info(`Activating test ${testId} for customer: ${email || customerId}`);
+        
+        // Get database connection
+        const db = req.app.locals.db;
+        if (!db) {
+            throw new Error('Database connection not available');
+        }
         
         // Validate test kit format
         const testKitPattern = new RegExp(process.env.TEST_KIT_ID_PATTERN || '^[0-9]{4}-[0-9]{2}-[0-9]+-[A-Za-z0-9]{6}$', 'i');
@@ -4367,6 +4379,12 @@ app.post('/api/customer/stats', async (req, res) => {
             });
         }
         
+        // Get database connection
+        const db = req.app.locals.db;
+        if (!db) {
+            throw new Error('Database connection not available');
+        }
+        
         // Build query based on available identifiers
         let query = `
             SELECT 
@@ -4423,6 +4441,12 @@ app.post('/api/customer/results', async (req, res) => {
                 success: false,
                 error: 'Email or customer ID is required'
             });
+        }
+        
+        // Get database connection
+        const db = req.app.locals.db;
+        if (!db) {
+            throw new Error('Database connection not available');
         }
         
         // Build query for results
