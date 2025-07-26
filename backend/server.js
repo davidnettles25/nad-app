@@ -4312,11 +4312,12 @@ app.post('/api/customer/activate', async (req, res) => {
         }
         
         // Activate the test kit
-        await db.beginTransaction();
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
         
         try {
             // Update test_ids table
-            await db.execute(`
+            await connection.execute(`
                 UPDATE nad_test_ids 
                 SET 
                     status = 'activated',
@@ -4331,7 +4332,7 @@ app.post('/api/customer/activate', async (req, res) => {
             ]);
             
             // Create score record
-            await db.execute(`
+            await connection.execute(`
                 INSERT INTO nad_test_scores 
                 (test_id, technician_id, score, created_date, updated_date)
                 VALUES (?, '', 0, CURDATE(), CURDATE())
@@ -4339,7 +4340,8 @@ app.post('/api/customer/activate', async (req, res) => {
                     test_id = VALUES(test_id)
             `, [testId]);
             
-            await db.commit();
+            await connection.commit();
+            connection.release();
             
             logger.info(`Test Kit ${testId} activated successfully for ${email || customerId}`);
             
@@ -4354,7 +4356,8 @@ app.post('/api/customer/activate', async (req, res) => {
             });
             
         } catch (error) {
-            await db.rollback();
+            await connection.rollback();
+            connection.release();
             throw error;
         }
         
