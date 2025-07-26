@@ -492,7 +492,9 @@ async function createTestKitLogMetafield(customerId, logData) {
             const updateData = {
                 metafield: {
                     id: existingMetafield.id,
-                    value: finalValue
+                    type: 'multi_line_text_field',
+                    value: finalValue,
+                    description: 'Test kit activation history log'
                 }
             };
             
@@ -548,8 +550,9 @@ async function createTestKitLogMetafield(customerId, logData) {
                 metafield: {
                     namespace: 'customer',
                     key: 'test_kit_log',
-                    type: 'json',
-                    value: finalValue
+                    type: 'multi_line_text_field',
+                    value: finalValue,
+                    description: 'Test kit activation history log'
                 }
             };
             
