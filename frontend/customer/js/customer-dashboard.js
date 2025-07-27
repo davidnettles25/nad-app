@@ -283,6 +283,8 @@ window.NADDashboard = {
             
             if (response.success && response.data.tests && response.data.tests.length > 0) {
                 console.log('Tests found:', response.data.tests.length);
+                console.log('Sample test data:', response.data.tests[0]);
+                console.log('All test data:', response.data.tests);
                 NAD.logger.info('API response:', response);
                 this.tests = response.data.tests;
                 NAD.logger.info('Tests loaded from API:', this.tests.length, 'tests');
