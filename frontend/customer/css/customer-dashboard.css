@@ -793,6 +793,122 @@ body {
     animation: fadeIn 0.3s ease-out;
 }
 
+/* Results Styles */
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.test-result-detail {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 30px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.result-header h2 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.result-main {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 40px;
+    margin-bottom: 30px;
+}
+
+.score-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.score-circle {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
+}
+
+.score-value {
+    font-size: 3rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.score-label {
+    font-size: 0.875rem;
+    margin-top: 5px;
+    opacity: 0.9;
+}
+
+.result-info {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px;
+    background: var(--light-bg);
+    border-radius: 6px;
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.info-value {
+    color: var(--text-primary);
+}
+
+.result-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 768px) {
+    .result-main {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .result-actions {
+        flex-direction: column;
+    }
+}
+
 /* Utilities */
 .text-center { text-align: center; }
 .mb-20 { margin-bottom: 20px; }

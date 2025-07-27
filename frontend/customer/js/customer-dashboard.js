@@ -753,6 +753,12 @@ window.NADDashboard = {
         const resultsContent = document.getElementById('results-content');
         if (!resultsContent) return;
         
+        // If a specific test was selected, show its results
+        if (this.selectedTestId) {
+            this.showTestResults(this.selectedTestId);
+            return;
+        }
+        
         const completedTests = this.tests.filter(test => test.status === 'completed');
         
         if (completedTests.length === 0) {
@@ -767,16 +773,103 @@ window.NADDashboard = {
         }
         
         // Create results display
-        resultsContent.innerHTML = completedTests.map(test => `
-            <div class="result-card">
-                <h4>${test.test_id}</h4>
-                <p>Score: ${test.score || 'N/A'}</p>
-                <p>Completed: ${new Date(test.score_date || test.created_date).toLocaleDateString()}</p>
-                <button class="btn-primary" onclick="NADDashboard.viewDetailedResults('${test.test_id}')">
-                    View Details
+        resultsContent.innerHTML = `
+            <div class="results-header">
+                <h3>All Test Results</h3>
+                <button class="btn-link" onclick="NADDashboard.clearSelectedTest()">
+                    <i class="fas fa-list"></i> View All Results
                 </button>
             </div>
-        `).join('');
+            <div class="results-grid">
+                ${completedTests.map(test => `
+                    <div class="result-card">
+                        <h4>${test.test_id}</h4>
+                        <p>Score: ${test.score || 'N/A'}</p>
+                        <p>Completed: ${new Date(test.score_date || test.created_date).toLocaleDateString()}</p>
+                        <button class="btn-primary" onclick="NADDashboard.showTestResults('${test.test_id}')">
+                            View Details
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    },
+    
+    /**
+     * Show detailed results for a specific test
+     */
+    showTestResults(testId) {
+        const resultsContent = document.getElementById('results-content');
+        if (!resultsContent) return;
+        
+        const test = this.tests.find(t => t.test_id === testId);
+        if (!test) {
+            resultsContent.innerHTML = '<p>Test not found</p>';
+            return;
+        }
+        
+        resultsContent.innerHTML = `
+            <div class="results-header">
+                <button class="btn-link" onclick="NADDashboard.clearSelectedTest()">
+                    <i class="fas fa-arrow-left"></i> Back to All Results
+                </button>
+            </div>
+            <div class="test-result-detail">
+                <div class="result-header">
+                    <h2>Test Results: ${test.test_id}</h2>
+                    <div class="result-status status-${test.status}">${test.status}</div>
+                </div>
+                
+                <div class="result-main">
+                    <div class="score-display">
+                        <div class="score-circle">
+                            <span class="score-value">${test.score || 'N/A'}</span>
+                            <span class="score-label">NAD+ Level</span>
+                        </div>
+                    </div>
+                    
+                    <div class="result-info">
+                        <div class="info-row">
+                            <span class="info-label">Test ID:</span>
+                            <span class="info-value">${test.test_id}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Created:</span>
+                            <span class="info-value">${new Date(test.created_date).toLocaleDateString()}</span>
+                        </div>
+                        ${test.activated_date ? `
+                        <div class="info-row">
+                            <span class="info-label">Activated:</span>
+                            <span class="info-value">${new Date(test.activated_date).toLocaleDateString()}</span>
+                        </div>
+                        ` : ''}
+                        ${test.score_date ? `
+                        <div class="info-row">
+                            <span class="info-label">Completed:</span>
+                            <span class="info-value">${new Date(test.score_date).toLocaleDateString()}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="result-actions">
+                    <button class="btn-primary" onclick="NADDashboard.downloadResults('${test.test_id}')">
+                        <i class="fas fa-download"></i> Download Report
+                    </button>
+                    <button class="btn-secondary" onclick="NADDashboard.viewSupplementRecommendations('${test.test_id}')">
+                        <i class="fas fa-pills"></i> View Recommendations
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+    
+    /**
+     * Clear selected test and show all results
+     */
+    clearSelectedTest() {
+        this.selectedTestId = null;
+        this.loadResultsData();
     },
 
     /**
@@ -869,7 +962,11 @@ window.NADDashboard = {
     },
 
     viewResults(testId) {
+        // Store the selected test ID
+        this.selectedTestId = testId;
         this.showSection('results');
+        // Show detailed results for this specific test
+        this.showTestResults(testId);
     },
 
     viewDetailedResults(testId) {
@@ -878,6 +975,11 @@ window.NADDashboard = {
 
     downloadResults(testId) {
         alert(`Download results for test: ${testId || 'all tests'}`);
+    },
+    
+    viewSupplementRecommendations(testId) {
+        this.showSection('supplements');
+        // TODO: Show recommendations specific to this test
     },
 
     exportAllResults() {
