@@ -460,7 +460,7 @@ window.NADDashboard = {
             <div class="empty-state">
                 <i class="fas fa-vial"></i>
                 <h3>No Tests Yet</h3>
-                <p>To activate your test kits, please visit your Shopify account where you can enter your test kit ID.</p>
+                <p>To activate your test kits, please visit your account at <strong>mynadtest.com</strong> where you can enter your test kit ID.</p>
                 <p><small>Once activated, your tests will appear here for viewing and downloading results.</small></p>
             </div>
         `;
@@ -1667,7 +1667,7 @@ window.NADDashboard = {
                 <h4>Test Activation</h4>
                 <div class="guide-callout">
                     <i class="fas fa-info-circle"></i>
-                    <p><strong>Important:</strong> To activate new test kits, please visit your Shopify account where you can enter your test kit ID. Once activated, tests will appear here for viewing and downloading results.</p>
+                    <p><strong>Important:</strong> To activate new test kits, please visit your account at <strong>mynadtest.com</strong> where you can enter your test kit ID. Once activated, tests will appear here for viewing and downloading results.</p>
                 </div>
 
                 <h4>Test Statuses</h4>
@@ -1740,7 +1740,7 @@ window.NADDashboard = {
                 <h3><i class="fas fa-shield-alt"></i> Privacy & Security</h3>
                 <ul>
                     <li>Your test data is securely stored and encrypted</li>
-                    <li>Access requires authentication through your Shopify account</li>
+                    <li>Access requires authentication through your mynadtest.com account</li>
                     <li>Data is only shared with authorized laboratory personnel</li>
                     <li>You have full control over downloading and sharing your results</li>
                 </ul>
