@@ -1071,8 +1071,232 @@ window.NADDashboard = {
         alert(`View detailed results for test: ${testId}`);
     },
 
-    downloadResults(testId) {
-        alert(`Download results for test: ${testId || 'all tests'}`);
+    async downloadResults(testId) {
+        if (!testId) {
+            alert('No test ID provided');
+            return;
+        }
+        
+        const test = this.tests.find(t => t.test_id === testId);
+        if (!test) {
+            alert('Test not found');
+            return;
+        }
+        
+        try {
+            // Generate PDF report
+            await this.generatePDFReport(test);
+        } catch (error) {
+            NAD.logger.error('Failed to generate report:', error);
+            alert('Failed to generate report. Please try again.');
+        }
+    },
+    
+    /**
+     * Generate PDF report for a test
+     */
+    async generatePDFReport(test) {
+        // Create a printable HTML document
+        const reportHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>NAD+ Test Report - ${test.test_id}</title>
+                <style>
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        line-height: 1.6; 
+                        color: #333;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px;
+                    }
+                    .header { 
+                        text-align: center; 
+                        margin-bottom: 30px;
+                        border-bottom: 2px solid #3498db;
+                        padding-bottom: 20px;
+                    }
+                    .logo { 
+                        max-height: 60px; 
+                        margin-bottom: 10px;
+                    }
+                    h1 { 
+                        color: #2c3e50; 
+                        margin: 10px 0;
+                    }
+                    .report-info {
+                        background: #f5f5f5;
+                        padding: 15px;
+                        border-radius: 5px;
+                        margin-bottom: 20px;
+                    }
+                    .score-section {
+                        text-align: center;
+                        margin: 30px 0;
+                    }
+                    .score-circle {
+                        display: inline-block;
+                        width: 150px;
+                        height: 150px;
+                        border-radius: 50%;
+                        background: #3498db;
+                        color: white;
+                        line-height: 150px;
+                        font-size: 48px;
+                        font-weight: bold;
+                    }
+                    .info-row {
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #eee;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #666;
+                    }
+                    .supplements-section {
+                        margin-top: 30px;
+                        padding: 20px;
+                        background: #f9f9f9;
+                        border-radius: 5px;
+                    }
+                    .supplement-item {
+                        padding: 5px 0;
+                        margin-left: 20px;
+                    }
+                    .footer {
+                        margin-top: 40px;
+                        text-align: center;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { padding: 0; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="/shared/assets/logo.png" alt="NAD+ Test" class="logo">
+                    <h1>NAD+ Test Report</h1>
+                </div>
+                
+                <div class="report-info">
+                    <div class="info-row">
+                        <span class="info-label">Test ID:</span>
+                        <span>${test.test_id}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Patient:</span>
+                        <span>${this.user.firstName} ${this.user.lastName}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span>${this.user.email}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Report Date:</span>
+                        <span>${new Date().toLocaleDateString()}</span>
+                    </div>
+                </div>
+                
+                ${test.status === 'completed' && test.score ? `
+                <div class="score-section">
+                    <h2>NAD+ Level</h2>
+                    <div class="score-circle">${test.score}</div>
+                    <p>Your NAD+ level score is ${test.score} out of 100</p>
+                </div>
+                ` : ''}
+                
+                <div class="test-details">
+                    <h3>Test Details</h3>
+                    <div class="info-row">
+                        <span class="info-label">Status:</span>
+                        <span>${test.status.charAt(0).toUpperCase() + test.status.slice(1)}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Created:</span>
+                        <span>${new Date(test.created_date).toLocaleDateString()}</span>
+                    </div>
+                    ${test.activated_date ? `
+                    <div class="info-row">
+                        <span class="info-label">Activated:</span>
+                        <span>${new Date(test.activated_date).toLocaleDateString()}</span>
+                    </div>
+                    ` : ''}
+                    ${test.score_date ? `
+                    <div class="info-row">
+                        <span class="info-label">Completed:</span>
+                        <span>${new Date(test.score_date).toLocaleDateString()}</span>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                ${this.renderSupplementsForReport(test)}
+                
+                <div class="footer">
+                    <p>This report was generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+                    <p>NAD+ Test &copy; ${new Date().getFullYear()} - All rights reserved</p>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        // Open in new window and trigger print dialog
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(reportHTML);
+        printWindow.document.close();
+        
+        // Wait for content to load, then print
+        printWindow.onload = function() {
+            printWindow.print();
+            
+            // Optionally close the window after printing
+            // printWindow.onafterprint = function() {
+            //     printWindow.close();
+            // };
+        };
+    },
+    
+    /**
+     * Render supplements for PDF report
+     */
+    renderSupplementsForReport(test) {
+        if (!test.supplement_data) {
+            return '';
+        }
+        
+        let supplementsData = test.supplement_data;
+        
+        // Parse if string
+        if (typeof supplementsData === 'string') {
+            try {
+                supplementsData = JSON.parse(supplementsData);
+            } catch (e) {
+                return '';
+            }
+        }
+        
+        let html = '<div class="supplements-section"><h3>Supplements at Time of Test</h3>';
+        
+        if (supplementsData.selected && Array.isArray(supplementsData.selected)) {
+            supplementsData.selected.forEach(supplement => {
+                const name = supplement.name || supplement;
+                const dose = supplement.amount || supplement.dose || '';
+                const unit = supplement.unit || 'mg';
+                html += `<div class="supplement-item">• ${name} ${dose ? `(${dose} ${unit})` : ''}</div>`;
+            });
+            
+            if (supplementsData.other) {
+                html += `<div class="supplement-item"><strong>Other:</strong> ${supplementsData.other}</div>`;
+            }
+        }
+        
+        html += '</div>';
+        return html;
     },
     
     viewSupplementRecommendations(testId) {
