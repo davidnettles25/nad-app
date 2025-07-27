@@ -502,9 +502,88 @@ window.NADDashboard = {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(44, 62, 80, 0.9)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: '#3498db',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            title: (context) => {
+                                const testIndex = context[0].dataIndex;
+                                const completedTests = this.tests.filter(test => test.status === 'completed' && test.score);
+                                const test = completedTests[testIndex];
+                                return test ? test.test_id : 'Test';
+                            },
+                            label: (context) => {
+                                return `NAD+ Level: ${context.parsed.y.toFixed(1)}`;
+                            },
+                            afterLabel: (context) => {
+                                const testIndex = context.dataIndex;
+                                const completedTests = this.tests.filter(test => test.status === 'completed' && test.score);
+                                const test = completedTests[testIndex];
+                                if (!test) return [];
+                                
+                                const lines = [];
+                                
+                                // Add activation date
+                                if (test.activated_date) {
+                                    const activationDate = new Date(test.activated_date);
+                                    lines.push(`Activation Date: ${activationDate.toLocaleDateString('en-US', { 
+                                        year: 'numeric', 
+                                        month: 'short', 
+                                        day: 'numeric' 
+                                    })}`);
+                                }
+                                
+                                // Add completion date
+                                if (test.score_date || test.created_date) {
+                                    const scoreDate = new Date(test.score_date || test.created_date);
+                                    lines.push(`Score Date: ${scoreDate.toLocaleDateString('en-US', { 
+                                        year: 'numeric', 
+                                        month: 'short', 
+                                        day: 'numeric' 
+                                    })}`);
+                                }
+                                
+                                // Add supplements if available
+                                if (test.supplements) {
+                                    lines.push(''); // Empty line for spacing
+                                    lines.push('Supplements:');
+                                    
+                                    if (typeof test.supplements === 'object' && test.supplements.selected) {
+                                        if (test.supplements.selected && test.supplements.selected.length > 0) {
+                                            test.supplements.selected.forEach(supplement => {
+                                                const dose = supplement.amount || supplement.dose || '';
+                                                const unit = supplement.unit || 'mg';
+                                                const doseText = dose ? ` (${dose} ${unit})` : '';
+                                                lines.push(`• ${supplement.name}${doseText}`);
+                                            });
+                                        }
+                                        
+                                        if (test.supplements.other) {
+                                            lines.push(`• Other: ${test.supplements.other}`);
+                                        }
+                                    } else if (Array.isArray(test.supplements)) {
+                                        test.supplements.forEach(supplement => {
+                                            lines.push(`• ${supplement}`);
+                                        });
+                                    }
+                                }
+                                
+                                return lines;
+                            }
+                        }
                     }
                 },
                 scales: {
