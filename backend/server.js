@@ -4190,54 +4190,6 @@ app.post('/api/customer/tests', async (req, res) => {
         const logger = req.logger || console;
         logger.info(`Loading tests for customer: ${email || customerId}`);
         
-        // For John Doe, return sample data immediately for testing
-        if (email === 'john.doe@example.com') {
-            logger.info('Returning sample data for John Doe');
-            const sampleTests = [
-                {
-                    test_id: '2025-07-108-66lpba',
-                    status: 'completed',
-                    score: 85,
-                    created_date: '2025-07-20',
-                    activated_date: '2025-07-21',
-                    updated_date: '2025-07-25',
-                    customer_id: 'john.doe@example.com',
-                    shopify_customer_id: null,
-                    score_date: '2025-07-25'
-                },
-                {
-                    test_id: '2025-07-095-4A7B2C',
-                    status: 'activated',
-                    created_date: '2025-07-15',
-                    activated_date: '2025-07-16',
-                    updated_date: '2025-07-16',
-                    customer_id: 'john.doe@example.com',
-                    shopify_customer_id: null,
-                    score: null,
-                    score_date: null
-                },
-                {
-                    test_id: '2025-07-082-9X8Y7Z',
-                    status: 'pending',
-                    created_date: '2025-07-10',
-                    activated_date: null,
-                    updated_date: '2025-07-10',
-                    customer_id: 'john.doe@example.com',
-                    shopify_customer_id: null,
-                    score: null,
-                    score_date: null
-                }
-            ];
-            
-            return res.json({
-                success: true,
-                data: {
-                    tests: sampleTests,
-                    count: sampleTests.length
-                }
-            });
-        }
-        
         // Get database connection
         const db = req.app.locals.db;
         if (!db) {
@@ -4269,34 +4221,7 @@ app.post('/api/customer/tests', async (req, res) => {
         
         const [tests] = await db.execute(query, params);
         
-        // For John Doe testing, if no results found, return some sample data
-        if (tests.length === 0 && email === 'john.doe@example.com') {
-            req.logger.info('No tests found for john.doe@example.com, using sample data');
-            // Return some actual test data for John Doe for demo purposes
-            const sampleQuery = `
-                SELECT ti.test_id, ti.status, ti.created_date, ti.updated_date, 
-                       ti.activated_date, ti.customer_id, ti.shopify_customer_id,
-                       ts.score, ts.updated_date as score_date
-                FROM nad_test_ids ti
-                LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
-                WHERE ti.test_id IN ('2025-07-108-66lpba', '2025-07-69-79090', '2025-07-70-50018')
-                ORDER BY ti.created_date DESC
-            `;
-            const [sampleTests] = await db.execute(sampleQuery);
-            
-            req.logger.info(`Found ${sampleTests.length} sample tests for John Doe`);
-            
-            res.json({
-                success: true,
-                data: {
-                    tests: sampleTests,
-                    count: sampleTests.length
-                }
-            });
-            return;
-        }
-        
-        req.logger.info(`Found ${tests.length} tests for customer`);
+        logger.info(`Found ${tests.length} tests for customer`);
         
         res.json({
             success: true,
