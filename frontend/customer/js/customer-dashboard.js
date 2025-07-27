@@ -1591,6 +1591,171 @@ window.NADDashboard = {
     logout() {
         sessionStorage.clear();
         window.location.href = '/customer-portal.html';
+    },
+
+    /**
+     * Show User Guide modal
+     */
+    showUserGuide() {
+        const modalContainer = document.getElementById('modal-container');
+        if (!modalContainer) return;
+
+        const userGuideHTML = `
+            <div class="modal-overlay" onclick="NADDashboard.closeModal()">
+                <div class="modal-content user-guide-modal" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-book"></i> NAD+ Dashboard User Guide</h2>
+                        <button class="modal-close" onclick="NADDashboard.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        ${this.getUserGuideContent()}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="NADDashboard.closeModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modalContainer.innerHTML = userGuideHTML;
+        modalContainer.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    },
+
+    /**
+     * Close modal
+     */
+    closeModal() {
+        const modalContainer = document.getElementById('modal-container');
+        if (modalContainer) {
+            modalContainer.innerHTML = '';
+            modalContainer.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    },
+
+    /**
+     * Get User Guide content
+     */
+    getUserGuideContent() {
+        return `
+            <div class="guide-section">
+                <h3><i class="fas fa-home"></i> Dashboard Overview</h3>
+                <p>Your NAD+ Dashboard provides a comprehensive view of your test results and health insights.</p>
+                
+                <h4>Quick Stats</h4>
+                <ul>
+                    <li><strong>Total Tests:</strong> Shows the number of NAD+ tests you've taken</li>
+                    <li><strong>Completed:</strong> Tests that have been processed and have results available</li>
+                    <li><strong>In Lab:</strong> Tests currently being processed by our laboratory</li>
+                    <li><strong>Average Score:</strong> Your overall NAD+ level average across all completed tests</li>
+                </ul>
+
+                <h4>Quick Actions</h4>
+                <ul>
+                    <li><strong>View All Tests:</strong> Navigate to your complete test history</li>
+                    <li><strong>Download Results:</strong> Export all your test results as a PDF report</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3><i class="fas fa-vial"></i> My Tests Section</h3>
+                <p>View and manage all your NAD+ tests in one place.</p>
+                
+                <h4>Test Activation</h4>
+                <div class="guide-callout">
+                    <i class="fas fa-info-circle"></i>
+                    <p><strong>Important:</strong> To activate new test kits, please visit your Shopify account where you can enter your test kit ID. Once activated, tests will appear here for viewing and downloading results.</p>
+                </div>
+
+                <h4>Test Statuses</h4>
+                <ul>
+                    <li><strong>In Lab:</strong> Your test sample is being processed by our laboratory team. Results typically available in 3-5 business days.</li>
+                    <li><strong>Completed:</strong> Test processing is complete and results are available for viewing and download.</li>
+                </ul>
+
+                <h4>Test Actions</h4>
+                <ul>
+                    <li><strong>View (In Lab tests):</strong> See test details, supplements taken, and processing status</li>
+                    <li><strong>Results (Completed tests):</strong> View detailed NAD+ scores and analysis</li>
+                    <li><strong>Download:</strong> Generate and download a PDF report for individual tests</li>
+                </ul>
+
+                <h4>Filters and Search</h4>
+                <ul>
+                    <li>Filter tests by status (All, In Lab, Completed)</li>
+                    <li>Search for specific tests using the test ID</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3><i class="fas fa-chart-line"></i> Test Results</h3>
+                <p>Access detailed information about your completed NAD+ tests.</p>
+                
+                <h4>NAD+ Score</h4>
+                <ul>
+                    <li>Your NAD+ level is displayed as a numerical score</li>
+                    <li>Higher scores indicate better NAD+ levels</li>
+                    <li>Scores are measured using advanced laboratory techniques</li>
+                </ul>
+
+                <h4>Test Information</h4>
+                <ul>
+                    <li><strong>Test ID:</strong> Unique identifier for your test</li>
+                    <li><strong>Activated Date:</strong> When you activated the test kit</li>
+                    <li><strong>Completed Date:</strong> When lab processing finished</li>
+                    <li><strong>Supplements:</strong> Any supplements you were taking at the time of testing</li>
+                </ul>
+
+                <h4>Trend Analysis</h4>
+                <ul>
+                    <li>View your NAD+ levels over time with interactive charts</li>
+                    <li>Hover over data points to see detailed test information</li>
+                    <li>Filter trends by time period (30 days, 3 months, 1 year)</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3><i class="fas fa-download"></i> Downloading Reports</h3>
+                <p>Generate PDF reports of your test results for personal records or sharing with healthcare providers.</p>
+                
+                <h4>Individual Test Reports</h4>
+                <ul>
+                    <li>Click "Download" next to any completed test</li>
+                    <li>Includes test details, NAD+ score, and supplement information</li>
+                    <li>Professional format suitable for medical consultations</li>
+                </ul>
+
+                <h4>Comprehensive Reports</h4>
+                <ul>
+                    <li>Use "Download Results" from the Dashboard or "Export All" from Results</li>
+                    <li>Includes all your tests in one comprehensive document</li>
+                    <li>Shows trends and progression over time</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3><i class="fas fa-shield-alt"></i> Privacy & Security</h3>
+                <ul>
+                    <li>Your test data is securely stored and encrypted</li>
+                    <li>Access requires authentication through your Shopify account</li>
+                    <li>Data is only shared with authorized laboratory personnel</li>
+                    <li>You have full control over downloading and sharing your results</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3><i class="fas fa-question-circle"></i> Need Help?</h3>
+                <p>If you have questions or need assistance:</p>
+                <ul>
+                    <li>Check the FAQ section for common questions</li>
+                    <li>Contact our support team for personalized assistance</li>
+                    <li>Consult with your healthcare provider about interpreting results</li>
+                </ul>
+            </div>
+        `;
     }
 };
 
