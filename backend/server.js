@@ -35,6 +35,102 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Create a test kit log metafield in Shopify for record keeping
+ */
+async function createShopifyMetafieldLog(customerId, logData) {
+    if (!customerId || !process.env.SHOPIFY_ACCESS_TOKEN) {
+        return;
+    }
+    
+    try {
+        // Get existing metafields to check for test_kit_log
+        const getUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields.json`;
+        const getResponse = await fetch(getUrl, {
+            method: 'GET',
+            headers: {
+                'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        let existingMetafield = null;
+        if (getResponse.ok) {
+            const metafields = await getResponse.json();
+            existingMetafield = metafields.metafields?.find(mf => 
+                mf.namespace === 'custom' && mf.key === 'test_kit_log'
+            );
+        }
+        
+        const logEntry = {
+            action: logData.action,
+            testKitId: logData.testKitId,
+            timestamp: logData.timestamp,
+            status: logData.status,
+            message: logData.message,
+            activationDate: logData.activationDate,
+            source: logData.source || 'unknown'
+        };
+        
+        let logArray = [];
+        if (existingMetafield) {
+            try {
+                logArray = JSON.parse(existingMetafield.value) || [];
+                if (!Array.isArray(logArray)) {
+                    logArray = [logArray];
+                }
+            } catch (e) {
+                logArray = [];
+            }
+        }
+        
+        // Add new log entry
+        logArray.push(logEntry);
+        
+        // Keep only last 50 entries
+        if (logArray.length > 50) {
+            logArray = logArray.slice(-50);
+        }
+        
+        const metafieldData = {
+            metafield: {
+                namespace: 'custom',
+                key: 'test_kit_log',
+                type: 'json',
+                value: JSON.stringify(logArray)
+            }
+        };
+        
+        const url = existingMetafield 
+            ? `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields/${existingMetafield.id}.json`
+            : `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}/metafields.json`;
+        
+        const response = await fetch(url, {
+            method: existingMetafield ? 'PUT' : 'POST',
+            headers: {
+                'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(metafieldData)
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Shopify API error: ${response.status} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        return result.metafield;
+        
+    } catch (error) {
+        throw new Error(`Failed to create Shopify metafield log: ${error.message}`);
+    }
+}
+
+// ============================================================================
 // MIDDLEWARE SETUP
 // ============================================================================
 
@@ -4374,6 +4470,26 @@ app.post('/api/customer/activate', async (req, res) => {
             connection.release();
             
             req.logger.info(`Test Kit ${testId} activated successfully for ${email || customerId}`);
+            
+            // Create metafield log in Shopify if customer has Shopify ID
+            const shopifyCustomerId = customerId || test.shopify_customer_id;
+            if (shopifyCustomerId && process.env.SHOPIFY_ACCESS_TOKEN) {
+                try {
+                    await createShopifyMetafieldLog(shopifyCustomerId, {
+                        action: 'activation',
+                        testKitId: testId,
+                        timestamp: Date.now(),
+                        status: 'success',
+                        message: 'Test kit activated via dashboard',
+                        activationDate: new Date().toISOString(),
+                        source: 'dashboard'
+                    });
+                    req.logger.info(`Created Shopify metafield log for customer ${shopifyCustomerId}`);
+                } catch (metafieldError) {
+                    req.logger.warn(`Failed to create Shopify metafield log: ${metafieldError.message}`);
+                    // Don't fail the activation if metafield creation fails
+                }
+            }
             
             res.json({
                 success: true,
