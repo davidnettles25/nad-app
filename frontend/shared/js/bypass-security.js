@@ -10,11 +10,17 @@
 (function() {
     'use strict';
     
+    console.log('Bypass security script loading...');
+    
     const urlParams = new URLSearchParams(window.location.search);
     const bypassParam = urlParams.get('bypass');
     
+    console.log('URL params:', window.location.search);
+    console.log('Bypass param:', bypassParam);
+    
     // Only check if bypass parameter is present
     if (bypassParam) {
+        console.log('Bypass parameter found, processing...');
         // Get any user information from URL parameters
         const email = urlParams.get('email');
         const firstName = urlParams.get('first_name');
@@ -27,15 +33,19 @@
         if (lastName) validationUrl += '&last_name=' + encodeURIComponent(lastName);
         
         // Validate bypass parameter with server
+        console.log('Bypass validation: sending request to', validationUrl);
         fetch(validationUrl, {
             method: 'GET',
             redirect: 'manual'
         })
         .then(response => {
+            console.log('Bypass validation response:', response.status, response.ok);
             if (!response.ok || response.status === 401) {
+                console.log('Invalid bypass key - redirecting to mynadtest.com');
                 // Invalid bypass key - redirect to company site
                 window.location.href = 'http://mynadtest.com';
             } else {
+                console.log('Valid bypass - setting sessionStorage flags');
                 // Valid bypass - set flag for dashboard to use
                 sessionStorage.setItem('nad_bypass_validated', 'true');
                 sessionStorage.setItem('nad_bypass_user', JSON.stringify({
@@ -43,9 +53,11 @@
                     first_name: firstName || 'John',
                     last_name: lastName || 'Doe'
                 }));
+                console.log('Bypass sessionStorage set:', sessionStorage.getItem('nad_bypass_validated'));
             }
         })
-        .catch(() => {
+        .catch(error => {
+            console.log('Bypass validation error:', error);
             // On network error or other issues, assume invalid and redirect
             window.location.href = 'http://mynadtest.com';
         });

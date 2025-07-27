@@ -72,7 +72,14 @@ window.NADDashboard = {
             const bypassValidated = sessionStorage.getItem('nad_bypass_validated');
             const bypassUser = sessionStorage.getItem('nad_bypass_user');
             
+            console.log('Dashboard auth check - bypass flags:', {
+                bypassValidated,
+                bypassUser,
+                hasUser: !!bypassUser
+            });
+            
             if (bypassValidated === 'true' && bypassUser) {
+                console.log('Using bypass authentication with user data');
                 NAD.logger.debug('Bypass authentication validated, using bypass user data');
                 const user = JSON.parse(bypassUser);
                 
@@ -84,6 +91,7 @@ window.NADDashboard = {
                 sessionStorage.removeItem('nad_bypass_validated');
                 sessionStorage.removeItem('nad_bypass_user');
                 
+                console.log('Bypass auth successful, user:', user);
                 return { success: true, user: user, type: 'bypass' };
             }
             
