@@ -756,9 +756,16 @@ window.NADDashboard = {
         const resultsContent = document.getElementById('results-content');
         if (!resultsContent) return;
         
-        // If a specific test was selected, show its results
+        // If a specific test was selected, show its details/results
         if (this.selectedTestId) {
-            this.showTestResults(this.selectedTestId);
+            const selectedTest = this.tests.find(t => t.test_id === this.selectedTestId);
+            if (selectedTest) {
+                if (selectedTest.status === 'completed') {
+                    this.showTestResults(this.selectedTestId);
+                } else if (selectedTest.status === 'activated') {
+                    this.showActivatedTestDetails(this.selectedTestId);
+                }
+            }
             return;
         }
         
@@ -860,6 +867,78 @@ window.NADDashboard = {
                 <div class="result-actions">
                     <button class="btn-primary" onclick="NADDashboard.downloadResults('${test.test_id}')">
                         <i class="fas fa-download"></i> Download Report
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+    
+    /**
+     * Show detailed view for an activated test
+     */
+    showActivatedTestDetails(testId) {
+        const resultsContent = document.getElementById('results-content');
+        if (!resultsContent) return;
+        
+        const test = this.tests.find(t => t.test_id === testId);
+        if (!test) {
+            resultsContent.innerHTML = '<p>Test not found</p>';
+            return;
+        }
+        
+        resultsContent.innerHTML = `
+            <div class="results-header">
+                <button class="btn-link" onclick="NADDashboard.clearSelectedTest()">
+                    <i class="fas fa-arrow-left"></i> Back to All Tests
+                </button>
+            </div>
+            <div class="test-result-detail">
+                <div class="result-header">
+                    <h2>Test Details: ${test.test_id}</h2>
+                    <div class="result-status status-${test.status}">In Lab</div>
+                </div>
+                
+                <div class="result-main">
+                    <div class="score-display">
+                        <div class="score-circle" style="background: linear-gradient(135deg, var(--warning-color), #e67e22);">
+                            <i class="fas fa-flask" style="font-size: 2rem;"></i>
+                            <span class="score-label">Processing</span>
+                        </div>
+                    </div>
+                    
+                    <div class="result-info">
+                        <div class="info-row">
+                            <span class="info-label">Test ID:</span>
+                            <span class="info-value">${test.test_id}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Status:</span>
+                            <span class="info-value">In Lab Processing</span>
+                        </div>
+                        ${test.activated_date ? `
+                        <div class="info-row">
+                            <span class="info-label">Activated:</span>
+                            <span class="info-value">${new Date(test.activated_date).toLocaleDateString()}</span>
+                        </div>
+                        ` : ''}
+                        <div class="info-row">
+                            <span class="info-label">Expected Results:</span>
+                            <span class="info-value">3-5 business days</span>
+                        </div>
+                        ${test.notes ? `
+                        <div class="info-row">
+                            <span class="info-label">Notes:</span>
+                            <span class="info-value">${test.notes}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                ${this.renderSupplementsSection(test)}
+                
+                <div class="result-actions">
+                    <button class="btn-secondary" onclick="NADDashboard.showSection('tests')">
+                        <i class="fas fa-list"></i> Back to My Tests
                     </button>
                 </div>
             </div>
@@ -1041,7 +1120,11 @@ window.NADDashboard = {
     },
 
     viewTestDetails(testId) {
-        alert(`View details for test: ${testId}`);
+        // Store the selected test ID and show in results section
+        this.selectedTestId = testId;
+        this.showSection('results');
+        // Show detailed view for this activated test
+        this.showActivatedTestDetails(testId);
     },
 
     viewResults(testId) {
