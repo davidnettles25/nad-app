@@ -252,8 +252,27 @@ window.NADDashboard = {
         const completedWithScores = this.tests.filter(test => 
             test.status === 'completed' && test.score && test.score > 0
         );
+        
+        // Debug log to see what scores we're working with
+        if (completedWithScores.length > 0) {
+            NAD.logger.debug('Completed test scores:', completedWithScores.map(t => ({ id: t.test_id, score: t.score })));
+        }
+        
+        // Calculate average, treating scores as numbers and validating range
         const avgScore = completedWithScores.length > 0 
-            ? Math.round(completedWithScores.reduce((sum, test) => sum + test.score, 0) / completedWithScores.length)
+            ? Math.round(completedWithScores.reduce((sum, test) => {
+                const score = Number(test.score);
+                // Validate score is in reasonable range (0-100)
+                if (score >= 0 && score <= 100) {
+                    return sum + score;
+                } else {
+                    NAD.logger.warn(`Invalid score ${score} for test ${test.test_id}`);
+                    return sum;
+                }
+            }, 0) / completedWithScores.filter(test => {
+                const score = Number(test.score);
+                return score >= 0 && score <= 100;
+            }).length)
             : 0;
         
         return {
@@ -311,7 +330,7 @@ window.NADDashboard = {
             'total-tests': stats.totalTests,
             'completed-tests': stats.completedTests,
             'pending-tests': stats.pendingTests,
-            'avg-score': stats.avgScore > 0 ? stats.avgScore : '-'
+            'avg-score': (stats.avgScore > 0 && stats.avgScore <= 100) ? stats.avgScore : '-'
         };
         
         Object.entries(elements).forEach(([id, value]) => {
