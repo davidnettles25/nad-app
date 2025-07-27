@@ -15,8 +15,19 @@
     
     // Only check if bypass parameter is present
     if (bypassParam) {
+        // Get any user information from URL parameters
+        const email = urlParams.get('email');
+        const firstName = urlParams.get('first_name');
+        const lastName = urlParams.get('last_name');
+        
+        // Build validation URL with user info if provided
+        let validationUrl = '/api/admin/validate-bypass?bypass=' + encodeURIComponent(bypassParam);
+        if (email) validationUrl += '&email=' + encodeURIComponent(email);
+        if (firstName) validationUrl += '&first_name=' + encodeURIComponent(firstName);
+        if (lastName) validationUrl += '&last_name=' + encodeURIComponent(lastName);
+        
         // Validate bypass parameter with server
-        fetch('/api/admin/validate-bypass?bypass=' + encodeURIComponent(bypassParam), {
+        fetch(validationUrl, {
             method: 'GET',
             redirect: 'manual'
         })

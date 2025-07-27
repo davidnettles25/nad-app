@@ -154,7 +154,7 @@ app.use(requestLoggingMiddleware);
 // BACKDOOR AUTHENTICATION MIDDLEWARE
 // ============================================================================
 
-function createBackdoorSession(urlPath) {
+function createBackdoorSession(urlPath, userInfo = null) {
     // Determine role based on URL path
     let userRole = 'customer'; // default
     let context = 'portal';
@@ -170,16 +170,21 @@ function createBackdoorSession(urlPath) {
         context = 'portal';
     }
     
+    // Use provided user info or defaults
+    const email = userInfo?.email || 'john.doe@example.com';
+    const firstName = userInfo?.first_name || 'John';
+    const lastName = userInfo?.last_name || 'Doe';
+    
     // Create session structure matching multipass format
     return {
         token: 'backdoor-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
         role: userRole,
-        customer_id: 'john.doe@example.com',
+        customer_id: email,
         user: {
-            email: 'john.doe@example.com',
-            first_name: 'John',
-            last_name: 'Doe',
-            id: 'john.doe@example.com'
+            email: email,
+            first_name: firstName,
+            last_name: lastName,
+            id: email
         },
         authenticated: true,
         context: context,
@@ -206,8 +211,13 @@ function backdoorAuthMiddleware(req, res, next) {
     
     // Check if bypass parameter matches the secret
     if (bypassParam === multipassOverride && multipassOverride) {
-        // Valid backdoor attempt
-        const session = createBackdoorSession(req.path);
+        // Valid backdoor attempt - extract user info from query params
+        const userInfo = {
+            email: req.query.email || 'john.doe@example.com',
+            first_name: req.query.first_name || 'John',
+            last_name: req.query.last_name || 'Doe'
+        };
+        const session = createBackdoorSession(req.path, userInfo);
         
         // Set headers to mimic multipass authentication
         req.headers['x-shopify-token'] = session.token;
@@ -275,6 +285,10 @@ app.get('/admin.html', (req, res) => {
 
 app.get('/customer-portal.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/customer-portal.html'));
+});
+
+app.get('/customer-dashboard.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/customer-dashboard.html'));
 });
 
 // Also handle root paths
