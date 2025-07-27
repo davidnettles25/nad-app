@@ -852,6 +852,8 @@ window.NADDashboard = {
                     </div>
                 </div>
                 
+                ${this.renderSupplementsSection(test)}
+                
                 <div class="result-actions">
                     <button class="btn-primary" onclick="NADDashboard.downloadResults('${test.test_id}')">
                         <i class="fas fa-download"></i> Download Report
@@ -862,6 +864,102 @@ window.NADDashboard = {
                 </div>
             </div>
         `;
+    },
+    
+    /**
+     * Render supplements section for a test
+     */
+    renderSupplementsSection(test) {
+        // Check if supplements data exists
+        if (!test.supplements && !test.supplement_data) {
+            return '';
+        }
+        
+        // Handle different data structures
+        let supplementsData = test.supplements || test.supplement_data;
+        
+        // If it's a JSON string, parse it
+        if (typeof supplementsData === 'string') {
+            try {
+                supplementsData = JSON.parse(supplementsData);
+            } catch (e) {
+                NAD.logger.warn('Failed to parse supplements data:', e);
+                return '';
+            }
+        }
+        
+        let supplementsHTML = `
+            <div class="supplements-section">
+                <h3><i class="fas fa-pills"></i> Supplements at Time of Test</h3>
+                <div class="supplements-content">
+        `;
+        
+        // Handle object structure with selected array
+        if (supplementsData.selected && Array.isArray(supplementsData.selected)) {
+            if (supplementsData.selected.length > 0) {
+                supplementsHTML += '<div class="supplement-list">';
+                supplementsData.selected.forEach(supplement => {
+                    const name = supplement.name || supplement;
+                    const dose = supplement.amount || supplement.dose || '';
+                    const unit = supplement.unit || 'mg';
+                    const frequency = supplement.frequency || '';
+                    
+                    supplementsHTML += `
+                        <div class="supplement-item">
+                            <span class="supplement-name">${name}</span>
+                            ${dose ? `<span class="supplement-dose">${dose} ${unit}</span>` : ''}
+                            ${frequency ? `<span class="supplement-frequency">${frequency}</span>` : ''}
+                        </div>
+                    `;
+                });
+                supplementsHTML += '</div>';
+            }
+            
+            // Add other supplements if specified
+            if (supplementsData.other) {
+                supplementsHTML += `
+                    <div class="supplement-other">
+                        <strong>Other Supplements:</strong> ${supplementsData.other}
+                    </div>
+                `;
+            }
+            
+            // Add health conditions if specified
+            if (supplementsData.health_conditions) {
+                supplementsHTML += `
+                    <div class="supplement-conditions">
+                        <strong>Health Conditions:</strong> ${supplementsData.health_conditions}
+                    </div>
+                `;
+            }
+        } 
+        // Handle simple array of supplements
+        else if (Array.isArray(supplementsData)) {
+            supplementsHTML += '<div class="supplement-list">';
+            supplementsData.forEach(supplement => {
+                supplementsHTML += `
+                    <div class="supplement-item">
+                        <span class="supplement-name">${supplement}</span>
+                    </div>
+                `;
+            });
+            supplementsHTML += '</div>';
+        }
+        // Handle simple string
+        else if (typeof supplementsData === 'string') {
+            supplementsHTML += `<p>${supplementsData}</p>`;
+        }
+        // No recognizable data
+        else {
+            return '';
+        }
+        
+        supplementsHTML += `
+                </div>
+            </div>
+        `;
+        
+        return supplementsHTML;
     },
     
     /**

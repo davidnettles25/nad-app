@@ -4200,7 +4200,8 @@ app.post('/api/customer/tests', async (req, res) => {
         let query = `
             SELECT ti.test_id, ti.status, ti.created_date, 
                    ti.activated_date, ti.customer_id, ti.shopify_customer_id,
-                   ts.score, ts.updated_date as score_date
+                   ts.score, ts.updated_date as score_date,
+                   ts.supplements as supplement_data
             FROM nad_test_ids ti
             LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id
             WHERE 1=1
