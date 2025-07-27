@@ -274,13 +274,22 @@ window.NADDashboard = {
                 }
             });
             
+            console.log('API response received:', response);
+            
             if (response.success && response.data.tests && response.data.tests.length > 0) {
+                console.log('Tests found:', response.data.tests.length);
                 NAD.logger.info('API response:', response);
                 this.tests = response.data.tests;
                 NAD.logger.info('Tests loaded from API:', this.tests.length, 'tests');
                 this.updateTestsDisplay();
                 return;
             } else {
+                console.log('No tests found or API failed:', {
+                    success: response.success,
+                    hasData: !!response.data,
+                    hasTests: response.data?.tests ? response.data.tests.length : 'N/A',
+                    error: response.error
+                });
                 NAD.logger.warn('No tests found for customer, will use fallback if available');
                 this.tests = [];
             }
