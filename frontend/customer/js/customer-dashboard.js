@@ -179,7 +179,9 @@ window.NADDashboard = {
             });
             
             if (response.success) {
+                NAD.logger.info('API response:', response);
                 this.tests = response.data.tests || [];
+                NAD.logger.info('Tests loaded from API:', this.tests.length, 'tests');
                 this.updateTestsDisplay();
                 return;
             } else {
@@ -326,14 +328,20 @@ window.NADDashboard = {
      * Update tests display
      */
     updateTestsDisplay() {
+        NAD.logger.debug('updateTestsDisplay called with', this.tests.length, 'tests');
         const testsList = document.getElementById('tests-list');
-        if (!testsList) return;
+        if (!testsList) {
+            NAD.logger.warn('tests-list element not found');
+            return;
+        }
         
         if (this.tests.length === 0) {
+            NAD.logger.info('No tests to display, showing empty state');
             testsList.innerHTML = this.getEmptyTestsHTML();
             return;
         }
         
+        NAD.logger.info('Rendering', this.tests.length, 'tests');
         const testsHTML = this.tests.map(test => this.getTestItemHTML(test)).join('');
         testsList.innerHTML = testsHTML;
     },
