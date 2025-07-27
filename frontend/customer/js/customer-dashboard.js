@@ -450,8 +450,12 @@ window.NADDashboard = {
         
         Object.entries(elements).forEach(([id, value]) => {
             const element = document.getElementById(id);
+            console.log(`Updating element ${id}:`, { element: !!element, oldValue: element?.textContent, newValue: value });
             if (element) {
                 element.textContent = value;
+                console.log(`Updated ${id} to:`, element.textContent);
+            } else {
+                console.log(`Element ${id} not found!`);
             }
         });
     },
