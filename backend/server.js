@@ -4270,6 +4270,7 @@ app.post('/api/customer/tests', async (req, res) => {
         logger.info(`Found ${tests.length} tests for customer ${email || customerId}`);
         
         // If no tests found, do a broader search to see what's in the database
+        let debugInfo = null;
         if (tests.length === 0 && email) {
             logger.info(`No tests found, doing broader search for: ${email}`);
             const searchQuery = `
@@ -4282,6 +4283,15 @@ app.post('/api/customer/tests', async (req, res) => {
             const searchParams = [`%${email}%`, `%${email}%`];
             const [searchResults] = await db.execute(searchQuery, searchParams);
             logger.info(`Broader search results:`, searchResults);
+            
+            // Store debug info for response
+            debugInfo = {
+                searchQuery,
+                searchParams,
+                searchResults,
+                originalQuery: query,
+                originalParams: params
+            };
         }
         
         // If John Doe has no tests, let's check what customer IDs exist for debugging
@@ -4297,13 +4307,20 @@ app.post('/api/customer/tests', async (req, res) => {
             logger.info('Found customers matching john/doe:', customerCheck);
         }
         
-        res.json({
+        const response = {
             success: true,
             data: {
                 tests: tests,
                 count: tests.length
             }
-        });
+        };
+        
+        // Include debug info in response for troubleshooting
+        if (debugInfo && tests.length === 0) {
+            response.debug = debugInfo;
+        }
+        
+        res.json(response);
         
     } catch (error) {
         console.error('Failed to load customer tests:', error);

@@ -276,6 +276,11 @@ window.NADDashboard = {
             
             console.log('API response received:', response);
             
+            // Show debug info if available
+            if (response.debug) {
+                console.log('DEBUG INFO FROM SERVER:', response.debug);
+            }
+            
             if (response.success && response.data.tests && response.data.tests.length > 0) {
                 console.log('Tests found:', response.data.tests.length);
                 NAD.logger.info('API response:', response);
