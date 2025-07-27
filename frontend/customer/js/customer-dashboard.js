@@ -725,9 +725,6 @@ window.NADDashboard = {
             case 'results':
                 await this.loadResultsData();
                 break;
-            case 'supplements':
-                await this.loadSupplementsData();
-                break;
         }
     },
 
@@ -851,9 +848,6 @@ window.NADDashboard = {
                     <button class="btn-primary" onclick="NADDashboard.downloadResults('${test.test_id}')">
                         <i class="fas fa-download"></i> Download Report
                     </button>
-                    <button class="btn-secondary" onclick="NADDashboard.viewSupplementRecommendations('${test.test_id}')">
-                        <i class="fas fa-pills"></i> View Recommendations
-                    </button>
                 </div>
             </div>
         `;
@@ -963,21 +957,6 @@ window.NADDashboard = {
         this.loadResultsData();
     },
 
-    /**
-     * Load supplements data
-     */
-    async loadSupplementsData() {
-        const supplementsContent = document.getElementById('supplements-content');
-        if (!supplementsContent) return;
-        
-        supplementsContent.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-pills"></i>
-                <h3>Supplement Recommendations</h3>
-                <p>Complete a test to receive personalized supplement recommendations.</p>
-            </div>
-        `;
-    },
 
     /**
      * UI Actions
@@ -1504,10 +1483,6 @@ window.NADDashboard = {
         return html;
     },
     
-    viewSupplementRecommendations(testId) {
-        this.showSection('supplements');
-        // TODO: Show recommendations specific to this test
-    },
 
     exportAllResults() {
         alert('Export all results functionality coming soon!');
