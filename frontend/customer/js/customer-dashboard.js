@@ -181,14 +181,17 @@ window.NADDashboard = {
     async loadUserData() {
         try {
             const authData = JSON.parse(sessionStorage.getItem('nad_user_data') || '{}');
+            console.log('Loading user data from sessionStorage:', authData);
             
             this.user = {
-                firstName: authData.firstName || 'Customer',
-                lastName: authData.lastName || '',
+                firstName: authData.first_name || authData.firstName || 'Customer',
+                lastName: authData.last_name || authData.lastName || '',
                 email: authData.email || 'customer@example.com',
-                customerId: authData.customerId || null,
+                customerId: authData.customerId || authData.email || null,
                 type: authData.type || 'shopify'
             };
+            
+            console.log('User object created:', this.user);
             
             // Update UI
             this.updateUserDisplay();
@@ -228,6 +231,7 @@ window.NADDashboard = {
         try {
             const customerIdentifier = this.user.customerId || this.user.email;
             
+            console.log('Making API request for tests with user:', this.user);
             const response = await NAD.API.request('/api/customer/tests', {
                 method: 'POST',
                 data: {

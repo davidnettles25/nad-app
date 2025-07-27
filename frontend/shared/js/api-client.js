@@ -34,6 +34,7 @@ NAD.API = {
                 'Content-Type': 'application/json',
                 ...headers
             },
+            credentials: 'include', // Include cookies/session for authentication
             ...fetchOptions
         };
         
