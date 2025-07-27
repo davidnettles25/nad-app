@@ -4219,9 +4219,23 @@ app.post('/api/customer/tests', async (req, res) => {
         
         query += ` ORDER BY ti.created_date DESC`;
         
+        logger.info(`Executing query with params:`, params);
         const [tests] = await db.execute(query, params);
         
-        logger.info(`Found ${tests.length} tests for customer`);
+        logger.info(`Found ${tests.length} tests for customer ${email || customerId}`);
+        
+        // If John Doe has no tests, let's check what customer IDs exist for debugging
+        if (tests.length === 0 && email === 'john.doe@example.com') {
+            logger.info('No tests found for john.doe@example.com, checking database...');
+            const checkQuery = `
+                SELECT DISTINCT customer_id, COUNT(*) as test_count 
+                FROM nad_test_ids 
+                WHERE customer_id LIKE '%john%' OR customer_id LIKE '%doe%'
+                GROUP BY customer_id
+            `;
+            const [customerCheck] = await db.execute(checkQuery);
+            logger.info('Found customers matching john/doe:', customerCheck);
+        }
         
         res.json({
             success: true,
