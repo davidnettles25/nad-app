@@ -329,7 +329,7 @@ window.NADDashboard = {
         const elements = {
             'total-tests': stats.totalTests,
             'completed-tests': stats.completedTests,
-            'pending-tests': stats.pendingTests,
+            'activated-tests': stats.activatedTests,
             'avg-score': (stats.avgScore > 0 && stats.avgScore <= 100) ? stats.avgScore : '-'
         };
         
