@@ -377,17 +377,30 @@ window.NADDashboard = {
      */
     getTestItemHTML(test) {
         const statusClass = `status-${test.status}`;
-        const date = new Date(test.created_date).toLocaleDateString();
+        
+        // Show relevant dates based on status
+        let dateInfo = '';
+        if (test.activated_date) {
+            dateInfo += `<p>Activated: ${new Date(test.activated_date).toLocaleDateString()}</p>`;
+        }
+        if (test.status === 'completed' && (test.score_date || test.updated_date)) {
+            const completedDate = test.score_date || test.updated_date;
+            dateInfo += `<p>Completed: ${new Date(completedDate).toLocaleDateString()}</p>`;
+        }
+        
+        // If no relevant dates, show created as fallback
+        if (!dateInfo) {
+            dateInfo = `<p>Created: ${new Date(test.created_date).toLocaleDateString()}</p>`;
+        }
         
         return `
             <div class="test-item">
                 <div class="test-details">
                     <h4>${test.test_id}</h4>
-                    <p>Created: ${date}</p>
-                    ${test.activated_date ? `<p>Activated: ${new Date(test.activated_date).toLocaleDateString()}</p>` : ''}
+                    ${dateInfo}
                 </div>
                 <div class="test-actions">
-                    <span class="test-status ${statusClass}">${test.status}</span>
+                    <span class="test-status ${statusClass}">${test.status === 'activated' ? 'In Lab' : test.status}</span>
                     ${this.getTestActionButtons(test)}
                 </div>
             </div>
