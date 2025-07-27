@@ -351,9 +351,12 @@ window.NADDashboard = {
         const completedTests = this.tests.filter(test => test.status === 'completed').length;
         const activatedTests = this.tests.filter(test => test.status === 'activated').length;
         
-        // Calculate average score
+        // Calculate average score (include scores of 0 as valid results)
         const completedWithScores = this.tests.filter(test => 
-            test.status === 'completed' && test.score && test.score > 0
+            test.status === 'completed' && 
+            test.score !== null && 
+            test.score !== undefined && 
+            test.score !== ''
         );
         
         // Debug log to see what scores we're working with
@@ -432,7 +435,7 @@ window.NADDashboard = {
             'total-tests': stats.totalTests,
             'completed-tests': stats.completedTests,
             'activated-tests': stats.activatedTests,
-            'avg-score': (stats.avgScore > 0 && stats.avgScore <= 100) ? stats.avgScore : '-'
+            'avg-score': (stats.avgScore >= 0 && stats.avgScore <= 100) ? stats.avgScore : '-'
         };
         
         Object.entries(elements).forEach(([id, value]) => {
@@ -1343,7 +1346,7 @@ window.NADDashboard = {
                     </div>
                 </div>
                 
-                ${test.status === 'completed' && test.score ? `
+                ${test.status === 'completed' && test.score !== null && test.score !== undefined && test.score !== '' ? `
                 <div class="score-section">
                     <h2>NAD+ Level</h2>
                     <div class="score-circle">${test.score}</div>
