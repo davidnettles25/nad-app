@@ -4230,6 +4230,7 @@ app.post('/api/customer/tests', async (req, res) => {
         // Use console.log as fallback if req.logger is undefined
         const logger = req.logger || console;
         logger.info(`Loading tests for customer: ${email || customerId}`);
+        logger.info(`Request data:`, { email, customerId, body: req.body });
         
         // Get database connection
         const db = req.app.locals.db;
@@ -4262,10 +4263,26 @@ app.post('/api/customer/tests', async (req, res) => {
         
         query += ` ORDER BY ti.created_date DESC`;
         
-        logger.info(`Executing query with params:`, params);
+        logger.info(`Executing query:`, query);
+        logger.info(`Query params:`, params);
         const [tests] = await db.execute(query, params);
         
         logger.info(`Found ${tests.length} tests for customer ${email || customerId}`);
+        
+        // If no tests found, do a broader search to see what's in the database
+        if (tests.length === 0 && email) {
+            logger.info(`No tests found, doing broader search for: ${email}`);
+            const searchQuery = `
+                SELECT customer_id, shopify_customer_id, COUNT(*) as test_count
+                FROM nad_test_ids 
+                WHERE customer_id LIKE ? OR shopify_customer_id LIKE ?
+                GROUP BY customer_id, shopify_customer_id
+                LIMIT 10
+            `;
+            const searchParams = [`%${email}%`, `%${email}%`];
+            const [searchResults] = await db.execute(searchQuery, searchParams);
+            logger.info(`Broader search results:`, searchResults);
+        }
         
         // If John Doe has no tests, let's check what customer IDs exist for debugging
         if (tests.length === 0 && email === 'john.doe@example.com') {
