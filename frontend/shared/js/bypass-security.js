@@ -35,8 +35,15 @@
             if (!response.ok || response.status === 401) {
                 // Invalid bypass key - redirect to company site
                 window.location.href = 'http://mynadtest.com';
+            } else {
+                // Valid bypass - set flag for dashboard to use
+                sessionStorage.setItem('nad_bypass_validated', 'true');
+                sessionStorage.setItem('nad_bypass_user', JSON.stringify({
+                    email: email || 'john.doe@example.com',
+                    first_name: firstName || 'John',
+                    last_name: lastName || 'Doe'
+                }));
             }
-            // If response is ok, bypass is valid - continue loading page
         })
         .catch(() => {
             // On network error or other issues, assume invalid and redirect

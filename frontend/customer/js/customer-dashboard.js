@@ -69,24 +69,26 @@ window.NADDashboard = {
     async checkAuthentication() {
         try {
             // Check for bypass authentication first
-            const urlParams = new URLSearchParams(window.location.search);
-            const bypassParam = urlParams.get('bypass');
+            const bypassValidated = sessionStorage.getItem('nad_bypass_validated');
+            const bypassUser = sessionStorage.getItem('nad_bypass_user');
             
-            if (bypassParam) {
-                NAD.logger.debug('Bypass parameter found, checking session...');
-                const response = await NAD.API.request('/api/customer/bypass-session', {
-                    method: 'GET'
-                });
+            if (bypassValidated === 'true' && bypassUser) {
+                NAD.logger.debug('Bypass authentication validated, using bypass user data');
+                const user = JSON.parse(bypassUser);
                 
-                if (response.success) {
-                    // Store bypass authentication
-                    sessionStorage.setItem('nad_auth_type', 'bypass');
-                    sessionStorage.setItem('nad_user_data', JSON.stringify(response.user));
-                    return { success: true, user: response.user, type: 'bypass' };
-                }
+                // Store bypass authentication
+                sessionStorage.setItem('nad_auth_type', 'bypass');
+                sessionStorage.setItem('nad_user_data', JSON.stringify(user));
+                
+                // Clear bypass validation flags (one-time use)
+                sessionStorage.removeItem('nad_bypass_validated');
+                sessionStorage.removeItem('nad_bypass_user');
+                
+                return { success: true, user: user, type: 'bypass' };
             }
             
             // Check for Shopify portal token in URL
+            const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('t');
             
             if (token) {
