@@ -673,7 +673,7 @@ window.NADDashboard = {
             <div class="result-card">
                 <h4>${test.test_id}</h4>
                 <p>Score: ${test.score || 'N/A'}</p>
-                <p>Completed: ${new Date(test.updated_date).toLocaleDateString()}</p>
+                <p>Completed: ${new Date(test.score_date || test.created_date).toLocaleDateString()}</p>
                 <button class="btn-primary" onclick="NADDashboard.viewDetailedResults('${test.test_id}')">
                     View Details
                 </button>

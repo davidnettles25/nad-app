@@ -4198,7 +4198,7 @@ app.post('/api/customer/tests', async (req, res) => {
         
         // Build query based on available identifiers
         let query = `
-            SELECT ti.test_id, ti.status, ti.created_date, ti.updated_date, 
+            SELECT ti.test_id, ti.status, ti.created_date, 
                    ti.activated_date, ti.customer_id, ti.shopify_customer_id,
                    ts.score, ts.updated_date as score_date
             FROM nad_test_ids ti
