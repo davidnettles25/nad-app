@@ -1637,6 +1637,282 @@ window.NADDashboard = {
     },
 
     /**
+     * Show FAQ modal
+     */
+    showFAQ() {
+        const modalContainer = document.getElementById('modal-container');
+        if (!modalContainer) return;
+
+        const faqHTML = `
+            <div class="modal-overlay" onclick="NADDashboard.closeModal()">
+                <div class="modal-content faq-modal" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-question-circle"></i> Frequently Asked Questions</h2>
+                        <button class="modal-close" onclick="NADDashboard.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        ${this.getFAQContent()}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="NADDashboard.closeModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modalContainer.innerHTML = faqHTML;
+        modalContainer.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Add click handlers for FAQ items
+        this.setupFAQHandlers();
+    },
+
+    /**
+     * Setup FAQ expand/collapse handlers
+     */
+    setupFAQHandlers() {
+        const faqQuestions = document.querySelectorAll('.faq-question');
+        faqQuestions.forEach(question => {
+            question.addEventListener('click', () => {
+                const faqItem = question.parentElement;
+                const isActive = faqItem.classList.contains('active');
+                
+                // Close all other FAQ items
+                document.querySelectorAll('.faq-item.active').forEach(item => {
+                    if (item !== faqItem) {
+                        item.classList.remove('active');
+                    }
+                });
+                
+                // Toggle current item
+                faqItem.classList.toggle('active');
+            });
+        });
+    },
+
+    /**
+     * Get FAQ content
+     */
+    getFAQContent() {
+        return `
+            <div class="faq-section">
+                <h3><i class="fas fa-vial"></i> Test Activation & Getting Started</h3>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>How do I activate my NAD+ test kit?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>To activate your test kit, visit your account at <strong>mynadtest.com</strong> and enter your unique test kit ID. The test kit ID is printed on your test kit package. Once activated, your test will appear in this dashboard.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Where do I find my test kit ID?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Your test kit ID is printed on the outside of your test kit package. It follows the format: YYYY-MM-###-XXXXXX (for example: 2025-07-123-ABC123). Each test kit has a unique ID.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>I don't have an account at mynadtest.com. How do I create one?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>You can create an account by visiting mynadtest.com and registering with your email address. You'll need a valid account to activate test kits and access your results through this dashboard.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <h3><i class="fas fa-flask"></i> Testing Process</h3>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>How long does it take to get my results?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Once your test kit is activated and your sample is received by our laboratory, results are typically available within 3-5 business days. You'll see the status change from "In Lab" to "Completed" when results are ready.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>What do the different test statuses mean?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p><strong>In Lab:</strong> Your test sample is currently being processed by our laboratory team.</p>
+                        <p><strong>Completed:</strong> Lab processing is finished and your NAD+ results are available for viewing and download.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Why should I record my supplements when activating a test?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Recording your current supplements helps provide context for your NAD+ results. Certain supplements may influence NAD+ levels, so this information helps you and your healthcare provider better interpret your results.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <h3><i class="fas fa-chart-line"></i> Understanding Results</h3>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>How do I interpret my NAD+ score?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Your NAD+ score is a numerical value that indicates your current NAD+ levels. Higher scores generally indicate better NAD+ levels. For personalized interpretation of your results, consult with your healthcare provider who can provide guidance based on your individual health profile.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>What is a normal NAD+ level?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>NAD+ levels can vary significantly between individuals and can be influenced by factors such as age, diet, exercise, and supplement use. Your results should be discussed with a healthcare professional who can provide personalized guidance.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Can I track my NAD+ levels over time?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes! This dashboard includes trend charts that show your NAD+ levels over time. You can view trends for the last 30 days, 3 months, or 1 year. Taking multiple tests allows you to monitor changes and track the effectiveness of lifestyle interventions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <h3><i class="fas fa-download"></i> Reports & Data</h3>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>How do I download my test results?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>You can download results in two ways:</p>
+                        <ul>
+                            <li><strong>Individual Test:</strong> Click the "Download" button next to any completed test</li>
+                            <li><strong>All Tests:</strong> Use "Download Results" from the Dashboard or "Export All" from the Results section</li>
+                        </ul>
+                        <p>Reports are generated as professional PDF documents suitable for sharing with healthcare providers.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Can I share my results with my doctor?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Absolutely! The PDF reports are formatted professionally and include all relevant test information. You can download and share these reports with your healthcare provider to discuss your NAD+ levels and potential health implications.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>How long are my results stored?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Your test results are stored securely and remain accessible through your dashboard indefinitely. This allows you to track long-term trends and maintain a complete history of your NAD+ testing.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <h3><i class="fas fa-shield-alt"></i> Privacy & Security</h3>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Is my health data secure?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes, your health data is protected using industry-standard encryption and security measures. Your data is only accessible to you through your authenticated account and to authorized laboratory personnel for processing purposes.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Who has access to my test results?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Only you have access to your complete test results through this dashboard. Laboratory personnel have access to your samples and data solely for processing and quality control purposes. We do not share your data with third parties without your explicit consent.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <h3><i class="fas fa-tools"></i> Technical Support</h3>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>I'm having trouble accessing my dashboard. What should I do?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>First, ensure you're accessing the dashboard through your mynadtest.com account. If you continue to experience issues, try clearing your browser cache or using a different browser. If problems persist, contact our support team.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>My test isn't showing up in the dashboard. Why?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Make sure you've activated your test kit through your mynadtest.com account. If you've activated it but it's not appearing, wait a few minutes and refresh the page. If it still doesn't appear, verify you're logged into the correct account or contact support.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>How do I contact customer support?</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>You can contact our customer support team through the "Contact Support" option in the Help section of this dashboard, or by visiting mynadtest.com. Our support team is available to help with technical issues, test questions, and account problems.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <h3><i class="fas fa-question"></i> Still Have Questions?</h3>
+                <div class="faq-callout">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <p><strong>Need More Help?</strong></p>
+                        <p>If you couldn't find the answer to your question here, please don't hesitate to contact our support team. We're here to help you get the most out of your NAD+ testing experience.</p>
+                        <p>You can also check out our User Guide for detailed instructions on using the dashboard.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
      * Get User Guide content
      */
     getUserGuideContent() {
