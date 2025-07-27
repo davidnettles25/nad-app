@@ -1248,6 +1248,48 @@ body {
     color: var(--text-primary);
 }
 
+/* Markdown Content Styling */
+.modal-body h1 {
+    color: var(--primary-color);
+    margin: 0 0 20px 0;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+.modal-body h2 {
+    color: var(--primary-color);
+    margin: 30px 0 15px 0;
+    font-size: 1.25rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.modal-body p {
+    margin: 0 0 15px 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.modal-body ul {
+    margin: 0 0 15px 0;
+    padding-left: 20px;
+}
+
+.modal-body li {
+    margin-bottom: 5px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.modal-body strong {
+    color: var(--text-primary);
+}
+
+.modal-body em {
+    font-style: italic;
+    color: var(--primary-color);
+}
+
 /* Responsive Modal */
 @media (max-width: 768px) {
     .modal-overlay {
@@ -1268,7 +1310,8 @@ body {
         font-size: 1.25rem;
     }
     
-    .guide-section h3 {
+    .guide-section h3,
+    .faq-section h3 {
         font-size: 1.1rem;
     }
 }

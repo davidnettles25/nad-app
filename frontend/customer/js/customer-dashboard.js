@@ -1596,32 +1596,68 @@ window.NADDashboard = {
     /**
      * Show User Guide modal
      */
-    showUserGuide() {
+    async showUserGuide() {
         const modalContainer = document.getElementById('modal-container');
         if (!modalContainer) return;
 
-        const userGuideHTML = `
-            <div class="modal-overlay" onclick="NADDashboard.closeModal()">
-                <div class="modal-content user-guide-modal" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-book"></i> NAD+ Dashboard User Guide</h2>
-                        <button class="modal-close" onclick="NADDashboard.closeModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        ${this.getUserGuideContent()}
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn-secondary" onclick="NADDashboard.closeModal()">Close</button>
+        // Show loading first
+        modalContainer.innerHTML = `
+            <div class="modal-overlay">
+                <div class="modal-content" onclick="event.stopPropagation()">
+                    <div class="modal-body" style="text-align: center; padding: 50px;">
+                        <div class="loading-spinner"></div>
+                        <p>Loading User Guide...</p>
                     </div>
                 </div>
             </div>
         `;
-
-        modalContainer.innerHTML = userGuideHTML;
         modalContainer.style.display = 'block';
-        document.body.style.overflow = 'hidden';
+
+        try {
+            const guideContent = await this.loadMarkdownContent('customer/help/user-guide.md');
+            
+            const userGuideHTML = `
+                <div class="modal-overlay" onclick="NADDashboard.closeModal()">
+                    <div class="modal-content user-guide-modal" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <h2><i class="fas fa-book"></i> NAD+ Dashboard User Guide</h2>
+                            <button class="modal-close" onclick="NADDashboard.closeModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            ${guideContent}
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" onclick="NADDashboard.closeModal()">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            modalContainer.innerHTML = userGuideHTML;
+            document.body.style.overflow = 'hidden';
+        } catch (error) {
+            NAD.logger.error('Failed to load User Guide:', error);
+            modalContainer.innerHTML = `
+                <div class="modal-overlay" onclick="NADDashboard.closeModal()">
+                    <div class="modal-content" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <h2>Error</h2>
+                            <button class="modal-close" onclick="NADDashboard.closeModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Failed to load User Guide content. Please try again later.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" onclick="NADDashboard.closeModal()">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     },
 
     /**
@@ -1637,37 +1673,195 @@ window.NADDashboard = {
     },
 
     /**
+     * Load and parse markdown content
+     */
+    async loadMarkdownContent(filePath) {
+        try {
+            const response = await fetch(filePath);
+            if (!response.ok) {
+                throw new Error(`Failed to load ${filePath}: ${response.status}`);
+            }
+            
+            const markdownText = await response.text();
+            
+            // Configure marked options for better rendering
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+                headerIds: true,
+                mangle: false
+            });
+            
+            // Convert markdown to HTML
+            let html = marked.parse(markdownText);
+            
+            // Post-process the HTML to add our custom classes
+            html = this.processMarkdownHTML(html);
+            
+            return html;
+        } catch (error) {
+            NAD.logger.error('Error loading markdown content:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Process the converted HTML to add custom classes and structure
+     */
+    processMarkdownHTML(html) {
+        // Create a temporary div to manipulate the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // Add classes to different elements for FAQ and Guide styling
+        
+        // Convert h2 elements to section headers
+        const h2Elements = tempDiv.querySelectorAll('h2');
+        h2Elements.forEach(h2 => {
+            const section = document.createElement('div');
+            section.className = 'faq-section';
+            
+            // Create section header
+            const header = document.createElement('h3');
+            header.innerHTML = h2.innerHTML;
+            section.appendChild(header);
+            
+            // Move all following elements until next h2 into this section
+            let nextElement = h2.nextElementSibling;
+            while (nextElement && nextElement.tagName !== 'H2') {
+                const elementToMove = nextElement;
+                nextElement = nextElement.nextElementSibling;
+                section.appendChild(elementToMove);
+            }
+            
+            h2.parentNode.replaceChild(section, h2);
+        });
+        
+        // Convert h3 elements to FAQ items
+        const h3Elements = tempDiv.querySelectorAll('h3');
+        h3Elements.forEach(h3 => {
+            // Skip if it's already in a faq-section header (from h2 conversion)
+            if (h3.parentElement && h3.parentElement.classList.contains('faq-section')) {
+                return;
+            }
+            
+            const faqItem = document.createElement('div');
+            faqItem.className = 'faq-item';
+            
+            // Create question
+            const question = document.createElement('div');
+            question.className = 'faq-question';
+            question.innerHTML = `
+                <h4>${h3.innerHTML}</h4>
+                <i class="fas fa-chevron-down"></i>
+            `;
+            
+            // Create answer container
+            const answer = document.createElement('div');
+            answer.className = 'faq-answer';
+            
+            // Move all following elements until next h3 into the answer
+            let nextElement = h3.nextElementSibling;
+            while (nextElement && nextElement.tagName !== 'H3' && nextElement.tagName !== 'H2') {
+                const elementToMove = nextElement;
+                nextElement = nextElement.nextElementSibling;
+                answer.appendChild(elementToMove);
+            }
+            
+            faqItem.appendChild(question);
+            faqItem.appendChild(answer);
+            
+            h3.parentNode.replaceChild(faqItem, h3);
+        });
+        
+        // Style blockquotes as callouts
+        const blockquotes = tempDiv.querySelectorAll('blockquote');
+        blockquotes.forEach(blockquote => {
+            blockquote.className = 'faq-callout';
+            // Add info icon
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-info-circle';
+            blockquote.insertBefore(icon, blockquote.firstChild);
+            
+            // Wrap content in div
+            const content = document.createElement('div');
+            Array.from(blockquote.childNodes).slice(1).forEach(node => {
+                content.appendChild(node);
+            });
+            blockquote.appendChild(content);
+        });
+        
+        return tempDiv.innerHTML;
+    },
+
+    /**
      * Show FAQ modal
      */
-    showFAQ() {
+    async showFAQ() {
         const modalContainer = document.getElementById('modal-container');
         if (!modalContainer) return;
 
-        const faqHTML = `
-            <div class="modal-overlay" onclick="NADDashboard.closeModal()">
-                <div class="modal-content faq-modal" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-question-circle"></i> Frequently Asked Questions</h2>
-                        <button class="modal-close" onclick="NADDashboard.closeModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        ${this.getFAQContent()}
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn-secondary" onclick="NADDashboard.closeModal()">Close</button>
+        // Show loading first
+        modalContainer.innerHTML = `
+            <div class="modal-overlay">
+                <div class="modal-content" onclick="event.stopPropagation()">
+                    <div class="modal-body" style="text-align: center; padding: 50px;">
+                        <div class="loading-spinner"></div>
+                        <p>Loading FAQ...</p>
                     </div>
                 </div>
             </div>
         `;
-
-        modalContainer.innerHTML = faqHTML;
         modalContainer.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-        
-        // Add click handlers for FAQ items
-        this.setupFAQHandlers();
+
+        try {
+            const faqContent = await this.loadMarkdownContent('customer/help/faq.md');
+            
+            const faqHTML = `
+                <div class="modal-overlay" onclick="NADDashboard.closeModal()">
+                    <div class="modal-content faq-modal" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <h2><i class="fas fa-question-circle"></i> Frequently Asked Questions</h2>
+                            <button class="modal-close" onclick="NADDashboard.closeModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            ${faqContent}
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" onclick="NADDashboard.closeModal()">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            modalContainer.innerHTML = faqHTML;
+            document.body.style.overflow = 'hidden';
+            
+            // Add click handlers for FAQ items
+            this.setupFAQHandlers();
+        } catch (error) {
+            NAD.logger.error('Failed to load FAQ:', error);
+            modalContainer.innerHTML = `
+                <div class="modal-overlay" onclick="NADDashboard.closeModal()">
+                    <div class="modal-content" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <h2>Error</h2>
+                            <button class="modal-close" onclick="NADDashboard.closeModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Failed to load FAQ content. Please try again later.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" onclick="NADDashboard.closeModal()">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     },
 
     /**
@@ -1691,347 +1885,6 @@ window.NADDashboard = {
                 faqItem.classList.toggle('active');
             });
         });
-    },
-
-    /**
-     * Get FAQ content
-     */
-    getFAQContent() {
-        return `
-            <div class="faq-section">
-                <h3><i class="fas fa-vial"></i> Test Activation & Getting Started</h3>
-                
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>How do I activate my NAD+ test kit?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>To activate your test kit, visit your account at <strong>mynadtest.com</strong> and enter your unique test kit ID. The test kit ID is printed on your test kit package. Once activated, your test will appear in this dashboard.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>Where do I find my test kit ID?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Your test kit ID is printed on the outside of your test kit package. It follows the format: YYYY-MM-###-XXXXXX (for example: 2025-07-123-ABC123). Each test kit has a unique ID.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>I don't have an account at mynadtest.com. How do I create one?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>You can create an account by visiting mynadtest.com and registering with your email address. You'll need a valid account to activate test kits and access your results through this dashboard.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="faq-section">
-                <h3><i class="fas fa-flask"></i> Testing Process</h3>
-                
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>How long does it take to get my results?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Once your test kit is activated and your sample is received by our laboratory, results are typically available within 3-5 business days. You'll see the status change from "In Lab" to "Completed" when results are ready.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>What do the different test statuses mean?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p><strong>In Lab:</strong> Your test sample is currently being processed by our laboratory team.</p>
-                        <p><strong>Completed:</strong> Lab processing is finished and your NAD+ results are available for viewing and download.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>Why should I record my supplements when activating a test?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Recording your current supplements helps provide context for your NAD+ results. Certain supplements may influence NAD+ levels, so this information helps you and your healthcare provider better interpret your results.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="faq-section">
-                <h3><i class="fas fa-chart-line"></i> Understanding Results</h3>
-                
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>How do I interpret my NAD+ score?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Your NAD+ score is a numerical value that indicates your current NAD+ levels. Higher scores generally indicate better NAD+ levels. For personalized interpretation of your results, consult with your healthcare provider who can provide guidance based on your individual health profile.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>What is a normal NAD+ level?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>NAD+ levels can vary significantly between individuals and can be influenced by factors such as age, diet, exercise, and supplement use. Your results should be discussed with a healthcare professional who can provide personalized guidance.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>Can I track my NAD+ levels over time?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Yes! This dashboard includes trend charts that show your NAD+ levels over time. You can view trends for the last 30 days, 3 months, or 1 year. Taking multiple tests allows you to monitor changes and track the effectiveness of lifestyle interventions.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="faq-section">
-                <h3><i class="fas fa-download"></i> Reports & Data</h3>
-                
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>How do I download my test results?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>You can download results in two ways:</p>
-                        <ul>
-                            <li><strong>Individual Test:</strong> Click the "Download" button next to any completed test</li>
-                            <li><strong>All Tests:</strong> Use "Download Results" from the Dashboard or "Export All" from the Results section</li>
-                        </ul>
-                        <p>Reports are generated as professional PDF documents suitable for sharing with healthcare providers.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>Can I share my results with my doctor?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Absolutely! The PDF reports are formatted professionally and include all relevant test information. You can download and share these reports with your healthcare provider to discuss your NAD+ levels and potential health implications.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>How long are my results stored?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Your test results are stored securely and remain accessible through your dashboard indefinitely. This allows you to track long-term trends and maintain a complete history of your NAD+ testing.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="faq-section">
-                <h3><i class="fas fa-shield-alt"></i> Privacy & Security</h3>
-                
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>Is my health data secure?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Yes, your health data is protected using industry-standard encryption and security measures. Your data is only accessible to you through your authenticated account and to authorized laboratory personnel for processing purposes.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>Who has access to my test results?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Only you have access to your complete test results through this dashboard. Laboratory personnel have access to your samples and data solely for processing and quality control purposes. We do not share your data with third parties without your explicit consent.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="faq-section">
-                <h3><i class="fas fa-tools"></i> Technical Support</h3>
-                
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>I'm having trouble accessing my dashboard. What should I do?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>First, ensure you're accessing the dashboard through your mynadtest.com account. If you continue to experience issues, try clearing your browser cache or using a different browser. If problems persist, contact our support team.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>My test isn't showing up in the dashboard. Why?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Make sure you've activated your test kit through your mynadtest.com account. If you've activated it but it's not appearing, wait a few minutes and refresh the page. If it still doesn't appear, verify you're logged into the correct account or contact support.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <h4>How do I contact customer support?</h4>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>You can contact our customer support team through the "Contact Support" option in the Help section of this dashboard, or by visiting mynadtest.com. Our support team is available to help with technical issues, test questions, and account problems.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="faq-section">
-                <h3><i class="fas fa-question"></i> Still Have Questions?</h3>
-                <div class="faq-callout">
-                    <i class="fas fa-info-circle"></i>
-                    <div>
-                        <p><strong>Need More Help?</strong></p>
-                        <p>If you couldn't find the answer to your question here, please don't hesitate to contact our support team. We're here to help you get the most out of your NAD+ testing experience.</p>
-                        <p>You can also check out our User Guide for detailed instructions on using the dashboard.</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    },
-
-    /**
-     * Get User Guide content
-     */
-    getUserGuideContent() {
-        return `
-            <div class="guide-section">
-                <h3><i class="fas fa-home"></i> Dashboard Overview</h3>
-                <p>Your NAD+ Dashboard provides a comprehensive view of your test results and health insights.</p>
-                
-                <h4>Quick Stats</h4>
-                <ul>
-                    <li><strong>Total Tests:</strong> Shows the number of NAD+ tests you've taken</li>
-                    <li><strong>Completed:</strong> Tests that have been processed and have results available</li>
-                    <li><strong>In Lab:</strong> Tests currently being processed by our laboratory</li>
-                    <li><strong>Average Score:</strong> Your overall NAD+ level average across all completed tests</li>
-                </ul>
-
-                <h4>Quick Actions</h4>
-                <ul>
-                    <li><strong>View All Tests:</strong> Navigate to your complete test history</li>
-                    <li><strong>Download Results:</strong> Export all your test results as a PDF report</li>
-                </ul>
-            </div>
-
-            <div class="guide-section">
-                <h3><i class="fas fa-vial"></i> My Tests Section</h3>
-                <p>View and manage all your NAD+ tests in one place.</p>
-                
-                <h4>Test Activation</h4>
-                <div class="guide-callout">
-                    <i class="fas fa-info-circle"></i>
-                    <p><strong>Important:</strong> To activate new test kits, please visit your account at <strong>mynadtest.com</strong> where you can enter your test kit ID. Once activated, tests will appear here for viewing and downloading results.</p>
-                </div>
-
-                <h4>Test Statuses</h4>
-                <ul>
-                    <li><strong>In Lab:</strong> Your test sample is being processed by our laboratory team. Results typically available in 3-5 business days.</li>
-                    <li><strong>Completed:</strong> Test processing is complete and results are available for viewing and download.</li>
-                </ul>
-
-                <h4>Test Actions</h4>
-                <ul>
-                    <li><strong>View (In Lab tests):</strong> See test details, supplements taken, and processing status</li>
-                    <li><strong>Results (Completed tests):</strong> View detailed NAD+ scores and analysis</li>
-                    <li><strong>Download:</strong> Generate and download a PDF report for individual tests</li>
-                </ul>
-
-                <h4>Filters and Search</h4>
-                <ul>
-                    <li>Filter tests by status (All, In Lab, Completed)</li>
-                    <li>Search for specific tests using the test ID</li>
-                </ul>
-            </div>
-
-            <div class="guide-section">
-                <h3><i class="fas fa-chart-line"></i> Test Results</h3>
-                <p>Access detailed information about your completed NAD+ tests.</p>
-                
-                <h4>NAD+ Score</h4>
-                <ul>
-                    <li>Your NAD+ level is displayed as a numerical score</li>
-                    <li>Higher scores indicate better NAD+ levels</li>
-                    <li>Scores are measured using advanced laboratory techniques</li>
-                </ul>
-
-                <h4>Test Information</h4>
-                <ul>
-                    <li><strong>Test ID:</strong> Unique identifier for your test</li>
-                    <li><strong>Activated Date:</strong> When you activated the test kit</li>
-                    <li><strong>Completed Date:</strong> When lab processing finished</li>
-                    <li><strong>Supplements:</strong> Any supplements you were taking at the time of testing</li>
-                </ul>
-
-                <h4>Trend Analysis</h4>
-                <ul>
-                    <li>View your NAD+ levels over time with interactive charts</li>
-                    <li>Hover over data points to see detailed test information</li>
-                    <li>Filter trends by time period (30 days, 3 months, 1 year)</li>
-                </ul>
-            </div>
-
-            <div class="guide-section">
-                <h3><i class="fas fa-download"></i> Downloading Reports</h3>
-                <p>Generate PDF reports of your test results for personal records or sharing with healthcare providers.</p>
-                
-                <h4>Individual Test Reports</h4>
-                <ul>
-                    <li>Click "Download" next to any completed test</li>
-                    <li>Includes test details, NAD+ score, and supplement information</li>
-                    <li>Professional format suitable for medical consultations</li>
-                </ul>
-
-                <h4>Comprehensive Reports</h4>
-                <ul>
-                    <li>Use "Download Results" from the Dashboard or "Export All" from Results</li>
-                    <li>Includes all your tests in one comprehensive document</li>
-                    <li>Shows trends and progression over time</li>
-                </ul>
-            </div>
-
-            <div class="guide-section">
-                <h3><i class="fas fa-shield-alt"></i> Privacy & Security</h3>
-                <ul>
-                    <li>Your test data is securely stored and encrypted</li>
-                    <li>Access requires authentication through your mynadtest.com account</li>
-                    <li>Data is only shared with authorized laboratory personnel</li>
-                    <li>You have full control over downloading and sharing your results</li>
-                </ul>
-            </div>
-
-            <div class="guide-section">
-                <h3><i class="fas fa-question-circle"></i> Need Help?</h3>
-                <p>If you have questions or need assistance:</p>
-                <ul>
-                    <li>Check the FAQ section for common questions</li>
-                    <li>Contact our support team for personalized assistance</li>
-                    <li>Consult with your healthcare provider about interpreting results</li>
-                </ul>
-            </div>
-        `;
     }
 };
 
