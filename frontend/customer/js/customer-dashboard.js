@@ -360,6 +360,9 @@ window.NADDashboard = {
         );
         
         // Debug log to see what scores we're working with
+        console.log('All tests:', this.tests.map(t => ({ id: t.test_id, status: t.status, score: t.score, scoreType: typeof t.score })));
+        console.log('Completed with scores:', completedWithScores.map(t => ({ id: t.test_id, score: t.score, scoreType: typeof t.score })));
+        
         if (completedWithScores.length > 0) {
             NAD.logger.debug('Completed test scores:', completedWithScores.map(t => ({ id: t.test_id, score: t.score })));
         }
@@ -381,12 +384,15 @@ window.NADDashboard = {
             }).length)
             : 0;
         
-        return {
+        const stats = {
             totalTests,
             completedTests,
             activatedTests,
             avgScore
         };
+        
+        console.log('Calculated stats:', stats);
+        return stats;
     },
 
     /**
@@ -431,12 +437,16 @@ window.NADDashboard = {
      * Update stats display
      */
     updateStatsDisplay(stats) {
+        console.log('Updating stats display with:', stats);
+        
         const elements = {
             'total-tests': stats.totalTests,
             'completed-tests': stats.completedTests,
             'activated-tests': stats.activatedTests,
             'avg-score': (stats.avgScore >= 0 && stats.avgScore <= 100) ? stats.avgScore : '-'
         };
+        
+        console.log('Display elements:', elements);
         
         Object.entries(elements).forEach(([id, value]) => {
             const element = document.getElementById(id);
