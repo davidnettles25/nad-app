@@ -1072,20 +1072,19 @@ window.NADDashboard = {
     },
 
     async downloadResults(testId) {
-        if (!testId) {
-            alert('No test ID provided');
-            return;
-        }
-        
-        const test = this.tests.find(t => t.test_id === testId);
-        if (!test) {
-            alert('Test not found');
-            return;
-        }
-        
         try {
-            // Generate PDF report
-            await this.generatePDFReport(test);
+            if (testId) {
+                // Download single test report
+                const test = this.tests.find(t => t.test_id === testId);
+                if (!test) {
+                    alert('Test not found');
+                    return;
+                }
+                await this.generatePDFReport(test);
+            } else {
+                // Download all tests report
+                await this.generateAllTestsReport();
+            }
         } catch (error) {
             NAD.logger.error('Failed to generate report:', error);
             alert('Failed to generate report. Please try again.');
@@ -1258,6 +1257,242 @@ window.NADDashboard = {
             // printWindow.onafterprint = function() {
             //     printWindow.close();
             // };
+        };
+    },
+    
+    /**
+     * Generate comprehensive report for all tests
+     */
+    async generateAllTestsReport() {
+        const stats = this.calculateStats();
+        const completedTests = this.tests.filter(test => test.status === 'completed');
+        const activatedTests = this.tests.filter(test => test.status === 'activated');
+        const pendingTests = this.tests.filter(test => test.status === 'pending');
+        
+        const reportHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>NAD+ Complete Test Report - ${this.user.firstName} ${this.user.lastName}</title>
+                <style>
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        line-height: 1.6; 
+                        color: #333;
+                        max-width: 900px;
+                        margin: 0 auto;
+                        padding: 20px;
+                    }
+                    .header { 
+                        text-align: center; 
+                        margin-bottom: 30px;
+                        border-bottom: 2px solid #3498db;
+                        padding-bottom: 20px;
+                    }
+                    .logo { 
+                        max-height: 60px; 
+                        margin-bottom: 10px;
+                    }
+                    h1 { 
+                        color: #2c3e50; 
+                        margin: 10px 0;
+                    }
+                    .patient-info {
+                        background: #f5f5f5;
+                        padding: 20px;
+                        border-radius: 8px;
+                        margin-bottom: 30px;
+                    }
+                    .stats-summary {
+                        display: grid;
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .stat-box {
+                        text-align: center;
+                        padding: 15px;
+                        background: #f9f9f9;
+                        border-radius: 8px;
+                        border: 1px solid #ddd;
+                    }
+                    .stat-number {
+                        font-size: 2rem;
+                        font-weight: bold;
+                        color: #3498db;
+                    }
+                    .stat-label {
+                        color: #666;
+                        font-size: 0.9rem;
+                    }
+                    .section-title {
+                        color: #2c3e50;
+                        border-bottom: 1px solid #ddd;
+                        padding-bottom: 10px;
+                        margin: 30px 0 20px 0;
+                    }
+                    .test-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 30px;
+                    }
+                    .test-table th,
+                    .test-table td {
+                        padding: 12px;
+                        text-align: left;
+                        border-bottom: 1px solid #ddd;
+                    }
+                    .test-table th {
+                        background: #f5f5f5;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .status-completed { color: #27ae60; font-weight: bold; }
+                    .status-activated { color: #f39c12; font-weight: bold; }
+                    .status-pending { color: #e74c3c; font-weight: bold; }
+                    .score-highlight {
+                        background: #3498db;
+                        color: white;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                    }
+                    .footer {
+                        margin-top: 40px;
+                        text-align: center;
+                        color: #666;
+                        font-size: 12px;
+                        border-top: 1px solid #ddd;
+                        padding-top: 20px;
+                    }
+                    @media print {
+                        body { padding: 0; }
+                        .stats-summary { grid-template-columns: repeat(2, 1fr); }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="/shared/assets/logo.png" alt="NAD+ Test" class="logo">
+                    <h1>Complete NAD+ Test Report</h1>
+                </div>
+                
+                <div class="patient-info">
+                    <h3>Patient Information</h3>
+                    <p><strong>Name:</strong> ${this.user.firstName} ${this.user.lastName}</p>
+                    <p><strong>Email:</strong> ${this.user.email}</p>
+                    <p><strong>Report Generated:</strong> ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+                    <p><strong>Total Tests:</strong> ${this.tests.length}</p>
+                </div>
+                
+                <div class="stats-summary">
+                    <div class="stat-box">
+                        <div class="stat-number">${stats.totalTests}</div>
+                        <div class="stat-label">Total Tests</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${stats.completedTests}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${stats.activatedTests}</div>
+                        <div class="stat-label">Activated</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${stats.avgScore > 0 ? stats.avgScore : '-'}</div>
+                        <div class="stat-label">Avg Score</div>
+                    </div>
+                </div>
+                
+                ${completedTests.length > 0 ? `
+                <h2 class="section-title">Completed Tests (${completedTests.length})</h2>
+                <table class="test-table">
+                    <thead>
+                        <tr>
+                            <th>Test ID</th>
+                            <th>Score</th>
+                            <th>Created</th>
+                            <th>Activated</th>
+                            <th>Completed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${completedTests.map(test => `
+                            <tr>
+                                <td>${test.test_id}</td>
+                                <td>${test.score ? `<span class="score-highlight">${test.score}</span>` : 'N/A'}</td>
+                                <td>${new Date(test.created_date).toLocaleDateString()}</td>
+                                <td>${test.activated_date ? new Date(test.activated_date).toLocaleDateString() : '-'}</td>
+                                <td>${test.score_date ? new Date(test.score_date).toLocaleDateString() : '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                ` : ''}
+                
+                ${activatedTests.length > 0 ? `
+                <h2 class="section-title">Activated Tests (${activatedTests.length})</h2>
+                <table class="test-table">
+                    <thead>
+                        <tr>
+                            <th>Test ID</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Activated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${activatedTests.map(test => `
+                            <tr>
+                                <td>${test.test_id}</td>
+                                <td><span class="status-activated">Activated</span></td>
+                                <td>${new Date(test.created_date).toLocaleDateString()}</td>
+                                <td>${test.activated_date ? new Date(test.activated_date).toLocaleDateString() : '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                ` : ''}
+                
+                ${this.tests.filter(test => test.status === 'pending').length > 0 ? `
+                <h2 class="section-title">Pending Tests</h2>
+                <table class="test-table">
+                    <thead>
+                        <tr>
+                            <th>Test ID</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${this.tests.filter(test => test.status === 'pending').map(test => `
+                            <tr>
+                                <td>${test.test_id}</td>
+                                <td><span class="status-pending">Pending</span></td>
+                                <td>${new Date(test.created_date).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                ` : ''}
+                
+                <div class="footer">
+                    <p>This comprehensive report includes all NAD+ tests for ${this.user.firstName} ${this.user.lastName}</p>
+                    <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+                    <p>NAD+ Test &copy; ${new Date().getFullYear()} - All rights reserved</p>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        // Open in new window and trigger print dialog
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(reportHTML);
+        printWindow.document.close();
+        
+        // Wait for content to load, then print
+        printWindow.onload = function() {
+            printWindow.print();
         };
     },
     
