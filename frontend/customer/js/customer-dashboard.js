@@ -27,6 +27,7 @@ window.NADDashboard = {
      */
     async init() {
         try {
+            console.log('Starting dashboard initialization...');
             NAD.logger.info('Initializing NAD Customer Dashboard...');
             
             // Show loading screen
@@ -34,14 +35,18 @@ window.NADDashboard = {
             
             // Check authentication
             const authResult = await this.checkAuthentication();
+            console.log('Auth result:', authResult);
             if (!authResult.success) {
+                console.log('Authentication failed, showing auth error');
                 this.showAuthError();
                 return;
             }
             
+            console.log('Authentication succeeded, loading user data...');
             // Load user data
             await this.loadUserData();
             
+            console.log('User data loaded, loading dashboard data...');
             // Load dashboard data
             await this.loadDashboardData();
             
@@ -58,6 +63,7 @@ window.NADDashboard = {
             NAD.logger.info('Dashboard initialized successfully');
             
         } catch (error) {
+            console.log('Dashboard initialization error:', error);
             NAD.logger.error('Dashboard initialization failed:', error);
             this.showError('Failed to initialize dashboard. Please refresh the page.');
         }
