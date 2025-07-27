@@ -207,18 +207,13 @@ window.NADDashboard = {
                     score: 85,
                     created_date: '2025-07-20',
                     activated_date: '2025-07-21',
-                    updated_date: '2025-07-25'
+                    score_date: '2025-07-25'
                 },
                 {
                     test_id: '2025-07-095-4A7B2C',
                     status: 'activated',
                     created_date: '2025-07-15',
                     activated_date: '2025-07-16'
-                },
-                {
-                    test_id: '2025-07-082-9X8Y7Z',
-                    status: 'pending',
-                    created_date: '2025-07-10'
                 }
             ];
             NAD.logger.info('📊 Mock data loaded: ', this.tests.length, 'tests');
@@ -245,7 +240,6 @@ window.NADDashboard = {
     calculateStats() {
         const totalTests = this.tests.length;
         const completedTests = this.tests.filter(test => test.status === 'completed').length;
-        const pendingTests = this.tests.filter(test => test.status === 'pending').length;
         const activatedTests = this.tests.filter(test => test.status === 'activated').length;
         
         // Calculate average score
@@ -278,7 +272,6 @@ window.NADDashboard = {
         return {
             totalTests,
             completedTests,
-            pendingTests,
             activatedTests,
             avgScore
         };
@@ -1267,7 +1260,6 @@ window.NADDashboard = {
         const stats = this.calculateStats();
         const completedTests = this.tests.filter(test => test.status === 'completed');
         const activatedTests = this.tests.filter(test => test.status === 'activated');
-        const pendingTests = this.tests.filter(test => test.status === 'pending');
         
         const reportHTML = `
             <!DOCTYPE html>
@@ -1396,7 +1388,7 @@ window.NADDashboard = {
                     </div>
                     <div class="stat-box">
                         <div class="stat-number">${stats.activatedTests}</div>
-                        <div class="stat-label">Activated</div>
+                        <div class="stat-label">In Lab</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-number">${stats.avgScore > 0 ? stats.avgScore : '-'}</div>
@@ -1431,7 +1423,7 @@ window.NADDashboard = {
                 ` : ''}
                 
                 ${activatedTests.length > 0 ? `
-                <h2 class="section-title">Activated Tests (${activatedTests.length})</h2>
+                <h2 class="section-title">Tests in Lab Processing (${activatedTests.length})</h2>
                 <table class="test-table">
                     <thead>
                         <tr>
@@ -1445,31 +1437,9 @@ window.NADDashboard = {
                         ${activatedTests.map(test => `
                             <tr>
                                 <td>${test.test_id}</td>
-                                <td><span class="status-activated">Activated</span></td>
+                                <td><span class="status-activated">In Lab</span></td>
                                 <td>${new Date(test.created_date).toLocaleDateString()}</td>
                                 <td>${test.activated_date ? new Date(test.activated_date).toLocaleDateString() : '-'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                ` : ''}
-                
-                ${this.tests.filter(test => test.status === 'pending').length > 0 ? `
-                <h2 class="section-title">Pending Tests</h2>
-                <table class="test-table">
-                    <thead>
-                        <tr>
-                            <th>Test ID</th>
-                            <th>Status</th>
-                            <th>Created</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${this.tests.filter(test => test.status === 'pending').map(test => `
-                            <tr>
-                                <td>${test.test_id}</td>
-                                <td><span class="status-pending">Pending</span></td>
-                                <td>${new Date(test.created_date).toLocaleDateString()}</td>
                             </tr>
                         `).join('')}
                     </tbody>
