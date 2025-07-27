@@ -33,6 +33,16 @@ window.NADDashboard = {
             // Show loading screen
             this.showLoading();
             
+            // Check if we need to wait for bypass validation
+            const urlParams = new URLSearchParams(window.location.search);
+            const bypassParam = urlParams.get('bypass');
+            const bypassPending = sessionStorage.getItem('nad_bypass_pending');
+            
+            if (bypassParam && bypassPending === 'true') {
+                console.log('Bypass validation pending, waiting for completion...');
+                await this.waitForBypassValidation();
+            }
+            
             // Check authentication
             const authResult = await this.checkAuthentication();
             console.log('Auth result:', authResult);
@@ -67,6 +77,40 @@ window.NADDashboard = {
             NAD.logger.error('Dashboard initialization failed:', error);
             this.showError('Failed to initialize dashboard. Please refresh the page.');
         }
+    },
+
+    /**
+     * Wait for bypass validation to complete
+     */
+    async waitForBypassValidation() {
+        return new Promise((resolve) => {
+            const checkPending = () => {
+                const pending = sessionStorage.getItem('nad_bypass_pending');
+                if (!pending) {
+                    console.log('Bypass validation completed');
+                    resolve();
+                    return;
+                }
+                
+                // Check again in 100ms
+                setTimeout(checkPending, 100);
+            };
+            
+            // Also listen for the custom event
+            window.addEventListener('nadBypassValidated', () => {
+                console.log('Received bypass validation event');
+                resolve();
+            }, { once: true });
+            
+            // Start checking
+            checkPending();
+            
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                console.log('Bypass validation timeout');
+                resolve();
+            }, 10000);
+        });
     },
 
     /**
@@ -129,21 +173,11 @@ window.NADDashboard = {
             
             if (authType === 'bypass' && storedUser) {
                 NAD.logger.debug('Existing bypass session found');
-                // Verify bypass session is still valid
-                const response = await NAD.API.request('/api/customer/bypass-session', {
-                    method: 'GET'
-                });
-                
-                if (response.success) {
-                    return { 
-                        success: true, 
-                        user: JSON.parse(storedUser),
-                        type: 'bypass'
-                    };
-                }
-                // Clear invalid session
-                sessionStorage.removeItem('nad_auth_type');
-                sessionStorage.removeItem('nad_user_data');
+                return { 
+                    success: true, 
+                    user: JSON.parse(storedUser),
+                    type: 'bypass'
+                };
             }
             
             const storedToken = sessionStorage.getItem('nad_auth_token');

@@ -34,6 +34,10 @@
         
         // Validate bypass parameter with server
         console.log('Bypass validation: sending request to', validationUrl);
+        
+        // Set a flag that dashboard should wait for bypass validation
+        sessionStorage.setItem('nad_bypass_pending', 'true');
+        
         fetch(validationUrl, {
             method: 'GET',
             redirect: 'manual'
@@ -54,6 +58,12 @@
                     last_name: lastName || 'Doe'
                 }));
                 console.log('Bypass sessionStorage set:', sessionStorage.getItem('nad_bypass_validated'));
+                
+                // Clear pending flag and trigger dashboard init if it's waiting
+                sessionStorage.removeItem('nad_bypass_pending');
+                
+                // Dispatch event to signal bypass validation is complete
+                window.dispatchEvent(new CustomEvent('nadBypassValidated'));
             }
         })
         .catch(error => {
