@@ -149,8 +149,11 @@ window.NADDashboard = {
      */
     async loadDashboardData() {
         try {
+            // Load tests first, then stats and activity that depend on tests
+            await this.loadCustomerTests();
+            
+            // Now load stats and activity in parallel
             await Promise.all([
-                this.loadCustomerTests(),
                 this.loadCustomerStats(),
                 this.loadRecentActivity()
             ]);
@@ -178,25 +181,25 @@ window.NADDashboard = {
                 }
             });
             
-            if (response.success) {
+            if (response.success && response.data.tests && response.data.tests.length > 0) {
                 NAD.logger.info('API response:', response);
-                this.tests = response.data.tests || [];
+                this.tests = response.data.tests;
                 NAD.logger.info('Tests loaded from API:', this.tests.length, 'tests');
                 this.updateTestsDisplay();
                 return;
             } else {
-                NAD.logger.warn('No tests found for customer');
+                NAD.logger.warn('No tests found for customer, will use fallback if available');
                 this.tests = [];
             }
             
         } catch (error) {
             NAD.logger.error('Failed to load customer tests:', error);
+            this.tests = [];
         }
         
-        // Always check for mock data fallback when API fails or returns no data
-        NAD.logger.debug('Checking for mock data fallback. User email:', this.user?.email);
-        if (this.user && this.user.email === 'john.doe@example.com') {
-            NAD.logger.info('🎭 Using mock data for John Doe');
+        // Only use mock data if we have no real data
+        if (this.tests.length === 0 && this.user && this.user.email === 'john.doe@example.com') {
+            NAD.logger.info('🎭 No real data available, using mock data for John Doe');
             this.tests = [
                 {
                     test_id: '2025-07-108-66LPBA',
@@ -220,11 +223,6 @@ window.NADDashboard = {
             ];
             NAD.logger.info('📊 Mock data loaded: ', this.tests.length, 'tests');
             this.updateTestsDisplay();
-            // Recalculate and update statistics with mock data
-            this.loadCustomerStats();
-        } else {
-            NAD.logger.warn('❌ No mock data available for user:', this.user?.email || 'unknown');
-            this.tests = this.tests || [];
         }
     },
 
@@ -575,9 +573,14 @@ window.NADDashboard = {
      */
     async refreshDashboardData() {
         try {
-            await this.loadCustomerTests();
-            await this.loadCustomerStats();
-            this.updateTrendChart();
+            NAD.logger.debug('Refreshing dashboard data...');
+            // Only reload if we're on the dashboard section
+            if (this.currentSection === 'dashboard') {
+                await this.loadCustomerTests();
+                await this.loadCustomerStats();
+                await this.loadRecentActivity();
+                this.updateTrendChart();
+            }
         } catch (error) {
             NAD.logger.error('Failed to refresh dashboard data:', error);
         }
