@@ -432,11 +432,6 @@ window.NADDashboard = {
         let buttons = '';
         
         switch (test.status) {
-            case 'pending':
-                buttons = `<button class="btn-primary" onclick="NADDashboard.activateTest('${test.test_id}')">
-                    <i class="fas fa-play"></i> Activate
-                </button>`;
-                break;
             case 'activated':
                 buttons = `<button class="btn-secondary" onclick="NADDashboard.viewTestDetails('${test.test_id}')">
                     <i class="fas fa-eye"></i> View
@@ -465,10 +460,8 @@ window.NADDashboard = {
             <div class="empty-state">
                 <i class="fas fa-vial"></i>
                 <h3>No Tests Yet</h3>
-                <p>Get started by activating your first NAD+ test kit.</p>
-                <button class="btn-primary" onclick="NADDashboard.activateNewTest()">
-                    <i class="fas fa-plus"></i> Activate Test Kit
-                </button>
+                <p>To activate your test kits, please visit your Shopify account where you can enter your test kit ID.</p>
+                <p><small>Once activated, your tests will appear here for viewing and downloading results.</small></p>
             </div>
         `;
     },
@@ -1085,35 +1078,6 @@ window.NADDashboard = {
     /**
      * Action handlers
      */
-    async activateNewTest() {
-        const testId = prompt('Enter your test kit ID:');
-        if (testId) {
-            await this.activateTest(testId);
-        }
-    },
-
-    async activateTest(testId) {
-        try {
-            const response = await NAD.API.request('/api/customer/activate', {
-                method: 'POST',
-                data: {
-                    testId: testId,
-                    email: this.user.email,
-                    customerId: this.user.customerId
-                }
-            });
-            
-            if (response.success) {
-                alert('Test activated successfully!');
-                await this.refreshDashboardData();
-            } else {
-                alert('Failed to activate test: ' + (response.error || 'Unknown error'));
-            }
-        } catch (error) {
-            NAD.logger.error('Test activation failed:', error);
-            alert('Failed to activate test. Please try again.');
-        }
-    },
 
     viewAllTests() {
         this.showSection('tests');

@@ -152,11 +152,7 @@
 
                     <!-- Quick Actions -->
                     <div class="quick-actions">
-                        <button class="action-btn primary" onclick="NADDashboard.activateNewTest()">
-                            <i class="fas fa-plus"></i>
-                            Activate New Test
-                        </button>
-                        <button class="action-btn secondary" onclick="NADDashboard.viewAllTests()">
+                        <button class="action-btn primary" onclick="NADDashboard.viewAllTests()">
                             <i class="fas fa-list"></i>
                             View All Tests
                         </button>
@@ -204,10 +200,7 @@
                 <section id="section-tests" class="content-section">
                     <div class="section-header">
                         <h2>My Tests</h2>
-                        <button class="btn-primary" onclick="NADDashboard.activateNewTest()">
-                            <i class="fas fa-plus"></i>
-                            Activate New Test
-                        </button>
+                        <p class="section-description">To activate new test kits, please visit your Shopify account</p>
                     </div>
 
                     <!-- Test Filters -->
@@ -216,7 +209,7 @@
                             <label>Status:</label>
                             <select id="test-status-filter" onchange="NADDashboard.filterTests()">
                                 <option value="">All</option>
-                                <option value="activated">Activated (In Lab)</option>
+                                <option value="activated">In Lab</option>
                                 <option value="completed">Completed</option>
                             </select>
                         </div>
