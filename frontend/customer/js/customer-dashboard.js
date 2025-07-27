@@ -68,8 +68,25 @@ window.NADDashboard = {
      */
     async checkAuthentication() {
         try {
-            // Check for Shopify portal token in URL
+            // Check for bypass authentication first
             const urlParams = new URLSearchParams(window.location.search);
+            const bypassParam = urlParams.get('bypass');
+            
+            if (bypassParam) {
+                NAD.logger.debug('Bypass parameter found, checking session...');
+                const response = await NAD.API.request('/api/customer/bypass-session', {
+                    method: 'GET'
+                });
+                
+                if (response.success) {
+                    // Store bypass authentication
+                    sessionStorage.setItem('nad_auth_type', 'bypass');
+                    sessionStorage.setItem('nad_user_data', JSON.stringify(response.user));
+                    return { success: true, user: response.user, type: 'bypass' };
+                }
+            }
+            
+            // Check for Shopify portal token in URL
             const token = urlParams.get('t');
             
             if (token) {
@@ -84,21 +101,43 @@ window.NADDashboard = {
                 if (response.success) {
                     // Store authentication
                     sessionStorage.setItem('nad_auth_token', token);
+                    sessionStorage.setItem('nad_auth_type', 'shopify');
                     sessionStorage.setItem('nad_user_data', JSON.stringify(response.data));
                     return { success: true, user: response.data };
                 }
             }
             
             // Check existing session
-            const storedToken = sessionStorage.getItem('nad_auth_token');
+            const authType = sessionStorage.getItem('nad_auth_type');
             const storedUser = sessionStorage.getItem('nad_user_data');
             
-            if (storedToken && storedUser) {
-                NAD.logger.debug('Existing session found');
+            if (authType === 'bypass' && storedUser) {
+                NAD.logger.debug('Existing bypass session found');
+                // Verify bypass session is still valid
+                const response = await NAD.API.request('/api/customer/bypass-session', {
+                    method: 'GET'
+                });
+                
+                if (response.success) {
+                    return { 
+                        success: true, 
+                        user: JSON.parse(storedUser),
+                        type: 'bypass'
+                    };
+                }
+                // Clear invalid session
+                sessionStorage.removeItem('nad_auth_type');
+                sessionStorage.removeItem('nad_user_data');
+            }
+            
+            const storedToken = sessionStorage.getItem('nad_auth_token');
+            if (storedToken && storedUser && authType === 'shopify') {
+                NAD.logger.debug('Existing Shopify session found');
                 return { 
                     success: true, 
                     user: JSON.parse(storedUser),
-                    token: storedToken 
+                    token: storedToken,
+                    type: 'shopify'
                 };
             }
             

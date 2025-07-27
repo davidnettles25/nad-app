@@ -278,6 +278,27 @@ app.get('/api/admin/validate-bypass', (req, res) => {
     }
 });
 
+// Check bypass session endpoint for frontend authentication
+app.get('/api/customer/bypass-session', (req, res) => {
+    // Check if this request has bypass authentication
+    if (req.backdoorAuth && req.shopifyAuth) {
+        const session = req.shopifyAuth;
+        res.json({
+            success: true,
+            authenticated: true,
+            user: session.user,
+            session_type: 'bypass',
+            timestamp: session.timestamp
+        });
+    } else {
+        res.status(401).json({
+            success: false,
+            authenticated: false,
+            error: 'No bypass session found'
+        });
+    }
+});
+
 // Serve protected HTML files through Node.js to ensure bypass middleware runs
 app.get('/admin.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/admin.html'));
