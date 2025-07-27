@@ -85,7 +85,12 @@ Make sure you've activated your test kit through your mynadtest.com account. If 
 
 ### How do I contact customer support?
 
-You can contact our customer support team through the "Contact Support" option in the Help section of this dashboard, or by visiting mynadtest.com. Our support team is available to help with technical issues, test questions, and account problems.
+You can contact our customer support team by:
+- Clicking "Contact Us" in the Help section of this dashboard (opens email to support@mynadtest.com)
+- Emailing us directly at **support@mynadtest.com**
+- Visiting mynadtest.com
+
+Our support team is available to help with technical issues, test questions, and account problems.
 
 ## ❓ Still Have Questions?
 
