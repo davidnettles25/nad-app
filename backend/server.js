@@ -4251,14 +4251,21 @@ app.post('/api/customer/tests', async (req, res) => {
         `;
         const params = [];
         
-        if (email) {
-            query += ` AND ti.customer_id = ?`;
-            params.push(email);
-        }
-        
-        if (customerId) {
-            query += ` AND ti.shopify_customer_id = ?`;
-            params.push(customerId);
+        if (email && customerId && email === customerId) {
+            // If email and customerId are the same, use OR logic to search both fields
+            query += ` AND (ti.customer_id = ? OR ti.shopify_customer_id = ?)`;
+            params.push(email, email);
+        } else {
+            // If they're different, use AND logic
+            if (email) {
+                query += ` AND ti.customer_id = ?`;
+                params.push(email);
+            }
+            
+            if (customerId) {
+                query += ` AND ti.shopify_customer_id = ?`;
+                params.push(customerId);
+            }
         }
         
         query += ` ORDER BY ti.created_date DESC`;
