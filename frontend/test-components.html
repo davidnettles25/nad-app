@@ -212,13 +212,13 @@ Starting component system initialization...
                 <p>Tests navigation to main NAD interfaces.</p>
                 <div id="interface-links-status">
                     <div><span class="status-indicator status-info"></span>Admin: <span id="admin-status">Testing...</span></div>
-                    <div><span class="status-indicator status-info"></span>Portal: <span id="portal-status">Testing...</span></div>
+                    <div><span class="status-indicator status-info"></span>Dashboard: <span id="dashboard-status">Testing...</span></div>
                     <div><span class="status-indicator status-info"></span>Lab: <span id="lab-status">Testing...</span></div>
                     <div><span class="status-indicator status-info"></span>Test: <span id="test-interface-status">Testing...</span></div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
                     <a href="/admin.html" class="btn" target="_blank">🔧 Admin Dashboard</a>
-                    <a href="/customer-portal.html" class="btn" target="_blank">👤 Customer Portal</a>
+                    <a href="/customer-dashboard.html" class="btn" target="_blank">👤 Customer Dashboard</a>
                     <a href="/lab-interface.html" class="btn" target="_blank">🔬 Lab Interface</a>
                     <a href="/test-interface.html" class="btn" target="_blank">🧪 Test Interface</a>
                 </div>
@@ -705,7 +705,7 @@ Starting component system initialization...
             
             const interfaces = [
                 { url: '/admin.html', statusId: 'admin-status', name: 'Admin' },
-                { url: '/customer-portal.html', statusId: 'portal-status', name: 'Portal' },
+                { url: '/customer-dashboard.html', statusId: 'dashboard-status', name: 'Dashboard' },
                 { url: '/lab-interface.html', statusId: 'lab-status', name: 'Lab' },
                 { url: '/test-interface.html', statusId: 'test-interface-status', name: 'Test' }
             ];
