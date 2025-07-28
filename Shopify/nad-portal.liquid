@@ -231,12 +231,12 @@
       const metafieldForm = document.getElementById('metafield-form');
       const metafieldFrame = document.getElementById('metafield-frame');
 
-      // Customer data from Shopify
+      // Customer data from Shopify (properly escaped)
       const customerData = {
-        id: '{{ customer.id }}',
-        email: '{{ customer.email }}',
-        firstName: '{{ customer.first_name }}',
-        lastName: '{{ customer.last_name }}'
+        id: {{ customer.id | json }},
+        email: {{ customer.email | json }},
+        firstName: {{ customer.first_name | json }},
+        lastName: {{ customer.last_name | json }}
       };
 
       console.log('🏪 Metafield Portal initialized for:', customerData.email);
@@ -469,8 +469,9 @@
         console.log('🔍 Available forms:', document.querySelectorAll('form').length);
         console.log('🔍 Shopify object:', window.Shopify);
         
-        // Last resort - use liquid template value
-        return '{{ form.authenticity_token }}';
+        // Last resort - use liquid template value (properly escaped)
+        const liquidToken = {{ form.authenticity_token | json }};
+        return liquidToken || '';
       }
 
       function showLoadingState() {
