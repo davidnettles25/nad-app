@@ -116,8 +116,8 @@ function renderBatchCards() {
                 <button onclick="viewBatchDetails('${batch.batch_id}')" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                     👁️ Details
                 </button>
-                <button onclick="downloadBatchCSV('${batch.batch_id}')" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-                    📊 CSV
+                <button onclick="downloadBatchXLSX('${batch.batch_id}')" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    📊 XLSX
                 </button>
             </div>
         </div>
@@ -185,8 +185,8 @@ function createBatchCard(batch) {
                 <button class="btn secondary" onclick="viewBatchDetails('${batch.batch_id}')" style="flex: 1; padding: 6px 12px; font-size: 13px;">
                     👁️ Details
                 </button>
-                <button class="btn success" onclick="downloadBatchCSV('${batch.batch_id}')" style="flex: 1; padding: 6px 12px; font-size: 13px; background: #28a745; color: white; border: none; border-radius: 4px;">
-                    📊 CSV
+                <button class="btn success" onclick="downloadBatchXLSX('${batch.batch_id}')" style="flex: 1; padding: 6px 12px; font-size: 13px; background: #28a745; color: white; border: none; border-radius: 4px;">
+                    📊 XLSX
                 </button>
             </div>
         </div>
@@ -799,11 +799,11 @@ function closePrintHistoryModal() {
 }
 
 // CSV Download functionality
-async function downloadBatchCSV(batchId) {
+async function downloadBatchXLSX(batchId) {
     try {
         // Show loading alert
         if (typeof showAlert === 'function') {
-            showAlert('📊 Generating CSV file...', 'info');
+            showAlert('📊 Generating XLSX file...', 'info');
         }
         
         // Fetch batch details from API
@@ -816,11 +816,13 @@ async function downloadBatchCSV(batchId) {
         
         const batchData = result.data;
         
-        // Generate CSV content
-        const csvContent = generateBatchCSV(batchData);
+        // Generate XLSX content
+        const xlsxBuffer = generateBatchXLSX(batchData);
         
-        // Create and download CSV file
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        // Create and download XLSX file
+        const blob = new Blob([xlsxBuffer], { 
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+        });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -828,33 +830,49 @@ async function downloadBatchCSV(batchId) {
         // Generate filename with batch ID and current date
         const currentDate = new Date().toISOString().split('T')[0];
         const batchShortId = batchId.split('-').pop();
-        a.download = `NAD_Batch_${batchShortId}_${currentDate}.csv`;
+        a.download = `NAD_Batch_${batchShortId}_${currentDate}.xlsx`;
         
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
-        // Mark batch as fully printed after successful CSV download
-        await markBatchAsFullyPrinted(batchId);
+        // Mark batch as fully printed after successful XLSX download
+        await markBatchAsFullyPrinted(batchId, 'xlsx_export');
         
         if (typeof showAlert === 'function') {
-            showAlert('✅ CSV file downloaded and batch marked as fully printed!', 'success');
+            showAlert('✅ XLSX file downloaded and batch marked as fully printed!', 'success');
         }
         
     } catch (error) {
         if (typeof showAlert === 'function') {
-            showAlert(`❌ Failed to download CSV: ${error.message}`, 'error');
+            showAlert(`❌ Failed to download XLSX: ${error.message}`, 'error');
         }
     }
 }
 
-function generateBatchCSV(batchData) {
-    // Only return test IDs, one per line, no headers
-    return batchData.test_ids.map(test => test.test_id).join('\n');
+function generateBatchXLSX(batchData) {
+    // Create worksheet data with headers
+    const worksheetData = [
+        ['Test ID'], // Header row
+        ...batchData.test_ids.map(test => [test.test_id]) // Data rows
+    ];
+    
+    // Create worksheet from array of arrays
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    // Set column width for better readability
+    worksheet['!cols'] = [{ width: 20 }];
+    
+    // Create workbook and add worksheet
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Test IDs");
+    
+    // Generate XLSX buffer
+    return XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
 }
 
-async function markBatchAsFullyPrinted(batchId) {
+async function markBatchAsFullyPrinted(batchId, exportFormat = 'xlsx_export') {
     try {
         // Use the existing print-batch endpoint to mark the batch as printed
         const response = await fetch(`${API_BASE}/api/admin/print-batch`, {
@@ -864,9 +882,9 @@ async function markBatchAsFullyPrinted(batchId) {
             },
             body: JSON.stringify({
                 batch_id: batchId,
-                print_format: 'csv_export',
-                printer_name: 'CSV Export',
-                notes: 'Batch exported to CSV file'
+                print_format: exportFormat,
+                printer_name: 'XLSX Export',
+                notes: 'Batch exported to XLSX file'
             })
         });
         
@@ -884,7 +902,7 @@ async function markBatchAsFullyPrinted(batchId) {
     } catch (error) {
         console.error('Failed to mark batch as fully printed:', error);
         if (typeof showAlert === 'function') {
-            showAlert(`⚠️ CSV downloaded but failed to update batch status: ${error.message}`, 'warning');
+            showAlert(`⚠️ XLSX downloaded but failed to update batch status: ${error.message}`, 'warning');
         }
     }
 }

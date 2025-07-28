@@ -3329,6 +3329,16 @@ app.post('/api/admin/print-batch', async (req, res) => {
                 };
                 break;
                 
+            case 'xlsx_export':
+                printData = {
+                    print_format: 'xlsx_export',
+                    batch_id: batch_id,
+                    export_title: `XLSX Export - ${batchShortId}`,
+                    test_count: tests.length,
+                    test_ids: tests.map(t => t.test_id)
+                };
+                break;
+                
             default:
                 return res.status(400).json({
                     success: false,
