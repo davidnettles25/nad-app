@@ -60,8 +60,11 @@
   <!-- Hidden iframe for metafield submission -->
   <iframe id="metafield-frame" name="metafield-frame" style="display: none;"></iframe>
   
-  <!-- Hidden form for metafield updates -->
+  <!-- Debug: Check if customer is available -->
   {% if customer %}
+    <script>console.log('🔍 Customer available in context:', {{ customer.id }});</script>
+    
+    <!-- Customer form for metafield updates -->
     <div id="metafield-form" style="display: none;">
       {% form 'customer' %}
         <input type="hidden" name="customer[metafields][custom][test_kit_activation]" id="metafield-data">
@@ -267,6 +270,15 @@
       const validationDiv = document.getElementById('format-validation');
       const metafieldContainer = document.getElementById('metafield-form');
       const metafieldForm = metafieldContainer ? metafieldContainer.querySelector('form') || metafieldContainer : null;
+      
+      console.log('🔍 Metafield container found:', !!metafieldContainer);
+      console.log('🔍 Metafield form found:', !!metafieldForm);
+      if (metafieldForm) {
+        console.log('🔍 Form tag name:', metafieldForm.tagName);
+        console.log('🔍 Form action:', metafieldForm.action);
+        console.log('🔍 Form method:', metafieldForm.method);
+        console.log('🔍 Form inputs:', metafieldForm.querySelectorAll('input').length);
+      }
       const metafieldFrame = document.getElementById('metafield-frame');
 
       console.log('🏪 Metafield Portal initialized for:', customerData.email);
