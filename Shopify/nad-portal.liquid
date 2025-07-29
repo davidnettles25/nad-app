@@ -474,33 +474,30 @@
         
         // Use direct API call instead of form submission
         console.log('🚀 Submitting metafield update via API...');
-        submitMetafieldUpdate(sessionId, testKitId);
+        submitTestKitActivation(sessionId, testKitId);
       }
 
-      // Direct API call to NAD backend for test kit activation
-      async function submitMetafieldUpdate(sessionId, testKitId) {
+      // Direct API approach - bridge to existing webhook system
+      async function submitTestKitActivation(sessionId, testKitId) {
         try {
-          console.log('🔄 Calling NAD backend directly for test kit activation...');
+          console.log('🔄 Direct API approach - creating session and starting polling...');
+          console.log('📋 Session ID:', sessionId);
+          console.log('📋 Test Kit ID:', testKitId);
           
-          const response = await fetch('https://mynadtest.info/shopify/check-portal-access', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          });
+          // Create the metafield data that would trigger the webhook
+          const metafieldData = {
+            testKitId: testKitId,
+            timestamp: Date.now(),
+            sessionId: sessionId,
+            requestType: 'activation'
+          };
           
-          if (response.ok) {
-            console.log('✅ Backend accessible, starting activation process...');
-            
-            // Start polling immediately - the backend will handle the test kit activation
-            // through the existing webhook system when Shopify updates are processed
-            startPolling(sessionId);
-          } else {
-            throw new Error(`Backend not accessible: ${response.status}`);
-          }
+          // Call the original metafield submission process
+          submitMetafieldUpdate(metafieldData, sessionId);
+          
         } catch (error) {
-          console.error('❌ Backend call failed:', error);
-          showPortalError('Unable to connect to activation service. Please try again.');
+          console.error('❌ Metafield update failed:', error);
+          showPortalError('Failed to activate test kit. Please try again.');
         }
       }
 
