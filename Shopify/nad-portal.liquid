@@ -60,11 +60,22 @@
   <!-- Hidden iframe for metafield submission -->
   <iframe id="metafield-frame" name="metafield-frame" style="display: none;"></iframe>
   
-  <!-- Hidden form for metafield updates using Shopify form system -->
-  {% form 'customer', customer, id: 'metafield-form', target: 'metafield-frame', style: 'display: none;' %}
-    <input type="hidden" name="customer[metafields][custom][test_kit_activation]" id="metafield-data">
-    <input type="hidden" name="return_to" value="/pages/nad-portal">
-  {% endform %}
+  <!-- Hidden form for metafield updates -->
+  {% if customer %}
+    {% form 'customer', customer, id: 'metafield-form', target: 'metafield-frame', style: 'display: none;' %}
+      <input type="hidden" name="customer[metafields][custom][test_kit_activation]" id="metafield-data">
+      <input type="hidden" name="return_to" value="/pages/nad-portal">
+    {% endform %}
+  {% else %}
+    <!-- Fallback form when customer object is not available -->
+    <form id="metafield-form" method="post" action="/account" target="metafield-frame" style="display: none;">
+      <input type="hidden" name="form_type" value="customer">
+      <input type="hidden" name="utf8" value="✓">
+      <input type="hidden" name="authenticity_token" value="" class="auth-token-placeholder">
+      <input type="hidden" name="customer[metafields][custom][test_kit_activation]" id="metafield-data">
+      <input type="hidden" name="return_to" value="/pages/nad-portal">
+    </form>
+  {% endif %}
 
   <style>
     .nad-portal-container {
@@ -221,6 +232,20 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Try to extract CSRF token from Shopify checkout form if it exists
+      const checkoutForm = document.querySelector('form[action="/cart"]');
+      if (checkoutForm) {
+        const checkoutToken = checkoutForm.querySelector('input[name="authenticity_token"]');
+        if (checkoutToken && checkoutToken.value) {
+          // Create meta tag for CSRF token
+          const meta = document.createElement('meta');
+          meta.name = 'csrf-token';
+          meta.content = checkoutToken.value;
+          document.head.appendChild(meta);
+          console.log('✅ Created CSRF meta tag from checkout form');
+        }
+      }
+      
       // Get customer data safely from DOM attributes
       const portalContainer = document.querySelector('.nad-portal-container');
       const customerData = {
@@ -247,9 +272,21 @@
       const authToken = getAuthenticityToken();
       console.log('🔑 Using authenticity token:', authToken ? 'Found (' + authToken.length + ' chars)' : 'Missing');
       
-      // Shopify form tags handle authenticity tokens automatically
-      // No need to manually set tokens when using {% form %} helper
-      console.log('✅ Using Shopify form system - CSRF protection handled automatically');
+      // Handle authenticity token
+      if (!authToken) {
+        console.error('❌ CRITICAL: No authenticity token found! Form submission will fail.');
+        showError('Authentication token missing. Please refresh the page and try again.');
+        return;
+      }
+      
+      // Set token in form if we have a placeholder
+      const tokenInput = metafieldForm.querySelector('input[name="authenticity_token"]');
+      if (tokenInput) {
+        tokenInput.value = authToken;
+        console.log('✅ Set authenticity token in form');
+      } else {
+        console.log('✅ Using Shopify form system - CSRF protection handled automatically');
+      }
 
       // Real-time test ID validation
       if (testKitInput) {
@@ -517,9 +554,30 @@
           return token;
         }
         
+        // Try to extract from page scripts or other forms
+        const scripts = document.querySelectorAll('script');
+        for (const script of scripts) {
+          const match = script.textContent.match(/authenticity_token["\s]*:["\s]*"([^"]+)"/);
+          if (match && match[1]) {
+            console.log('🔑 Found authenticity token in script:', match[1].substring(0, 10) + '...');
+            return match[1];
+          }
+        }
+        
+        // Check for token in any customer account forms
+        const accountForms = document.querySelectorAll('form[action*="/account"]');
+        for (const form of accountForms) {
+          const tokenInput = form.querySelector('input[name="authenticity_token"]');
+          if (tokenInput && tokenInput.value) {
+            console.log('🔑 Found authenticity token in account form:', tokenInput.value.substring(0, 10) + '...');
+            return tokenInput.value;
+          }
+        }
+        
         console.error('❌ Could not find valid authenticity token anywhere!');
         console.log('🔍 Available meta tags with csrf:', document.querySelectorAll('meta[name="csrf-token"]'));
         console.log('🔍 Available auth inputs:', document.querySelectorAll('input[name="authenticity_token"]'));
+        console.log('🔍 Available forms:', document.querySelectorAll('form'));
         console.log('🔍 Shopify object:', window.Shopify);
         
         return '';
