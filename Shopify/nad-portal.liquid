@@ -62,10 +62,12 @@
   
   <!-- Hidden form for metafield updates -->
   {% if customer %}
-    {% form 'customer', customer, id: 'metafield-form', target: 'metafield-frame', style: 'display: none;' %}
-      <input type="hidden" name="customer[metafields][custom][test_kit_activation]" id="metafield-data">
-      <input type="hidden" name="return_to" value="/pages/nad-portal">
-    {% endform %}
+    <div id="metafield-form" style="display: none;">
+      {% form 'customer' %}
+        <input type="hidden" name="customer[metafields][custom][test_kit_activation]" id="metafield-data">
+        <input type="hidden" name="return_to" value="/pages/nad-portal">
+      {% endform %}
+    </div>
   {% else %}
     <!-- Fallback form when customer object is not available -->
     <form id="metafield-form" method="post" action="/account" target="metafield-frame" style="display: none;">
@@ -263,7 +265,8 @@
       const activateBtn = document.getElementById('activate-btn');
       const testKitInput = document.getElementById('test-kit-id');
       const validationDiv = document.getElementById('format-validation');
-      const metafieldForm = document.getElementById('metafield-form');
+      const metafieldContainer = document.getElementById('metafield-form');
+      const metafieldForm = metafieldContainer ? metafieldContainer.querySelector('form') || metafieldContainer : null;
       const metafieldFrame = document.getElementById('metafield-frame');
 
       console.log('🏪 Metafield Portal initialized for:', customerData.email);
