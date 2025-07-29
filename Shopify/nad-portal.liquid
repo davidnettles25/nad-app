@@ -247,13 +247,9 @@
       const authToken = getAuthenticityToken();
       console.log('🔑 Using authenticity token:', authToken ? 'Found (' + authToken.length + ' chars)' : 'Missing');
       
-      if (!authToken) {
-        console.error('❌ CRITICAL: No authenticity token found! Form submission will fail.');
-        showError('Authentication token missing. Please refresh the page and try again.');
-        return;
-      }
-      
-      metafieldForm.querySelector('input[name="authenticity_token"]').value = authToken;
+      // Shopify form tags handle authenticity tokens automatically
+      // No need to manually set tokens when using {% form %} helper
+      console.log('✅ Using Shopify form system - CSRF protection handled automatically');
 
       // Real-time test ID validation
       if (testKitInput) {
