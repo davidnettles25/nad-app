@@ -1,13 +1,17 @@
 <!-- ============================================================================ -->
-<!-- WORKING METAFIELD INTEGRATION - CORRECTED ENDPOINTS -->
-<!-- Uses your existing webhook system with correct domain routing -->
+<!-- WORKING METAFIELD INTEGRATION - SYNTAX ERROR FIXED -->
+<!-- Uses your existing webhook system with safe Liquid template rendering -->
 <!-- ============================================================================ -->
 
 <!-- File: pages/nad-portal.liquid -->
 <!-- Replace your current nad-portal page content with this -->
 
 {% if customer %}
-  <div class="nad-portal-container">
+  <div class="nad-portal-container" 
+       data-customer-id="{{ customer.id }}"
+       data-customer-email="{{ customer.email | escape }}"
+       data-customer-first-name="{{ customer.first_name | escape }}"
+       data-customer-last-name="{{ customer.last_name | escape }}">
     <div id="portal-options-container">
       <h1>NAD Test Portal</h1>
       <p>Welcome {{ customer.first_name }}! What would you like to do today?</p>
@@ -56,7 +60,7 @@
   <!-- Hidden iframe for metafield submission -->
   <iframe id="metafield-frame" name="metafield-frame" style="display: none;"></iframe>
   
-  <!-- Hidden form for metafield updates - Enhanced for debugging -->
+  <!-- Hidden form for metafield updates -->
   <form id="metafield-form" method="post" action="/account" target="metafield-frame" style="display: none;">
     <input type="hidden" name="form_type" value="customer">
     <input type="hidden" name="utf8" value="✓">
@@ -220,6 +224,15 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Get customer data safely from DOM attributes
+      const portalContainer = document.querySelector('.nad-portal-container');
+      const customerData = {
+        id: portalContainer.dataset.customerId,
+        email: portalContainer.dataset.customerEmail,
+        firstName: portalContainer.dataset.customerFirstName,
+        lastName: portalContainer.dataset.customerLastName
+      };
+
       const activationForm = document.getElementById('nad-activation-form');
       const portalOnlyBtn = document.getElementById('portal-only-btn');
       const optionsContainer = document.getElementById('portal-options-container');
@@ -231,19 +244,18 @@
       const metafieldForm = document.getElementById('metafield-form');
       const metafieldFrame = document.getElementById('metafield-frame');
 
-      // Customer data from Shopify (properly escaped)
-      const customerData = {
-        id: {{ customer.id | json }},
-        email: {{ customer.email | json }},
-        firstName: {{ customer.first_name | json }},
-        lastName: {{ customer.last_name | json }}
-      };
-
       console.log('🏪 Metafield Portal initialized for:', customerData.email);
 
-      // Set authenticity token with better debugging
+      // Set authenticity token with better debugging and validation
       const authToken = getAuthenticityToken();
-      console.log('🔑 Using authenticity token:', authToken ? 'Found' : 'Missing');
+      console.log('🔑 Using authenticity token:', authToken ? 'Found (' + authToken.length + ' chars)' : 'Missing');
+      
+      if (!authToken) {
+        console.error('❌ CRITICAL: No authenticity token found! Form submission will fail.');
+        showError('Authentication token missing. Please refresh the page and try again.');
+        return;
+      }
+      
       metafieldForm.querySelector('input[name="authenticity_token"]').value = authToken;
 
       // Real-time test ID validation
@@ -339,7 +351,7 @@
           // Additional data for webhook processing
           shopifyCustomerId: customerData.id,
           customerEmail: customerData.email,
-          customerName: `${customerData.firstName} ${customerData.lastName}`
+          customerName: customerData.firstName + ' ' + customerData.lastName
         };
         
         // Submit metafield via hidden form (this triggers webhook)
@@ -350,14 +362,58 @@
         console.log('📝 Submitting metafield update to trigger webhook...');
         console.log('📋 Metafield data:', data);
         
+        // Try AJAX method first (more reliable)
+        submitViaAjax(data, sessionId).catch(error => {
+          console.warn('🔄 AJAX method failed, trying iframe method:', error);
+          submitViaIframe(data, sessionId);
+        });
+      }
+
+      // Method 1: AJAX submission (preferred)
+      async function submitViaAjax(data, sessionId) {
+        const authToken = getAuthenticityToken();
+        if (!authToken) {
+          throw new Error('No authenticity token available');
+        }
+
+        const formData = new URLSearchParams();
+        formData.append('form_type', 'customer');
+        formData.append('utf8', '✓');
+        formData.append('authenticity_token', authToken);
+        formData.append('customer[metafields][custom][test_kit_activation]', JSON.stringify(data));
+        formData.append('return_to', '/pages/nad-portal');
+
+        console.log('📤 AJAX submission with token:', authToken.substring(0, 10) + '...');
+
+        const response = await fetch('/account', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'same-origin'
+        });
+
+        if (response.ok || response.redirected) {
+          console.log('✅ AJAX metafield submission successful');
+          console.log('⏳ Waiting for webhook to fire and process...');
+          setTimeout(() => startPolling(sessionId), 3000);
+        } else {
+          console.error('❌ AJAX submission failed:', response.status, response.statusText);
+          throw new Error('AJAX submission failed: ' + response.status);
+        }
+      }
+
+      // Method 2: Iframe submission (fallback)
+      function submitViaIframe(data, sessionId) {
         // Set metafield data
         document.getElementById('metafield-data').value = JSON.stringify(data);
         
         // Log the form data being submitted
         const formData = new FormData(metafieldForm);
-        console.log('📤 Form data being submitted:');
+        console.log('📤 Iframe form data being submitted:');
         for (let [key, value] of formData.entries()) {
-          console.log(`  ${key}: ${value}`);
+          console.log('  ' + key + ': ' + value);
         }
         
         // Set up iframe load handler to detect completion
@@ -365,7 +421,7 @@
         metafieldFrame.onload = function() {
           if (!submitted) {
             submitted = true;
-            console.log('✅ Metafield form submitted to Shopify');
+            console.log('✅ Iframe metafield form submitted to Shopify');
             console.log('⏳ Waiting for webhook to fire and process...');
             // Give webhook more time to process before polling
             setTimeout(() => startPolling(sessionId), 3000);
@@ -374,26 +430,26 @@
         
         // Handle iframe errors
         metafieldFrame.onerror = function() {
-          console.error('❌ Metafield form submission failed');
+          console.error('❌ Iframe metafield form submission failed');
           showPortalError('Failed to submit metafield update. Please try again.');
         };
         
         // Submit the form (this should trigger Shopify webhook to NAD server)
-        console.log('🚀 Submitting form to Shopify...');
+        console.log('🚀 Submitting form to Shopify via iframe...');
         metafieldForm.submit();
       }
 
-      
+      function startPolling(sessionId) {
         let attempts = 0;
         const maxAttempts = 30; // 30 seconds
         
         function poll() {
           attempts++;
           
-          console.log(`🔍 Polling attempt ${attempts}/${maxAttempts} for session: ${sessionId}`);
+          console.log('🔍 Polling attempt ' + attempts + '/' + maxAttempts + ' for session: ' + sessionId);
           
           // CORRECTED: Poll the NAD server (mynadtest.info), not Shopify store
-          fetch(`https://mynadtest.info/shopify/check-portal-access?session=${sessionId}`)
+          fetch('https://mynadtest.info/shopify/check-portal-access?session=' + sessionId)
             .then(response => response.json())
             .then(data => {
               console.log('📡 Polling response:', data);
@@ -409,7 +465,7 @@
                 console.log('⏳ Still processing, polling again in 2 seconds...');
                 setTimeout(poll, 2000);
               } else if (attempts >= maxAttempts) {
-                console.error('⏰ Portal access timeout after', maxAttempts, 'attempts');
+                console.error('⏰ Portal access timeout after ' + maxAttempts + ' attempts');
                 showPortalError('Portal access timeout. Please try again.');
               } else {
                 console.log('🔄 Unknown response, continuing to poll...');
@@ -431,47 +487,49 @@
         poll();
       }
 
-      function startPolling(sessionId) {
+      function generateSessionId() {
         const timestamp = Date.now().toString(36);
         const random = Math.random().toString(36).substr(2, 9);
-        return `session_${timestamp}_${random}`;
+        return 'session_' + timestamp + '_' + random;
       }
 
       function getAuthenticityToken() {
         // Try multiple methods to get the authenticity token
         const metaToken = document.querySelector('meta[name="csrf-token"]');
-        if (metaToken) {
-          console.log('🔑 Found authenticity token in meta tag');
-          return metaToken.getAttribute('content');
+        if (metaToken && metaToken.getAttribute('content')) {
+          const token = metaToken.getAttribute('content');
+          console.log('🔑 Found authenticity token in meta tag:', token.substring(0, 10) + '...');
+          return token;
         }
         
         const formToken = document.querySelector('input[name="authenticity_token"]');
-        if (formToken) {
-          console.log('🔑 Found authenticity token in form input');
-          return formToken.value;
+        if (formToken && formToken.value) {
+          const token = formToken.value;
+          console.log('🔑 Found authenticity token in form input:', token.substring(0, 10) + '...');
+          return token;
         }
         
         // Extract from any form on the page
         const anyForm = document.querySelector('form input[name="authenticity_token"]');
-        if (anyForm) {
-          console.log('🔑 Found authenticity token in page form');
-          return anyForm.value;
+        if (anyForm && anyForm.value) {
+          const token = anyForm.value;
+          console.log('🔑 Found authenticity token in page form:', token.substring(0, 10) + '...');
+          return token;
         }
         
         // Try to get from Shopify's global context
         if (window.Shopify && window.Shopify.authenticity_token) {
-          console.log('🔑 Found authenticity token in Shopify global');
-          return window.Shopify.authenticity_token;
+          const token = window.Shopify.authenticity_token;
+          console.log('🔑 Found authenticity token in Shopify global:', token.substring(0, 10) + '...');
+          return token;
         }
         
-        console.error('❌ Could not find authenticity token anywhere!');
-        console.log('🔍 Available meta tags:', document.querySelectorAll('meta').length);
-        console.log('🔍 Available forms:', document.querySelectorAll('form').length);
+        console.error('❌ Could not find valid authenticity token anywhere!');
+        console.log('🔍 Available meta tags with csrf:', document.querySelectorAll('meta[name="csrf-token"]'));
+        console.log('🔍 Available auth inputs:', document.querySelectorAll('input[name="authenticity_token"]'));
         console.log('🔍 Shopify object:', window.Shopify);
         
-        // Last resort - use liquid template value (properly escaped)
-        const liquidToken = {{ form.authenticity_token | json }};
-        return liquidToken || '';
+        return '';
       }
 
       function showLoadingState() {
@@ -487,11 +545,7 @@
       }
 
       function showPortalError(message) {
-        statusContainer.innerHTML = `
-          <h2>Portal Access Failed</h2>
-          <p class="error">${message}</p>
-          <button onclick="location.reload()" style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Try Again</button>
-        `;
+        statusContainer.innerHTML = '<h2>Portal Access Failed</h2><p class="error">' + message + '</p><button onclick="location.reload()" style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Try Again</button>';
       }
     });
   </script>
