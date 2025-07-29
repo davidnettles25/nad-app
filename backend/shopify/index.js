@@ -81,6 +81,15 @@ class ShopifyIntegration {
             }
         }, 60 * 60 * 1000); // 1 hour
         
+        // Cleanup old webhook records daily
+        setInterval(async () => {
+            try {
+                await this.cleanupOldWebhooks();
+            } catch (error) {
+                logger.error('Webhook cleanup error:', error);
+            }
+        }, 24 * 60 * 60 * 1000); // Daily cleanup
+        
         // Log session statistics every 30 minutes
         if (process.env.NODE_ENV !== 'production') {
             setInterval(() => {
@@ -158,6 +167,38 @@ class ShopifyIntegration {
             
         } catch (error) {
             logger.error('Failed to fetch customer:', error);
+            throw error;
+        }
+    }
+    
+    // Cleanup old webhook records to prevent table bloat
+    async cleanupOldWebhooks() {
+        const retentionDays = parseInt(process.env.SHOPIFY_WEBHOOK_RETENTION_DAYS || '90');
+        
+        try {
+            const query = `
+                DELETE FROM nad_shopify_webhooks 
+                WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)
+            `;
+            
+            const result = await this.db.execute(query, [retentionDays]);
+            const deletedCount = result.affectedRows || 0;
+            
+            if (deletedCount > 0) {
+                logger.info(`Webhook cleanup: Removed ${deletedCount} webhook records older than ${retentionDays} days`);
+            } else {
+                logger.debug(`Webhook cleanup: No webhook records older than ${retentionDays} days found`);
+            }
+            
+            // Log current table size for monitoring
+            const countQuery = 'SELECT COUNT(*) as total FROM nad_shopify_webhooks';
+            const countResult = await this.db.execute(countQuery);
+            const currentCount = countResult[0]?.total || 0;
+            
+            logger.info(`Webhook table status: ${currentCount} total records after cleanup`);
+            
+        } catch (error) {
+            logger.error('Failed to cleanup old webhook records:', error);
             throw error;
         }
     }

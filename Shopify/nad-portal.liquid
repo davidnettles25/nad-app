@@ -60,14 +60,11 @@
   <!-- Hidden iframe for metafield submission -->
   <iframe id="metafield-frame" name="metafield-frame" style="display: none;"></iframe>
   
-  <!-- Hidden form for metafield updates -->
-  <form id="metafield-form" method="post" action="/account" target="metafield-frame" style="display: none;">
-    <input type="hidden" name="form_type" value="customer">
-    <input type="hidden" name="utf8" value="✓">
-    <input type="hidden" name="authenticity_token" value="">
+  <!-- Hidden form for metafield updates using Shopify form system -->
+  {% form 'customer', customer, id: 'metafield-form', target: 'metafield-frame', style: 'display: none;' %}
     <input type="hidden" name="customer[metafields][custom][test_kit_activation]" id="metafield-data">
     <input type="hidden" name="return_to" value="/pages/nad-portal">
-  </form>
+  {% endform %}
 
   <style>
     .nad-portal-container {
