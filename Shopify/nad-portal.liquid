@@ -235,6 +235,14 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Clean URL of any unwanted parameters on page load
+      const url = new URL(window.location);
+      if (url.searchParams.has('test_kit_id')) {
+        console.log('🧹 Removing test_kit_id from URL');
+        url.searchParams.delete('test_kit_id');
+        window.history.replaceState({}, document.title, url.pathname + url.search);
+      }
+      
       // Try to extract CSRF token from Shopify checkout form if it exists
       const checkoutForm = document.querySelector('form[action="/cart"]');
       if (checkoutForm) {

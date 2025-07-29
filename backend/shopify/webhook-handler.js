@@ -337,7 +337,7 @@ async function createPollingSession(connection, sessionId, customer, testKitId, 
     global.pollingSessions.set(sessionId, {
         status: 'ready',
         portalToken: portalToken,
-        portalUrl: `${process.env.FRONTEND_URL || 'https://mynadtest.info'}/portal?t=${portalToken}`
+        portalUrl: `${process.env.FRONTEND_URL || 'https://mynadtest.info'}/customer-dashboard.html?t=${portalToken}`
     });
     
     return portalToken;

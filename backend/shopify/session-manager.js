@@ -98,7 +98,7 @@ class SessionManager {
             
             return {
                 token,
-                portalUrl: `${process.env.FRONTEND_URL || 'https://mynadtest.info'}/portal?t=${token}`,
+                portalUrl: `${process.env.FRONTEND_URL || 'https://mynadtest.info'}/customer-dashboard.html?t=${token}`,
                 expiresAt
             };
             
