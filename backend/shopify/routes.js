@@ -96,7 +96,7 @@ router.post('/webhooks/order-create',
 // ============================================================================
 
 router.get('/check-portal-access', (req, res) => {
-    const { session } = req.query;
+    const { session, setup, customerId, email, testKitId } = req.query;
     const sessionManager = req.app.locals.sessionManager;
     
     logger.debug(`Checking portal access for session: ${session}`);
@@ -106,6 +106,68 @@ router.get('/check-portal-access', (req, res) => {
             ready: false, 
             error: 'No session provided' 
         });
+    }
+    
+    // Handle session setup for direct API calls
+    if (setup === 'true' && customerId && email && testKitId) {
+        logger.info(`Setting up direct activation session: ${session}`);
+        logger.info(`Customer: ${email} (${customerId}), Test Kit: ${testKitId}`);
+        
+        try {
+            // Create a polling session that simulates webhook processing
+            const pollingData = {
+                status: 'processing',
+                customerId: customerId,
+                email: email,
+                testKitId: testKitId,
+                requestType: 'activation',
+                timestamp: Date.now()
+            };
+            
+            // Store in polling sessions (simulate webhook trigger)
+            global.pollingSessions = global.pollingSessions || new Map();
+            global.pollingSessions.set(session, pollingData);
+            
+            logger.info(`Direct activation session created: ${session}`);
+            
+            // Process the test kit activation directly
+            setTimeout(async () => {
+                try {
+                    const { processTestKitActivation } = require('./webhook-handler');
+                    logger.info(`Processing direct test kit activation: ${testKitId} for ${email}`);
+                    
+                    const result = await processTestKitActivation({
+                        id: customerId,
+                        email: email,
+                        first_name: '',
+                        last_name: ''
+                    }, testKitId, session);
+                    
+                    logger.info(`Direct activation result: ${result ? 'Success' : 'Failed'}`);
+                } catch (error) {
+                    logger.error('Direct activation processing failed:', error);
+                    // Update session with error
+                    global.pollingSessions.set(session, {
+                        ...pollingData,
+                        status: 'error',
+                        error: 'Test kit activation failed'
+                    });
+                }
+            }, 1000); // Process after 1 second
+            
+            return res.json({
+                ready: false,
+                processing: true,
+                message: 'Activation session created, processing...'
+            });
+            
+        } catch (error) {
+            logger.error('Failed to create direct activation session:', error);
+            return res.json({
+                ready: false,
+                error: 'Failed to create activation session'
+            });
+        }
     }
     
     const sessionData = sessionManager.getPollingSession(session);

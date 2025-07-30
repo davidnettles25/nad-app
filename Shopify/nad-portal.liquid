@@ -477,27 +477,38 @@
         submitTestKitActivation(sessionId, testKitId);
       }
 
-      // Direct API approach - bridge to existing webhook system
+      // Direct API approach - bypass forms entirely
       async function submitTestKitActivation(sessionId, testKitId) {
         try {
-          console.log('🔄 Direct API approach - creating session and starting polling...');
+          console.log('🔄 Direct API approach - bypassing forms entirely...');
           console.log('📋 Session ID:', sessionId);
           console.log('📋 Test Kit ID:', testKitId);
           
-          // Create the metafield data that would trigger the webhook
-          const metafieldData = {
-            testKitId: testKitId,
-            timestamp: Date.now(),
-            sessionId: sessionId,
-            requestType: 'activation'
-          };
+          // Store session data for polling (simulate what webhook would do)
+          console.log('💾 Creating session data for polling...');
           
-          // Call the original metafield submission process
-          submitMetafieldUpdate(metafieldData, sessionId);
+          // Directly call the backend with session setup parameters
+          const setupUrl = `https://mynadtest.info/shopify/check-portal-access?session=${sessionId}&setup=true&customerId=${customerData.id}&email=${encodeURIComponent(customerData.email)}&testKitId=${testKitId}`;
+          const response = await fetch(setupUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          if (response.ok) {
+            console.log('✅ Session created successfully, starting polling...');
+            startPolling(sessionId);
+          } else {
+            // Fallback - just start polling anyway
+            console.log('⚠️ Session creation failed, trying polling anyway...');
+            startPolling(sessionId);
+          }
           
         } catch (error) {
-          console.error('❌ Metafield update failed:', error);
-          showPortalError('Failed to activate test kit. Please try again.');
+          console.error('❌ Session creation failed, trying polling anyway:', error);
+          // Even if session creation fails, try polling
+          startPolling(sessionId);
         }
       }
 
