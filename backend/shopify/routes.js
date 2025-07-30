@@ -124,9 +124,8 @@ router.get('/check-portal-access', (req, res) => {
                 timestamp: Date.now()
             };
             
-            // Store in polling sessions (simulate webhook trigger)
-            global.pollingSessions = global.pollingSessions || new Map();
-            global.pollingSessions.set(session, pollingData);
+            // Store in session manager (simulate webhook trigger)
+            sessionManager.createPollingSession(session, pollingData);
             
             logger.info(`Direct activation session created: ${session}`);
             
@@ -147,8 +146,7 @@ router.get('/check-portal-access', (req, res) => {
                 } catch (error) {
                     logger.error('Direct activation processing failed:', error);
                     // Update session with error
-                    global.pollingSessions.set(session, {
-                        ...pollingData,
+                    sessionManager.updatePollingSession(session, {
                         status: 'error',
                         error: 'Test kit activation failed'
                     });
