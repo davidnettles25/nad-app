@@ -302,7 +302,11 @@ async function processTestKitActivation(connection, testKitId, customer) {
 async function createPollingSession(connection, sessionId, customer, testKitId, result) {
     // Generate portal token
     const portalToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    
+    // Determine session type and expiration
+    const sessionType = result.portalType ? result.portalType : 'customer';
+    const expirationTime = sessionType === 'customer' ? 30 * 60 * 1000 : 4 * 60 * 60 * 1000; // 30 min for customers, 4 hours for lab/admin
+    const expiresAt = new Date(Date.now() + expirationTime);
     
     // Store portal session
     await connection.execute(`
@@ -313,7 +317,7 @@ async function createPollingSession(connection, sessionId, customer, testKitId, 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
         portalToken,
-        'shopify',
+        sessionType,
         customer.email,
         customer.id,
         customer.email,
