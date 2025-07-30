@@ -145,26 +145,7 @@ window.NADDashboard = {
                 return { success: true, user: user, type: 'bypass' };
             }
             
-            // Check for Shopify portal token in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('t');
-            
-            if (token) {
-                NAD.logger.debug('Portal token found, validating...');
-                const response = await NAD.API.request(`/shopify/portal/validate?t=${token}`, {
-                    method: 'GET'
-                });
-                
-                if (response.success) {
-                    // Store authentication
-                    sessionStorage.setItem('nad_auth_token', token);
-                    sessionStorage.setItem('nad_auth_type', 'shopify');
-                    sessionStorage.setItem('nad_user_data', JSON.stringify(response.data));
-                    return { success: true, user: response.data };
-                }
-            }
-            
-            // Check existing session
+            // Check existing session first (before trying URL tokens)
             const authType = sessionStorage.getItem('nad_auth_type');
             const storedUser = sessionStorage.getItem('nad_user_data');
             
@@ -186,6 +167,31 @@ window.NADDashboard = {
                     token: storedToken,
                     type: 'shopify'
                 };
+            }
+            
+            // Only check for new tokens if no existing session
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('t');
+            
+            if (token) {
+                NAD.logger.debug('Portal token found, validating...');
+                const response = await NAD.API.request(`/shopify/portal/validate?t=${token}`, {
+                    method: 'GET'
+                });
+                
+                if (response.success) {
+                    // Store authentication
+                    sessionStorage.setItem('nad_auth_token', token);
+                    sessionStorage.setItem('nad_auth_type', 'shopify');
+                    sessionStorage.setItem('nad_user_data', JSON.stringify(response.data));
+                    
+                    // Remove token from URL to prevent reuse on refresh
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.delete('t');
+                    window.history.replaceState({}, document.title, newUrl.toString());
+                    
+                    return { success: true, user: response.data };
+                }
             }
             
             // Check for email-based authentication (legacy)
