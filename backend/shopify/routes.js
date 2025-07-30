@@ -151,14 +151,17 @@ router.get('/check-portal-access', (req, res) => {
                         
                         if (result.success) {
                             // Generate portal URL
-                            const portalUrl = `https://mynadtest.info/portal?t=${result.testKitData.test_id}&c=${customerId}`;
+                            const portalUrl = `https://mynadtest.info/portal?t=${result.testKitId}&c=${customerId}`;
                             
                             // Update session with success
                             sessionManager.updatePollingSession(session, {
                                 status: 'ready',
                                 ready: true,
                                 portalUrl: portalUrl,
-                                testKitData: result.testKitData
+                                testKitData: {
+                                    test_id: result.testKitId,
+                                    activationDate: result.activationDate
+                                }
                             });
                         } else {
                             // Update session with specific error
