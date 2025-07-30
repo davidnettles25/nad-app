@@ -135,35 +135,41 @@ router.get('/check-portal-access', (req, res) => {
                     const { processTestKitActivation } = require('./webhook-handler');
                     logger.info(`Processing direct test kit activation: ${testKitId} for ${email}`);
                     
-                    // Get database connection
+                    // Get database connection from pool
                     const db = req.app.locals.db;
+                    const connection = await db.getConnection();
                     
-                    const result = await processTestKitActivation(db, testKitId, {
-                        id: customerId,
-                        email: email,
-                        first_name: '',
-                        last_name: ''
-                    });
-                    
-                    logger.info(`Direct activation result: ${result.success ? 'Success' : 'Failed'}`);
-                    
-                    if (result.success) {
-                        // Generate portal URL
-                        const portalUrl = `https://mynadtest.info/portal?t=${result.testKitData.test_id}&c=${customerId}`;
+                    try {
+                        const result = await processTestKitActivation(connection, testKitId, {
+                            id: customerId,
+                            email: email,
+                            first_name: '',
+                            last_name: ''
+                        });
                         
-                        // Update session with success
-                        sessionManager.updatePollingSession(session, {
-                            status: 'ready',
-                            ready: true,
-                            portalUrl: portalUrl,
-                            testKitData: result.testKitData
-                        });
-                    } else {
-                        // Update session with specific error
-                        sessionManager.updatePollingSession(session, {
-                            status: 'error',
-                            error: result.error || 'Test kit activation failed'
-                        });
+                        logger.info(`Direct activation result: ${result.success ? 'Success' : 'Failed'}`);
+                        
+                        if (result.success) {
+                            // Generate portal URL
+                            const portalUrl = `https://mynadtest.info/portal?t=${result.testKitData.test_id}&c=${customerId}`;
+                            
+                            // Update session with success
+                            sessionManager.updatePollingSession(session, {
+                                status: 'ready',
+                                ready: true,
+                                portalUrl: portalUrl,
+                                testKitData: result.testKitData
+                            });
+                        } else {
+                            // Update session with specific error
+                            sessionManager.updatePollingSession(session, {
+                                status: 'error',
+                                error: result.error || 'Test kit activation failed'
+                            });
+                        }
+                    } finally {
+                        // Always release connection back to pool
+                        connection.release();
                     }
                 } catch (error) {
                     logger.error('Direct activation processing failed:', error.message || error);
