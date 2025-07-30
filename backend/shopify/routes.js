@@ -150,14 +150,24 @@ router.get('/check-portal-access', (req, res) => {
                         logger.info(`Direct activation result: ${result.success ? 'Success' : 'Failed'}`);
                         
                         if (result.success) {
-                            // Generate portal URL with new customer dashboard
-                            const portalUrl = `https://mynadtest.info/customer-dashboard.html?t=${result.testKitId}&c=${customerId}`;
+                            // Create portal session for authentication
+                            const { createPollingSession } = require('./webhook-handler');
+                            const portalToken = await createPollingSession(connection, session, {
+                                id: customerId,
+                                email: email,
+                                first_name: '',
+                                last_name: ''
+                            }, result.testKitId, result);
+                            
+                            // Generate portal URL with portal token
+                            const portalUrl = `https://mynadtest.info/customer-dashboard.html?t=${portalToken}`;
                             
                             // Update session with success
                             sessionManager.updatePollingSession(session, {
                                 status: 'ready',
                                 ready: true,
                                 portalUrl: portalUrl,
+                                portalToken: portalToken,
                                 testKitData: {
                                     test_id: result.testKitId,
                                     activationDate: result.activationDate

@@ -593,6 +593,7 @@ module.exports = {
     verifyWebhook,
     processCustomerUpdate,
     processTestKitActivation,
+    createPollingSession,
     logWebhookEvent,
     verifyWebhookSignature
 };
