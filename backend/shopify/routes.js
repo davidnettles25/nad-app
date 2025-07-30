@@ -140,12 +140,25 @@ router.get('/check-portal-access', (req, res) => {
                     const connection = await db.getConnection();
                     
                     try {
-                        const result = await processTestKitActivation(connection, testKitId, {
-                            id: customerId,
-                            email: email,
-                            first_name: '',
-                            last_name: ''
-                        });
+                        let result;
+                        
+                        // Handle portal_only requests (no test kit activation)
+                        if (!testKitId || testKitId.trim() === '') {
+                            logger.info(`Portal-only access request for ${email}`);
+                            result = { 
+                                success: true, 
+                                message: 'Portal access granted',
+                                portalOnly: true
+                            };
+                        } else {
+                            // Handle test kit activation
+                            result = await processTestKitActivation(connection, testKitId, {
+                                id: customerId,
+                                email: email,
+                                first_name: '',
+                                last_name: ''
+                            });
+                        }
                         
                         logger.info(`Direct activation result: ${result.success ? 'Success' : 'Failed'}`);
                         
@@ -157,22 +170,28 @@ router.get('/check-portal-access', (req, res) => {
                                 email: email,
                                 first_name: '',
                                 last_name: ''
-                            }, result.testKitId, result);
+                            }, result.portalOnly ? null : result.testKitId, result);
                             
                             // Generate portal URL with portal token
                             const portalUrl = `https://mynadtest.info/customer-dashboard.html?t=${portalToken}`;
                             
                             // Update session with success
-                            sessionManager.updatePollingSession(session, {
+                            const sessionData = {
                                 status: 'ready',
                                 ready: true,
                                 portalUrl: portalUrl,
-                                portalToken: portalToken,
-                                testKitData: {
+                                portalToken: portalToken
+                            };
+                            
+                            // Add test kit data only for activation requests
+                            if (!result.portalOnly && result.testKitId) {
+                                sessionData.testKitData = {
                                     test_id: result.testKitId,
                                     activationDate: result.activationDate
-                                }
-                            });
+                                };
+                            }
+                            
+                            sessionManager.updatePollingSession(session, sessionData);
                         } else {
                             // Update session with specific error
                             sessionManager.updatePollingSession(session, {
