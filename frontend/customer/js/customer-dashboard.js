@@ -151,11 +151,8 @@ window.NADDashboard = {
             
             if (token) {
                 NAD.logger.debug('Portal token found, validating...');
-                const response = await NAD.API.request('/shopify/portal', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                const response = await NAD.API.request(`/shopify/portal?t=${token}`, {
+                    method: 'GET'
                 });
                 
                 if (response.success) {
