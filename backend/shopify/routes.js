@@ -108,10 +108,11 @@ router.get('/check-portal-access', (req, res) => {
         });
     }
     
-    // Handle session setup for direct API calls
-    if (setup === 'true' && customerId && email && testKitId) {
-        logger.info(`Setting up direct activation session: ${session}`);
-        logger.info(`Customer: ${email} (${customerId}), Test Kit: ${testKitId}`);
+    // Handle session setup for direct API calls (including portal-only access)
+    if (setup === 'true' && customerId && email) {
+        const requestType = (!testKitId || testKitId.trim() === '') ? 'portal_only' : 'activation';
+        logger.info(`Setting up direct ${requestType === 'portal_only' ? 'portal-only' : 'activation'} session: ${session}`);
+        logger.info(`Customer: ${email} (${customerId}), Test Kit: ${testKitId || 'None (portal-only)'}`);
         
         try {
             // Create a polling session that simulates webhook processing
@@ -119,8 +120,8 @@ router.get('/check-portal-access', (req, res) => {
                 status: 'processing',
                 customerId: customerId,
                 email: email,
-                testKitId: testKitId,
-                requestType: 'activation',
+                testKitId: testKitId || '',
+                requestType: requestType,
                 timestamp: Date.now()
             };
             
