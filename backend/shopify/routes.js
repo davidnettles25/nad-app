@@ -163,6 +163,20 @@ router.get('/check-portal-access', (req, res) => {
                         
                         logger.info(`Direct activation result: ${result.success ? 'Success' : 'Failed'}`);
                         
+                        if (result.success && !result.portalOnly) {
+                            // Create test kit log metafield for successful activations
+                            const { createTestKitLogMetafield } = require('./webhook-handler');
+                            await createTestKitLogMetafield(customerId, {
+                                action: 'activation',
+                                testKitId: result.testKitId,
+                                timestamp: Date.now(),
+                                status: 'success',
+                                message: 'Test kit successfully activated',
+                                activationDate: result.activationDate
+                            });
+                            logger.info(`Created test kit log metafield for ${email}: ${result.testKitId}`);
+                        }
+                        
                         if (result.success) {
                             // Create portal session for authentication
                             const { createPollingSession } = require('./webhook-handler');
