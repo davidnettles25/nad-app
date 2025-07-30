@@ -273,16 +273,8 @@ async function processTestKitActivation(connection, testKitId, customer) {
                 testKitId
             ]);
             
-            // Create score record
-            await connection.execute(`
-                INSERT INTO nad_test_scores 
-                (test_id, technician_id, score, created_date, updated_date)
-                VALUES (?, '', 0, CURDATE(), CURDATE())
-                ON DUPLICATE KEY UPDATE 
-                    test_id = VALUES(test_id)
-            `, [
-                testKitId
-            ]);
+            // Don't create score record during activation - only create when actual score is submitted
+            // This prevents tests from appearing as "completed" when they're just activated
             
             await connection.commit();
             

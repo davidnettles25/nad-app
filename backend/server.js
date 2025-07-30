@@ -483,15 +483,27 @@ async function migrateTestStatusValues() {
             console.log(`✅ Updated ${nullUpdate.affectedRows} NULL status values to pending (default)`);
         }
         
-        // Step 2: Fix completed tests (those with scores)
+        // Step 2: Fix completed tests (those with meaningful scores)
         const [completedUpdate] = await db.execute(`
             UPDATE nad_test_ids ti
             INNER JOIN nad_test_scores ts ON ti.test_id = ts.test_id
             SET ti.status = 'completed'
             WHERE ts.score IS NOT NULL 
+            AND ts.score > 0
             AND ti.status != 'completed'
         `);
         console.log(`✅ Updated ${completedUpdate.affectedRows} tests to completed status`);
+        
+        // Step 2.1: Fix tests that were incorrectly marked as completed due to score=0
+        const [fixIncorrectlyCompleted] = await db.execute(`
+            UPDATE nad_test_ids ti
+            INNER JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            SET ti.status = 'activated'
+            WHERE ti.status = 'completed'
+            AND (ts.score IS NULL OR ts.score = 0)
+            AND ti.activated_date IS NOT NULL
+        `);
+        console.log(`✅ Fixed ${fixIncorrectlyCompleted.affectedRows} incorrectly completed tests back to activated status`);
         
         // Step 3: Fix activated tests (only if is_activated column exists)
         if (hasIsActivated) {
