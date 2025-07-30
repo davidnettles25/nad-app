@@ -163,6 +163,38 @@ router.get('/check-portal-access', (req, res) => {
                         
                         logger.info(`Direct activation result: ${result.success ? 'Success' : 'Failed'}`);
                         
+                        // Store/update customer data in database (for role checking later)
+                        if (result.success) {
+                            const { upsertShopifyCustomer, fetchCustomerFromShopify } = require('./webhook-handler');
+                            
+                            // Fetch complete customer data from Shopify (including tags)
+                            const shopifyCustomer = await fetchCustomerFromShopify(customerId);
+                            
+                            if (shopifyCustomer) {
+                                await upsertShopifyCustomer(connection, shopifyCustomer);
+                                logger.info(`Stored complete customer data for ${email} with tags: ${shopifyCustomer.tags}`);
+                            } else {
+                                // Fallback with minimal data
+                                await upsertShopifyCustomer(connection, {
+                                    id: customerId,
+                                    email: email,
+                                    first_name: '',
+                                    last_name: '',
+                                    tags: null,
+                                    phone: null,
+                                    accepts_marketing: false,
+                                    currency: 'USD',
+                                    note: null,
+                                    total_spent: 0,
+                                    orders_count: 0,
+                                    verified_email: true,
+                                    created_at: null,
+                                    updated_at: null
+                                });
+                                logger.warn(`Could not fetch customer data from Shopify for ${email}, stored minimal data`);
+                            }
+                        }
+                        
                         if (result.success && !result.portalOnly) {
                             // Create test kit log metafield for successful activations
                             const { createTestKitLogMetafield } = require('./webhook-handler');

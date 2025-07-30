@@ -372,6 +372,39 @@ async function fetchCustomerActivationMetafield(customerId) {
     }
 }
 
+async function fetchCustomerFromShopify(customerId) {
+    try {
+        const shopifyUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/${process.env.SHOPIFY_API_VERSION || '2024-01'}/customers/${customerId}.json`;
+        
+        const response = await fetch(shopifyUrl, {
+            method: 'GET',
+            headers: {
+                'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            logger.error('Failed to fetch customer from Shopify:', response.status, errorText);
+            return null;
+        }
+        
+        const result = await response.json();
+        
+        if (result.customer) {
+            logger.debug(`Fetched customer data from Shopify: ${result.customer.email}`);
+            return result.customer;
+        }
+        
+        return null;
+        
+    } catch (error) {
+        logger.error('Error fetching customer from Shopify:', error);
+        return null;
+    }
+}
+
 async function deleteMetafield(metafieldId) {
     if (!metafieldId) return;
     
@@ -587,6 +620,8 @@ module.exports = {
     processTestKitActivation,
     createPollingSession,
     createTestKitLogMetafield,
+    upsertShopifyCustomer,
+    fetchCustomerFromShopify,
     logWebhookEvent,
     verifyWebhookSignature
 };
