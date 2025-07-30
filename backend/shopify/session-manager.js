@@ -69,12 +69,14 @@ class SessionManager {
     // Portal Session Management (for authenticated portal access)
     // ============================================================================
     
-    async createPortalSession(customerData, testKitId = null, hasNewActivation = false) {
+    async createPortalSession(customerData, testKitId = null, hasNewActivation = false, sessionType = 'customer') {
         const connection = await this.db.getConnection();
         
         try {
             const token = crypto.randomBytes(32).toString('hex');
-            const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+            // Different expiration times based on session type
+            const expirationTime = sessionType === 'customer' ? 30 * 60 * 1000 : 4 * 60 * 60 * 1000; // 30 min for customers, 4 hours for lab/admin
+            const expiresAt = new Date(Date.now() + expirationTime);
             
             await connection.execute(`
                 INSERT INTO nad_portal_sessions 
@@ -83,7 +85,7 @@ class SessionManager {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `, [
                 token,
-                customerData.shopify_customer_id ? 'shopify' : 'email',
+                sessionType,
                 customerData.email,
                 customerData.shopify_customer_id || null,
                 customerData.email,
@@ -152,6 +154,50 @@ class SessionManager {
                 hasNewActivation: session.has_new_activation,
                 sessionType: session.session_type
             };
+            
+        } finally {
+            connection.release();
+        }
+    }
+    
+    // ============================================================================
+    // Role Validation
+    // ============================================================================
+    
+    async validateUserRole(customerId, requiredRole) {
+        const connection = await this.db.getConnection();
+        
+        try {
+            // Check database first
+            const [customers] = await connection.execute(`
+                SELECT tags FROM nad_shopify_customers 
+                WHERE shopify_customer_id = ?
+            `, [customerId]);
+            
+            if (customers.length > 0 && customers[0].tags) {
+                const tags = customers[0].tags.toLowerCase();
+                const hasRole = tags.includes(`mynadtest_${requiredRole.toLowerCase()}`);
+                logger.debug(`Role check for ${customerId}: ${requiredRole} = ${hasRole}`);
+                return hasRole;
+            }
+            
+            // If not in database, fetch from Shopify API
+            const { fetchCustomerFromShopify } = require('./webhook-handler');
+            const shopifyCustomer = await fetchCustomerFromShopify(customerId);
+            
+            if (shopifyCustomer && shopifyCustomer.tags) {
+                // Update database with fresh data
+                const { upsertShopifyCustomer } = require('./webhook-handler');
+                await upsertShopifyCustomer(connection, shopifyCustomer);
+                
+                const tags = shopifyCustomer.tags.toLowerCase();
+                const hasRole = tags.includes(`mynadtest_${requiredRole.toLowerCase()}`);
+                logger.debug(`Role check from Shopify for ${customerId}: ${requiredRole} = ${hasRole}`);
+                return hasRole;
+            }
+            
+            logger.warn(`Could not validate role for customer ${customerId}`);
+            return false;
             
         } finally {
             connection.release();

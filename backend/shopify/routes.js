@@ -323,8 +323,224 @@ router.get('/check-portal-access', (req, res) => {
 });
 
 // ============================================================================
+// Lab/Admin Portal Routes
+// ============================================================================
+
+// Lab/Admin portal access setup
+router.get('/check-lab-admin-access', async (req, res) => {
+    const { session, setup, customerId, email, portalType } = req.query;
+    const sessionManager = req.app.locals.sessionManager;
+    
+    logger.debug(`Checking ${portalType} portal access for session: ${session}`);
+    
+    if (!session) {
+        return res.json({ 
+            ready: false, 
+            error: 'No session provided' 
+        });
+    }
+    
+    // Handle session setup for lab/admin portal access
+    if (setup === 'true' && customerId && email && portalType) {
+        // Validate role first
+        const requiredRole = portalType === 'lab' ? 'lab' : 'admin';
+        const hasRole = await sessionManager.validateUserRole(customerId, requiredRole);
+        
+        if (!hasRole) {
+            logger.warn(`Access denied - user ${email} lacks ${requiredRole} role`);
+            return res.json({
+                ready: false,
+                error: `Access denied: ${requiredRole} role required`
+            });
+        }
+        
+        logger.info(`Setting up ${portalType} portal session: ${session}`);
+        logger.info(`Customer: ${email} (${customerId}) with ${requiredRole} role`);
+        
+        try {
+            // Create a polling session
+            const pollingData = {
+                status: 'processing',
+                customerId: customerId,
+                email: email,
+                portalType: portalType,
+                requestType: `${portalType}_portal`,
+                timestamp: Date.now()
+            };
+            
+            sessionManager.createPollingSession(session, pollingData);
+            logger.info(`${portalType} portal session created: ${session}`);
+            
+            // Process the portal access
+            setTimeout(async () => {
+                try {
+                    const db = req.app.locals.db;
+                    const connection = await db.getConnection();
+                    
+                    try {
+                        // Create portal session with appropriate type and expiration
+                        const { createPollingSession } = require('./webhook-handler');
+                        const portalToken = await createPollingSession(connection, session, {
+                            id: customerId,
+                            email: email,
+                            first_name: '',
+                            last_name: ''
+                        }, null, { 
+                            success: true, 
+                            portalOnly: true,
+                            portalType: portalType
+                        });
+                        
+                        // Generate portal URL based on type
+                        const portalPath = portalType === 'lab' ? '/lab-interface.html' : '/admin.html';
+                        const portalUrl = `https://mynadtest.info${portalPath}?t=${portalToken}`;
+                        
+                        // Update session with success
+                        sessionManager.updatePollingSession(session, {
+                            status: 'ready',
+                            ready: true,
+                            portalUrl: portalUrl,
+                            portalToken: portalToken,
+                            portalType: portalType
+                        });
+                        
+                        logger.info(`${portalType} portal access granted for ${email}`);
+                        
+                    } finally {
+                        connection.release();
+                    }
+                } catch (error) {
+                    logger.error(`${portalType} portal processing failed:`, error.message || error);
+                    sessionManager.updatePollingSession(session, {
+                        status: 'error',
+                        error: `${portalType} portal access failed`
+                    });
+                }
+            }, 1000);
+            
+            return res.json({
+                ready: false,
+                processing: true,
+                message: `${portalType} portal session created, processing...`
+            });
+            
+        } catch (error) {
+            logger.error(`Failed to create ${portalType} portal session:`, error);
+            return res.json({
+                ready: false,
+                error: `Failed to create ${portalType} portal session`
+            });
+        }
+    }
+    
+    // Check existing session
+    const sessionData = sessionManager.getPollingSession(session);
+    
+    if (!sessionData) {
+        return res.json({ 
+            ready: false, 
+            error: 'Invalid session' 
+        });
+    }
+    
+    // Check session age (5 minutes)
+    const sessionAge = Date.now() - sessionData.createdAt;
+    if (sessionAge > 5 * 60 * 1000) {
+        sessionManager.deletePollingSession(session);
+        return res.json({ 
+            ready: false, 
+            error: 'Session expired' 
+        });
+    }
+    
+    // Return status based on session state
+    if (sessionData.status === 'ready') {
+        sessionManager.deletePollingSession(session);
+        return res.json({ 
+            ready: true, 
+            portalUrl: sessionData.portalUrl,
+            portalType: sessionData.portalType
+        });
+    } else if (sessionData.status === 'error') {
+        sessionManager.deletePollingSession(session);
+        return res.json({ 
+            ready: false, 
+            error: sessionData.error 
+        });
+    } else {
+        return res.json({ 
+            ready: false, 
+            processing: true 
+        });
+    }
+});
+
+// ============================================================================
 // Portal Entry Routes
 // ============================================================================
+
+// API endpoint for lab/admin portal token validation
+router.get('/portal/validate-lab-admin', async (req, res) => {
+    const token = req.query.t;
+    const expectedType = req.query.type; // 'lab' or 'admin'
+    const sessionManager = req.app.locals.sessionManager;
+    
+    if (!token) {
+        return res.status(401).json({ 
+            success: false, 
+            error: 'No token provided' 
+        });
+    }
+    
+    if (!expectedType || !['lab', 'admin'].includes(expectedType)) {
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Invalid portal type' 
+        });
+    }
+    
+    try {
+        // Validate token
+        const sessionData = await sessionManager.validatePortalSession(token);
+        
+        if (!sessionData) {
+            return res.status(401).json({ 
+                success: false, 
+                error: 'Invalid token' 
+            });
+        }
+        
+        // Verify session type matches expected
+        if (sessionData.sessionType !== expectedType) {
+            return res.status(403).json({ 
+                success: false, 
+                error: `Access denied: ${expectedType} role required` 
+            });
+        }
+        
+        logger.info(`${expectedType} portal token validated for ${sessionData.email}`);
+        
+        // Return user data with role
+        return res.json({
+            success: true,
+            data: {
+                email: sessionData.email,
+                firstName: sessionData.firstName,
+                lastName: sessionData.lastName,
+                customerId: sessionData.customerId,
+                role: expectedType,
+                sessionType: sessionData.sessionType
+            }
+        });
+        
+    } catch (error) {
+        logger.error(`${expectedType} portal validation error:`, error);
+        return res.status(500).json({ 
+            success: false, 
+            error: 'Validation failed' 
+        });
+    }
+});
 
 // API endpoint for portal token validation
 router.get('/portal/validate', async (req, res) => {
