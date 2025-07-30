@@ -409,6 +409,15 @@
 
       // Method 1: AJAX submission (preferred)
       async function submitViaAjax(data, sessionId) {
+        // When customer is logged in, we use direct API calls which don't need auth tokens
+        if (customerData && customerData.id) {
+          console.log('🔄 Customer logged in - using direct API approach...');
+          const testKitId = data.testKitId;
+          await submitTestKitActivation(sessionId, testKitId);
+          return;
+        }
+        
+        // Otherwise, try to get auth token for form submission
         const authToken = getAuthenticityToken();
         if (!authToken) {
           throw new Error('No authenticity token available');
@@ -444,6 +453,16 @@
 
       // Method 2: Iframe submission (fallback)
       function submitViaIframe(data, sessionId) {
+        // Since we're using direct API calls when customer is logged in,
+        // this fallback should only be used when there's an actual form
+        if (!metafieldForm || metafieldForm.tagName !== 'FORM') {
+          console.error('❌ No valid form available for iframe submission');
+          // Fallback to direct API call
+          const testKitId = data.testKitId;
+          submitTestKitActivation(sessionId, testKitId);
+          return;
+        }
+        
         // Set metafield data
         document.getElementById('metafield-data').value = JSON.stringify(data);
         
@@ -474,6 +493,8 @@
         
         // Use direct API call instead of form submission
         console.log('🚀 Submitting metafield update via API...');
+        // Extract testKitId from the data parameter
+        const testKitId = data.testKitId;
         submitTestKitActivation(sessionId, testKitId);
       }
 

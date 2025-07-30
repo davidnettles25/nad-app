@@ -135,14 +135,36 @@ router.get('/check-portal-access', (req, res) => {
                     const { processTestKitActivation } = require('./webhook-handler');
                     logger.info(`Processing direct test kit activation: ${testKitId} for ${email}`);
                     
-                    const result = await processTestKitActivation({
+                    // Get database connection
+                    const db = req.app.locals.db;
+                    
+                    const result = await processTestKitActivation(db, testKitId, {
                         id: customerId,
                         email: email,
                         first_name: '',
                         last_name: ''
-                    }, testKitId, session);
+                    });
                     
-                    logger.info(`Direct activation result: ${result ? 'Success' : 'Failed'}`);
+                    logger.info(`Direct activation result: ${result.success ? 'Success' : 'Failed'}`);
+                    
+                    if (result.success) {
+                        // Generate portal URL
+                        const portalUrl = `https://mynadtest.info/portal?t=${result.testKitData.test_id}&c=${customerId}`;
+                        
+                        // Update session with success
+                        sessionManager.updatePollingSession(session, {
+                            status: 'ready',
+                            ready: true,
+                            portalUrl: portalUrl,
+                            testKitData: result.testKitData
+                        });
+                    } else {
+                        // Update session with specific error
+                        sessionManager.updatePollingSession(session, {
+                            status: 'error',
+                            error: result.error || 'Test kit activation failed'
+                        });
+                    }
                 } catch (error) {
                     logger.error('Direct activation processing failed:', error);
                     // Update session with error

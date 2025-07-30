@@ -591,6 +591,7 @@ module.exports = {
     webhookMiddleware,
     verifyWebhook,
     processCustomerUpdate,
+    processTestKitActivation,
     logWebhookEvent,
     verifyWebhookSignature
 };
