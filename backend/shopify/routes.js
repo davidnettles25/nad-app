@@ -150,8 +150,8 @@ router.get('/check-portal-access', (req, res) => {
                         logger.info(`Direct activation result: ${result.success ? 'Success' : 'Failed'}`);
                         
                         if (result.success) {
-                            // Generate portal URL
-                            const portalUrl = `https://mynadtest.info/portal?t=${result.testKitId}&c=${customerId}`;
+                            // Generate portal URL with new customer dashboard
+                            const portalUrl = `https://mynadtest.info/customer-dashboard.html?t=${result.testKitId}&c=${customerId}`;
                             
                             // Update session with success
                             sessionManager.updatePollingSession(session, {
