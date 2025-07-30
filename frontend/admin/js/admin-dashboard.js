@@ -138,9 +138,9 @@ function showAdminAuthError(message = 'Authentication Required') {
                         message
                     }
                 </p>
-                <a href="https://mynadtest.com/pages/nad-admin" 
+                <a href="https://mynadtest.com" 
                    style="display: inline-block; background: #dc3545; color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px;">
-                    Go to Admin Portal
+                    Go to NAD Test
                 </a>
             </div>
         </div>

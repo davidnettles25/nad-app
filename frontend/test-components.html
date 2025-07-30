@@ -889,10 +889,95 @@ Starting component system initialization...
             showQuickFix();
             logToConsole('Generated commands to create missing files');
         }
+
+        /**
+         * Check authentication for admin access
+         */
+        async function checkAdminAuthentication() {
+            try {
+                // Check existing session first
+                const authType = sessionStorage.getItem('nad_auth_type');
+                const storedUser = sessionStorage.getItem('nad_user_data');
+                
+                if (authType === 'admin' && storedUser) {
+                    console.log('Existing admin session found');
+                    return { 
+                        success: true, 
+                        user: JSON.parse(storedUser),
+                        type: 'admin'
+                    };
+                }
+                
+                // Only check for new tokens if no existing session
+                const urlParams = new URLSearchParams(window.location.search);
+                const token = urlParams.get('t');
+                
+                if (token) {
+                    console.log('Admin portal token found, validating...');
+                    const response = await fetch(`${API_BASE}/shopify/portal/validate-lab-admin?t=${token}&type=admin`, {
+                        method: 'GET'
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Store authentication
+                        sessionStorage.setItem('nad_auth_token', token);
+                        sessionStorage.setItem('nad_auth_type', 'admin');
+                        sessionStorage.setItem('nad_user_data', JSON.stringify(result.data));
+                        
+                        // Remove token from URL to prevent reuse on refresh
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.delete('t');
+                        window.history.replaceState({}, document.title, newUrl.toString());
+                        
+                        return { success: true, user: result.data, type: 'admin' };
+                    } else {
+                        console.error('Admin token validation failed:', result.error);
+                        return { success: false, error: result.error };
+                    }
+                }
+                
+                return { success: false, error: 'No admin authentication found' };
+                
+            } catch (error) {
+                console.error('Admin authentication check failed:', error);
+                return { success: false, error: 'Authentication check failed' };
+            }
+        }
+
+        /**
+         * Show access denied message and redirect
+         */
+        function showAccessDenied() {
+            document.body.innerHTML = `
+                <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8f9fa;">
+                    <div style="text-align: center; max-width: 500px; padding: 40px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
+                        <h2>Access Denied</h2>
+                        <p style="color: #666; margin-bottom: 30px;">
+                            This page requires administrator privileges. Please log in to your account to access administrative tools.
+                        </p>
+                        <a href="https://mynadtest.com" 
+                           style="display: inline-block; background: #dc3545; color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px;">
+                            Go to NAD Test
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
         
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check authentication first
+            const authResult = await checkAdminAuthentication();
+            if (!authResult.success) {
+                showAccessDenied();
+                return;
+            }
+            
             logToConsole('=== NAD Component Testing Started ===');
+            logToConsole(`Authenticated admin user: ${authResult.user.email}`);
             logToConsole('DOM Content Loaded');
             
             // Update connection status

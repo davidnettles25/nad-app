@@ -146,9 +146,9 @@ window.NADLab = {
                             message
                         }
                     </p>
-                    <a href="https://mynadtest.com/pages/nad-lab" 
+                    <a href="https://mynadtest.com" 
                        style="display: inline-block; background: #007bff; color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px;">
-                        Go to Lab Portal
+                        Go to NAD Test
                     </a>
                 </div>
             </div>
