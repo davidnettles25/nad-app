@@ -1,18 +1,158 @@
 // Main lab controller - Version 20250719-1
 
 window.NADLab = {
-    init() {
-        // Initialize NAD Lab Interface
-        
-        // Check DOM containers exist
-        const labContainer = document.querySelector('.lab-container');
-        
-        // Ensure modal container exists BEFORE loading components
-        this.ensureModalContainer();
-        
-        this.loadComponents();
-        this.loadStats();
-        this.setupEventListeners();
+    // Lab interface state
+    user: null,
+    
+    // Configuration
+    config: {
+        apiBase: 'https://mynadtest.info'
+    },
+
+    async init() {
+        try {
+            console.log('Starting lab interface initialization...');
+            
+            // Show loading screen
+            this.showLoading();
+            
+            // Check authentication
+            const authResult = await this.checkAuthentication();
+            console.log('Lab auth result:', authResult);
+            if (!authResult.success) {
+                console.log('Lab authentication failed, showing auth error');
+                this.showAuthError();
+                return;
+            }
+            
+            console.log('Lab authentication succeeded, loading interface...');
+            this.user = authResult.user;
+            
+            // Initialize NAD Lab Interface
+            const labContainer = document.querySelector('.lab-container');
+            
+            // Ensure modal container exists BEFORE loading components
+            this.ensureModalContainer();
+            
+            this.loadComponents();
+            this.loadStats();
+            this.setupEventListeners();
+            
+            // Hide loading screen
+            this.hideLoading();
+            
+        } catch (error) {
+            console.error('Lab interface initialization failed:', error);
+            this.showAuthError('Lab interface initialization failed');
+        }
+    },
+
+    /**
+     * Check authentication for lab access
+     */
+    async checkAuthentication() {
+        try {
+            // Check existing session first
+            const authType = sessionStorage.getItem('nad_auth_type');
+            const storedUser = sessionStorage.getItem('nad_user_data');
+            
+            if (authType === 'lab' && storedUser) {
+                console.log('Existing lab session found');
+                return { 
+                    success: true, 
+                    user: JSON.parse(storedUser),
+                    type: 'lab'
+                };
+            }
+            
+            // Only check for new tokens if no existing session
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('t');
+            
+            if (token) {
+                console.log('Lab portal token found, validating...');
+                const response = await fetch(`${this.config.apiBase}/shopify/portal/validate-lab-admin?t=${token}&type=lab`, {
+                    method: 'GET'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Store authentication
+                    sessionStorage.setItem('nad_auth_token', token);
+                    sessionStorage.setItem('nad_auth_type', 'lab');
+                    sessionStorage.setItem('nad_user_data', JSON.stringify(result.data));
+                    
+                    // Remove token from URL to prevent reuse on refresh
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.delete('t');
+                    window.history.replaceState({}, document.title, newUrl.toString());
+                    
+                    return { success: true, user: result.data, type: 'lab' };
+                } else {
+                    console.error('Lab token validation failed:', result.error);
+                    return { success: false, error: result.error };
+                }
+            }
+            
+            return { success: false, error: 'No lab authentication found' };
+            
+        } catch (error) {
+            console.error('Lab authentication check failed:', error);
+            return { success: false, error: 'Authentication check failed' };
+        }
+    },
+
+    /**
+     * Show loading screen
+     */
+    showLoading() {
+        document.body.innerHTML = `
+            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8f9fa;">
+                <div style="text-align: center;">
+                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                    <h3>Loading Lab Interface...</h3>
+                    <style>
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    </style>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Hide loading screen
+     */
+    hideLoading() {
+        // The interface will be loaded by the existing components
+        console.log('Lab interface loaded successfully');
+    },
+
+    /**
+     * Show authentication error
+     */
+    showAuthError(message = 'Authentication Required') {
+        document.body.innerHTML = `
+            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8f9fa;">
+                <div style="text-align: center; max-width: 500px; padding: 40px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                    <h2>Lab Access Required</h2>
+                    <p style="color: #666; margin-bottom: 30px;">
+                        ${message === 'Authentication Required' ? 
+                            'Please access the lab interface through your account at mynadtest.com.' : 
+                            message
+                        }
+                    </p>
+                    <a href="https://mynadtest.com/pages/nad-lab" 
+                       style="display: inline-block; background: #007bff; color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px;">
+                        Go to Lab Portal
+                    </a>
+                </div>
+            </div>
+        `;
     },
 
     ensureModalContainer() {

@@ -3,6 +3,171 @@ const API_BASE = 'https://mynadtest.info';
 let allSupplements = [];
 let filteredSupplements = [];
 
+// Admin dashboard state
+let adminUser = null;
+
+// Initialize admin dashboard with authentication
+async function initAdminDashboard() {
+    try {
+        console.log('Starting admin dashboard initialization...');
+        
+        // Show loading screen
+        showAdminLoading();
+        
+        // Check authentication
+        const authResult = await checkAdminAuthentication();
+        console.log('Admin auth result:', authResult);
+        if (!authResult.success) {
+            console.log('Admin authentication failed, showing auth error');
+            showAdminAuthError();
+            return;
+        }
+        
+        console.log('Admin authentication succeeded, loading dashboard...');
+        adminUser = authResult.user;
+        
+        // Load the original dashboard
+        await loadSupplements();
+        setupAdminNavigation();
+        
+        // Hide loading screen
+        hideAdminLoading();
+        
+    } catch (error) {
+        console.error('Admin dashboard initialization failed:', error);
+        showAdminAuthError('Admin dashboard initialization failed');
+    }
+}
+
+/**
+ * Check authentication for admin access
+ */
+async function checkAdminAuthentication() {
+    try {
+        // Check existing session first
+        const authType = sessionStorage.getItem('nad_auth_type');
+        const storedUser = sessionStorage.getItem('nad_user_data');
+        
+        if (authType === 'admin' && storedUser) {
+            console.log('Existing admin session found');
+            return { 
+                success: true, 
+                user: JSON.parse(storedUser),
+                type: 'admin'
+            };
+        }
+        
+        // Only check for new tokens if no existing session
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('t');
+        
+        if (token) {
+            console.log('Admin portal token found, validating...');
+            const response = await fetch(`${API_BASE}/shopify/portal/validate-lab-admin?t=${token}&type=admin`, {
+                method: 'GET'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Store authentication
+                sessionStorage.setItem('nad_auth_token', token);
+                sessionStorage.setItem('nad_auth_type', 'admin');
+                sessionStorage.setItem('nad_user_data', JSON.stringify(result.data));
+                
+                // Remove token from URL to prevent reuse on refresh
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.delete('t');
+                window.history.replaceState({}, document.title, newUrl.toString());
+                
+                return { success: true, user: result.data, type: 'admin' };
+            } else {
+                console.error('Admin token validation failed:', result.error);
+                return { success: false, error: result.error };
+            }
+        }
+        
+        return { success: false, error: 'No admin authentication found' };
+        
+    } catch (error) {
+        console.error('Admin authentication check failed:', error);
+        return { success: false, error: 'Authentication check failed' };
+    }
+}
+
+/**
+ * Show loading screen
+ */
+function showAdminLoading() {
+    document.body.innerHTML = `
+        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8f9fa;">
+            <div style="text-align: center;">
+                <div style="border: 4px solid #f3f3f3; border-top: 4px solid #dc3545; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                <h3>Loading Admin Dashboard...</h3>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Hide loading screen
+ */
+function hideAdminLoading() {
+    // The interface will be loaded by the existing components
+    console.log('Admin dashboard loaded successfully');
+}
+
+/**
+ * Show authentication error
+ */
+function showAdminAuthError(message = 'Authentication Required') {
+    document.body.innerHTML = `
+        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8f9fa;">
+            <div style="text-align: center; max-width: 500px; padding: 40px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                <h2>Admin Access Required</h2>
+                <p style="color: #666; margin-bottom: 30px;">
+                    ${message === 'Authentication Required' ? 
+                        'Please access the admin dashboard through your account at mynadtest.com.' : 
+                        message
+                    }
+                </p>
+                <a href="https://mynadtest.com/pages/nad-admin" 
+                   style="display: inline-block; background: #dc3545; color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px;">
+                    Go to Admin Portal
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Setup admin navigation after authentication
+ */
+function setupAdminNavigation() {
+    // Setup navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sectionName = this.getAttribute('data-section');
+            if (sectionName) {
+                showSection(sectionName);
+            }
+        });
+    });
+    
+    // Show default section
+    showSection('dashboard');
+    
+    console.log('Admin navigation setup complete');
+}
+
 // FINAL FIX Admin Dashboard Loaded
 
 async function loadSupplements() {

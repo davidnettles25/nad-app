@@ -1928,34 +1928,8 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         // Event listeners and initialization
         document.addEventListener('DOMContentLoaded', () => {
-            // NAD Admin Dashboard initializing...
-        
-            // Setup navigation
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const sectionName = this.getAttribute('data-section');
-                    if (sectionName) {
-                        showSection(sectionName);
-                    }
-                });
-            });
-        
-            // Clean up any leftover content and load initial data
-            if (typeof cleanupBatchContent === 'function') {
-                cleanupBatchContent();
-            }
-            
-            setTimeout(() => {
-                loadDashboardStats();
-            }, 500);
-        
-            // Admin dashboard initialization complete!
-        
-            // Show welcome message
-            setTimeout(() => {
-                showAlert('✅ Dashboard loaded successfully!', 'success');
-            }, 1000);
+            // Initialize admin dashboard with authentication
+            initAdminDashboard();
         });
 
         // Make functions globally available
