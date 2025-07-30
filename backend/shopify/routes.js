@@ -260,7 +260,55 @@ router.get('/check-portal-access', (req, res) => {
 // Portal Entry Routes
 // ============================================================================
 
-// Portal entry point with token validation
+// API endpoint for portal token validation
+router.get('/portal/validate', async (req, res) => {
+    const token = req.query.t;
+    const sessionManager = req.app.locals.sessionManager;
+    
+    if (!token) {
+        return res.status(401).json({ 
+            success: false, 
+            error: 'No token provided' 
+        });
+    }
+    
+    try {
+        // Validate token
+        const sessionData = await sessionManager.validatePortalSession(token);
+        
+        if (!sessionData) {
+            return res.status(401).json({ 
+                success: false, 
+                error: 'Invalid token' 
+            });
+        }
+        
+        logger.info(`Portal token validated for ${sessionData.email}`);
+        
+        // Return customer data
+        return res.json({
+            success: true,
+            data: {
+                email: sessionData.email,
+                firstName: sessionData.first_name,
+                lastName: sessionData.last_name,
+                customerId: sessionData.customer_id,
+                shopifyCustomerId: sessionData.shopify_customer_id,
+                hasNewActivation: sessionData.has_new_activation,
+                testKitId: sessionData.test_kit_id
+            }
+        });
+        
+    } catch (error) {
+        logger.error('Portal validation error:', error);
+        return res.status(500).json({ 
+            success: false, 
+            error: 'Validation failed' 
+        });
+    }
+});
+
+// Portal entry point with token validation (browser redirect)
 router.get('/portal', async (req, res) => {
     const token = req.query.t;
     const sessionManager = req.app.locals.sessionManager;
