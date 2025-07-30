@@ -166,7 +166,8 @@ router.get('/check-portal-access', (req, res) => {
                         });
                     }
                 } catch (error) {
-                    logger.error('Direct activation processing failed:', error);
+                    logger.error('Direct activation processing failed:', error.message || error);
+                    logger.error('Error stack:', error.stack || error);
                     // Update session with error
                     sessionManager.updatePollingSession(session, {
                         status: 'error',

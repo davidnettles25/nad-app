@@ -301,8 +301,9 @@ async function processTestKitActivation(connection, testKitId, customer) {
         }
         
     } catch (error) {
-        logger.error('Test kit activation error:', error);
-        return { success: false, error: 'Failed to activate test kit' };
+        logger.error('Test kit activation error:', error.message || error);
+        logger.error('Error details:', error.stack || error);
+        return { success: false, error: error.message || 'Failed to activate test kit' };
     }
 }
 
