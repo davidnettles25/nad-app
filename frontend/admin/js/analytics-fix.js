@@ -127,12 +127,22 @@ function replaceAnalyticsTables() {
         return;
     }
     
-    // Remove existing table sections
-    const existingTables = analyticsContent.querySelectorAll('h4');
-    existingTables.forEach(h4 => {
-        if (h4.textContent.includes('🏆 Top Performing Users') || h4.textContent.includes('💊 Popular Supplements')) {
-            console.log('Removing existing table:', h4.textContent);
-            h4.parentElement.remove();
+    // Remove ALL existing table sections (both vertical cards and tables)
+    const existingTables = analyticsContent.querySelectorAll('.card');
+    existingTables.forEach(card => {
+        const h4 = card.querySelector('h4');
+        if (h4 && (h4.textContent.includes('🏆 Top Performing Users') || h4.textContent.includes('💊 Popular Supplements'))) {
+            console.log('Removing existing vertical card:', h4.textContent);
+            card.remove();
+        }
+    });
+    
+    // Also remove any existing table elements
+    const existingTableDivs = analyticsContent.querySelectorAll('div[id*="table"]');
+    existingTableDivs.forEach(div => {
+        if (div.id.includes('users') || div.id.includes('supplements')) {
+            console.log('Removing table div:', div.id);
+            div.parentElement?.remove();
         }
     });
     
@@ -210,8 +220,15 @@ function replaceAnalyticsTables() {
         </div>
     `;
     
-    // Append the new cards using the same structure as Overview
-    analyticsContent.insertAdjacentHTML('beforeend', horizontalCardsHTML);
+    // Replace analytics content with horizontal cards only
+    const existingContent = analyticsContent.querySelector('.card:first-child'); // Keep the first analytics card with stats
+    if (existingContent) {
+        // Insert after the first card (stats overview)
+        existingContent.insertAdjacentHTML('afterend', horizontalCardsHTML);
+    } else {
+        // If no existing content, append normally
+        analyticsContent.insertAdjacentHTML('beforeend', horizontalCardsHTML);
+    }
     
     console.log('✅ Analytics successfully displaying horizontally!');
 }
