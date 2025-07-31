@@ -135,9 +135,24 @@ function replaceAnalyticsTables() {
         return;
     }
     
-    // Clear ALL existing content in analytics to avoid duplicates
-    console.log('Removing all existing analytics content to avoid vertical/horizontal duplicates');
-    analyticsContent.innerHTML = '';
+    // Only remove the specific tables we're replacing
+    const existingTables = analyticsContent.querySelectorAll('.card');
+    existingTables.forEach(card => {
+        const h4 = card.querySelector('h4');
+        if (h4 && (h4.textContent.includes('🏆 Top Performing Users') || h4.textContent.includes('💊 Popular Supplements'))) {
+            console.log('Removing existing vertical card:', h4.textContent);
+            card.remove();
+        }
+    });
+    
+    // Also remove any table containers
+    const tableContainers = analyticsContent.querySelectorAll('[id*="table"]');
+    tableContainers.forEach(container => {
+        if (container.id.includes('users') || container.id.includes('supplements')) {
+            console.log('Removing table container:', container.id);
+            container.parentElement?.remove();
+        }
+    });
     
     // Mark as replaced to prevent future executions
     window.analyticsReplaced = true;
@@ -216,8 +231,8 @@ function replaceAnalyticsTables() {
         </div>
     `;
     
-    // Set the clean horizontal-only content
-    analyticsContent.innerHTML = horizontalCardsHTML;
+    // Append horizontal cards to existing analytics content
+    analyticsContent.insertAdjacentHTML('beforeend', horizontalCardsHTML);
     
     console.log('✅ Analytics successfully displaying horizontally!');
 }
