@@ -135,7 +135,14 @@ function hideAdminLoading() {
         setTimeout(async () => {
             await loadSupplements();
             setupAdminNavigation();
-        }, 100);
+            
+            // Load overview dashboard stats if showSection and loadDashboardStats are available
+            if (typeof window.showSection === 'function') {
+                window.showSection('overview');
+            } else if (typeof window.loadDashboardStats === 'function') {
+                window.loadDashboardStats();
+            }
+        }, 200); // Increased timeout to ensure all functions are available
     }
     console.log('Admin dashboard loaded successfully');
 }
@@ -180,7 +187,7 @@ function setupAdminNavigation() {
     });
     
     // Show default section
-    showSection('dashboard');
+    showSection('overview');
     
     console.log('Admin navigation setup complete');
 }
