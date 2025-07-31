@@ -1546,7 +1546,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             if (!confirm(`Activate test ${testId}?`)) {return;}
         
             try {
-                const response = await fetch(`${API_BASE}/api/tests/${testId}/activate`, {
+                const response = await fetch(`${API_BASE}/api/admin/tests/${testId}/activate`, {
                     method: 'POST'
                 });
         
@@ -1568,7 +1568,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             if (!confirm(`Deactivate test ${testId}? This will return it to pending status.`)) {return;}
         
             try {
-                const response = await fetch(`${API_BASE}/api/tests/${testId}/deactivate`, {
+                const response = await fetch(`${API_BASE}/api/admin/tests/${testId}/deactivate`, {
                     method: 'POST'
                 });
         
