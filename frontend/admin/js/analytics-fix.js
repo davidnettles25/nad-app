@@ -86,17 +86,63 @@ function updateAnalyticsDisplay(stats) {
  * Replace analytics tables with guaranteed horizontal layout
  */
 function replaceAnalyticsTables() {
-    console.log('🔄 USING existing analytics tables with horizontal layout...');
+    console.log('🔄 FORCING existing analytics tables to display horizontally...');
     console.log('Cache buster:', new Date().getTime());
     
-    // Work with existing tables instead of replacing them
-    console.log('✅ Using existing HTML tables - no replacement needed');
+    // Add aggressive CSS overrides to force horizontal layout
+    const forceHorizontalCSS = `
+        <style id="force-horizontal-analytics">
+            /* Force horizontal layout with maximum specificity */
+            #analytics-content .data-table,
+            #analytics-content .data-table tbody,
+            #analytics-content .data-table thead,
+            #analytics-content .data-table tr {
+                display: table !important;
+                width: 100% !important;
+            }
+            
+            #analytics-content .data-table tr {
+                display: table-row !important;
+            }
+            
+            #analytics-content .data-table th,
+            #analytics-content .data-table td {
+                display: table-cell !important;
+                white-space: nowrap !important;
+            }
+            
+            #analytics-content #top-users-table,
+            #analytics-content #popular-supplements-table {
+                overflow-x: auto !important;
+                display: block !important;
+                width: 100% !important;
+            }
+            
+            /* Override any responsive rules */
+            @media (max-width: 768px) {
+                #analytics-content .data-table th,
+                #analytics-content .data-table td { 
+                    display: table-cell !important;
+                    white-space: nowrap !important;
+                }
+                #analytics-content .data-table {
+                    min-width: 600px !important;
+                }
+            }
+        </style>
+    `;
     
-    // Just populate the existing tables with data
+    // Inject the CSS if not already present
+    if (!document.getElementById('force-horizontal-analytics')) {
+        document.head.insertAdjacentHTML('beforeend', forceHorizontalCSS);
+        console.log('✅ Injected force-horizontal CSS');
+    }
+    
+    // Populate the existing tables with data
     loadTopUsers();
     loadPopularSupplements();
     
-    return; // Skip the injection, use existing HTML
+    console.log('✅ Using existing HTML tables with forced horizontal CSS');
     
     // ULTIMATE SOLUTION: Use CSS Grid to force horizontal layout
     const horizontalTablesHTML = `
