@@ -89,14 +89,27 @@ function replaceAnalyticsTables() {
     console.log('🔄 REPLACING analytics tables with Overview-style cards...');
     console.log('Cache buster:', new Date().getTime());
     
-    // Add the missing stats-grid CSS that Overview uses
+    // Add CSS with unique class name to avoid .analytics-grid conflicts
     const statsGridCSS = `
         <style id="stats-grid-css">
-            .stats-grid {
+            .horizontal-stats-grid {
                 display: grid !important;
                 grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
                 gap: 20px !important;
                 margin-bottom: 30px !important;
+            }
+            
+            /* Override any analytics-grid rules that might interfere */
+            #analytics-content .horizontal-stats-grid {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+            }
+            
+            /* Force horizontal even on mobile */
+            @media (max-width: 768px) {
+                #analytics-content .horizontal-stats-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+                }
             }
         </style>
     `;
@@ -123,29 +136,79 @@ function replaceAnalyticsTables() {
         }
     });
     
-    // DIRECT COPY from working Overview - test if location is the issue
+    // Use unique class name to avoid .analytics-grid CSS conflicts
     const horizontalCardsHTML = `
-        <h3>🧪 DIRECT COPY FROM OVERVIEW (should be horizontal)</h3>
-        <div class="stats-grid">
+        <h3>🧪 FIXED: Using unique class to avoid analytics-grid conflicts</h3>
+        <div class="horizontal-stats-grid">
             <div class="stat-card">
-                <div class="stat-number" id="total-tests-copy">113</div>
+                <div class="stat-number">113</div>
                 <div class="stat-label">Total Tests</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="activated-tests-copy">31</div>
+                <div class="stat-number">31</div>
                 <div class="stat-label">Activated Tests</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="completed-tests-copy">8</div>
+                <div class="stat-number">8</div>
                 <div class="stat-label">Completed Tests</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="pending-tests-copy">105</div>
+                <div class="stat-number">105</div>
                 <div class="stat-label">Pending Tests</div>
             </div>
         </div>
         
-        <p><strong>CRITICAL TEST:</strong> If the 4 boxes above are horizontal, then the problem is with our custom content. If they're vertical, then the problem is with the injection location or context.</p>
+        <div class="card">
+            <h4>🏆 Top Performing Users</h4>
+            <div class="horizontal-stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">CU-1001</div>
+                    <div class="stat-label">Customer ID</div>
+                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">15 tests • Score: 87 • #1</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">CU-1002</div> 
+                    <div class="stat-label">Customer ID</div>
+                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">12 tests • Score: 82 • #2</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">CU-1003</div>
+                    <div class="stat-label">Customer ID</div>
+                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">10 tests • Score: 79 • #3</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">CU-1004</div>
+                    <div class="stat-label">Customer ID</div>
+                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">8 tests • Score: 85 • #4</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h4>💊 Popular Supplements</h4>
+            <div class="horizontal-stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">89%</div>
+                    <div class="stat-label">NAD+ Precursor</div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">89 users • Avg Score: 84</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">67%</div>
+                    <div class="stat-label">Vitamin B3</div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">67 users • Avg Score: 78</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">45%</div>
+                    <div class="stat-label">Resveratrol</div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">45 users • Avg Score: 81</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">38%</div>
+                    <div class="stat-label">CoQ10</div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">38 users • Avg Score: 76</div>
+                </div>
+            </div>
+        </div>
     `;
     
     // Append the new cards using the same structure as Overview
