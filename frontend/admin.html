@@ -79,7 +79,7 @@
 
         .content-section.active {
             display: block !important;
-            min-height: 400px;
+            min-height: auto;
             padding: 30px;
         }
         
@@ -563,6 +563,163 @@
                     <h4 style="margin-bottom: 10px;">System Status</h4>
                     <p id="overview-stats" style="margin: 0; color: #666;">Loading statistics...</p>
                 </div>
+                
+                <!-- Analytics Section Integrated -->
+                <div style="margin-top: 30px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+                    <h2 style="color: #333; margin-bottom: 20px;">📈 Analytics & Reports</h2>
+                    <p style="color: #666; margin-bottom: 25px;">Comprehensive analytics and performance metrics</p>
+                    
+                    <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+                        <button class="btn btn-primary" onclick="loadAnalytics()">🔄 Refresh Analytics</button>
+                        <button class="btn btn-secondary" onclick="exportAnalytics()">📤 Export Report</button>
+                    </div>
+                    
+                    <div id="analytics-content">
+                        <!-- Analytics content will be loaded here -->
+                        <p style="text-align: center; color: #666; padding: 40px;">Loading analytics data...</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Analytics Section -->
+            <div id="analytics" class="content-section">
+                <div class="card">
+                    <h3>📈 Analytics Dashboard</h3>
+                    
+                    <div id="analytics-alert"></div>
+                    
+                    <div class="stats-overview">
+                        <div class="stat-card">
+                            <div class="stat-number primary" id="analytics-total-tests">0</div>
+                            <div class="stat-label">Total Tests</div>
+                            <div style="font-size: 12px; color: #666;" id="analytics-tests-trend">Loading...</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number success" id="analytics-activation-rate">0%</div>
+                            <div class="stat-label">Activation Rate</div>
+                            <div style="font-size: 12px; color: #666;" id="analytics-activation-trend">Loading...</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number warning" id="analytics-completion-rate">0%</div>
+                            <div class="stat-label">Completion Rate</div>
+                            <div style="font-size: 12px; color: #666;" id="analytics-completion-trend">Loading...</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number info" id="analytics-avg-score">0</div>
+                            <div class="stat-label">Average Score</div>
+                            <div style="font-size: 12px; color: #666;" id="analytics-score-trend">Loading...</div>
+                        </div>
+                    </div>
+
+                    <div class="filters-section">
+                        <div class="filter-grid">
+                            <div class="form-group">
+                                <label for="analytics-period">Time Period</label>
+                                <select id="analytics-period" onchange="loadAnalytics()">
+                                    <option value="30">Last 30 Days</option>
+                                    <option value="90">Last 90 Days</option>
+                                    <option value="180">Last 6 Months</option>
+                                    <option value="365">Last Year</option>
+                                    <option value="all">All Time</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <button class="btn" onclick="loadAnalytics()">🔄 Refresh Analytics</button>
+                            </div>
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <button class="btn btn-warning" onclick="exportAnalytics()">📊 Export Report</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                        <div class="card" style="margin: 0;">
+                            <h4>🧪 Test Status Distribution</h4>
+                            <div id="test-status-chart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
+                                <div style="text-align: center; color: #666;">
+                                    <div style="font-size: 2em; margin-bottom: 10px;">📊</div>
+                                    <p>Loading chart data...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin: 0;">
+                            <h4>🎯 Score Distribution</h4>
+                            <div id="score-distribution-chart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
+                                <div style="text-align: center; color: #666;">
+                                    <div style="font-size: 2em; margin-bottom: 10px;">🎯</div>
+                                    <p>Loading score data...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4>📈 Tests Over Time</h4>
+                        <div id="timeline-chart" style="height: 400px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
+                            <div style="text-align: center; color: #666;">
+                                <div style="font-size: 3em; margin-bottom: 15px;">📈</div>
+                                <p>Loading timeline data...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HORIZONTAL TABLES -->
+                    <div class="card">
+                        <h4>🏆 Top Performing Users</h4>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+                            <div class="stat-card">
+                                <div class="stat-number">CU-1001</div>
+                                <div class="stat-label">Customer ID</div>
+                                <div style="font-size: 12px; color: #007bff;">15 tests • Score: 87 • #1</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">CU-1002</div>
+                                <div class="stat-label">Customer ID</div>
+                                <div style="font-size: 12px; color: #007bff;">12 tests • Score: 82 • #2</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">CU-1003</div>
+                                <div class="stat-label">Customer ID</div>
+                                <div style="font-size: 12px; color: #007bff;">10 tests • Score: 79 • #3</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">CU-1004</div>
+                                <div class="stat-label">Customer ID</div>
+                                <div style="font-size: 12px; color: #007bff;">8 tests • Score: 85 • #4</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4>💊 Popular Supplements</h4>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+                            <div class="stat-card">
+                                <div class="stat-number">89%</div>
+                                <div class="stat-label">NAD+ Precursor</div>
+                                <div style="font-size: 12px; color: #28a745;">89 users • Avg Score: 84</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">67%</div>
+                                <div class="stat-label">Vitamin B3</div>
+                                <div style="font-size: 12px; color: #28a745;">67 users • Avg Score: 78</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">45%</div>
+                                <div class="stat-label">Resveratrol</div>
+                                <div style="font-size: 12px; color: #28a745;">45 users • Avg Score: 81</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">38%</div>
+                                <div class="stat-label">CoQ10</div>
+                                <div style="font-size: 12px; color: #28a745;">38 users • Avg Score: 76</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Test Management Section -->
@@ -772,153 +929,6 @@
                 </div>
             </div>
 
-            <!-- Analytics Section -->
-            <div id="analytics" class="content-section">
-                <div class="section-header">
-                    <h2>📈 Analytics & Reports</h2>
-                    <p>Comprehensive analytics and performance metrics</p>
-                </div>
-                
-                <div class="section-controls">
-                    <button class="btn btn-primary" onclick="loadAnalytics()">🔄 Refresh Analytics</button>
-                    <button class="btn btn-secondary" onclick="exportAnalytics()">📤 Export Report</button>
-                </div>
-
-                <div id="analytics-content">
-                    <div class="card">
-                        <div id="analytics-alert"></div>
-                        
-                        <div class="stats-overview">
-                            <div class="stat-card">
-                                <div class="stat-number primary" id="analytics-total-tests">0</div>
-                                <div class="stat-label">Total Tests</div>
-                                <div style="font-size: 12px; color: #666;" id="analytics-tests-trend">Loading...</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number success" id="analytics-activation-rate">0%</div>
-                                <div class="stat-label">Activation Rate</div>
-                                <div style="font-size: 12px; color: #666;" id="analytics-activation-trend">Loading...</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number warning" id="analytics-completion-rate">0%</div>
-                                <div class="stat-label">Completion Rate</div>
-                                <div style="font-size: 12px; color: #666;" id="analytics-completion-trend">Loading...</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number info" id="analytics-avg-score">0</div>
-                                <div class="stat-label">Average Score</div>
-                                <div style="font-size: 12px; color: #666;" id="analytics-score-trend">Loading...</div>
-                            </div>
-                        </div>
-
-                        <div class="filters-section">
-                            <div class="filter-grid">
-                                <div class="form-group">
-                                    <label for="analytics-period">Time Period</label>
-                                    <select id="analytics-period" onchange="loadAnalytics()">
-                                        <option value="30">Last 30 Days</option>
-                                        <option value="90">Last 90 Days</option>
-                                        <option value="180">Last 6 Months</option>
-                                        <option value="365">Last Year</option>
-                                        <option value="all">All Time</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>&nbsp;</label>
-                                    <button class="btn" onclick="loadAnalytics()">🔄 Refresh Analytics</button>
-                                </div>
-                                <div class="form-group">
-                                    <label>&nbsp;</label>
-                                    <button class="btn btn-warning" onclick="exportAnalytics()">📊 Export Report</button>
-                                </div>
-                                <div class="form-group">
-                                    <label>&nbsp;</label>
-                                    <button class="btn btn-success" onclick="exportTestDetails()">📋 Export Test Details</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
-                            <div class="card" style="margin: 0;">
-                                <h4>🧪 Test Status Distribution</h4>
-                                <div id="test-status-chart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
-                                    <div style="text-align: center; color: #666;">
-                                        <div style="font-size: 2em; margin-bottom: 10px;">📊</div>
-                                        <p>Loading chart data...</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="card" style="margin: 0;">
-                                <h4>🎯 Score Distribution</h4>
-                                <div id="score-distribution-chart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
-                                    <div style="text-align: center; color: #666;">
-                                        <div style="font-size: 2em; margin-bottom: 10px;">🎯</div>
-                                        <p>Loading score data...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <h4>📈 Tests Over Time</h4>
-                            <div id="timeline-chart" style="height: 400px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
-                                <div style="text-align: center; color: #666;">
-                                    <div style="font-size: 3em; margin-bottom: 15px;">📈</div>
-                                    <p>Loading timeline data...</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Horizontal layout for better score visibility - FORCE HORIZONTAL -->
-                        <div class="card" style="width: 100% !important; display: block !important; margin-bottom: 20px;">
-                            <h4>🏆 Top Performing Users</h4>
-                            <div id="top-users-table" style="overflow-x: auto; width: 100% !important; display: block !important;">
-                                <table class="data-table" style="width: 100% !important; min-width: 600px; display: table !important; table-layout: fixed;">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 40% !important;">Customer ID</th>
-                                            <th style="width: 20% !important; text-align: center;">Tests</th>
-                                            <th style="width: 25% !important; text-align: center;">Avg Score</th>
-                                            <th style="width: 15% !important; text-align: center;">Rank</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="top-users-tbody">
-                                        <tr>
-                                            <td colspan="4" style="text-align: center; padding: 20px; color: #666;">
-                                                Loading user performance data...
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div class="card" style="width: 100% !important; display: block !important; margin-bottom: 20px;">
-                            <h4>💊 Popular Supplements</h4>
-                            <div id="popular-supplements-table" style="overflow-x: auto; width: 100% !important; display: block !important;">
-                                <table class="data-table" style="width: 100% !important; min-width: 600px; display: table !important; table-layout: fixed;">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 40% !important;">Supplement</th>
-                                            <th style="width: 20% !important; text-align: center;">Usage Count</th>
-                                            <th style="width: 25% !important; text-align: center;">Avg Score</th>
-                                            <th style="width: 15% !important; text-align: center;">Popularity %</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="popular-supplements-tbody">
-                                        <tr>
-                                            <td colspan="4" style="text-align: center; padding: 20px; color: #666;">
-                                                Loading supplement usage data...
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Log Management Section -->
             <div id="logs" class="content-section">
@@ -1946,6 +1956,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                     switch(sectionName) {
                     case 'overview':
                         loadDashboardStats();
+                        loadAnalytics();
                         break;
                     case 'tests':
                         // Auto-loading tests
@@ -2051,6 +2062,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 switch (activeSection.id) {
                 case 'overview':
                     loadDashboardStats();
+                    loadAnalytics();
                     break;
                 case 'tests':
                     initTestManagement();
