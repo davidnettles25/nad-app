@@ -344,7 +344,9 @@ router.get('/check-lab-admin-access', async (req, res) => {
     if (setup === 'true' && customerId && email && portalType) {
         // Validate role first
         const requiredRole = portalType === 'lab' ? 'lab' : 'admin';
+        logger.debug(`Validating ${requiredRole} role for customer ${customerId}...`);
         const hasRole = await sessionManager.validateUserRole(customerId, requiredRole);
+        logger.debug(`Role validation result: ${hasRole}`);
         
         if (!hasRole) {
             logger.warn(`Access denied - user ${email} lacks ${requiredRole} role`);
@@ -378,18 +380,28 @@ router.get('/check-lab-admin-access', async (req, res) => {
                     const connection = await db.getConnection();
                     
                     try {
+                        // Fetch customer data from Shopify to get first/last name
+                        const { fetchCustomerFromShopify } = require('./webhook-handler');
+                        const shopifyCustomer = await fetchCustomerFromShopify(customerId);
+                        
+                        if (!shopifyCustomer) {
+                            throw new Error('Failed to fetch customer data from Shopify');
+                        }
+                        
                         // Create portal session with appropriate type and expiration
+                        logger.debug(`Creating ${portalType} portal session with token...`);
                         const { createPollingSession } = require('./webhook-handler');
                         const portalToken = await createPollingSession(connection, session, {
                             id: customerId,
                             email: email,
-                            first_name: '',
-                            last_name: ''
+                            first_name: shopifyCustomer.first_name || '',
+                            last_name: shopifyCustomer.last_name || ''
                         }, null, { 
                             success: true, 
                             portalOnly: true,
                             portalType: portalType
                         });
+                        logger.debug(`Portal token created: ${portalToken ? 'success' : 'failed'}`);
                         
                         // Generate portal URL based on type
                         const portalPath = portalType === 'lab' ? '/lab-interface.html' : '/admin.html';
@@ -411,9 +423,17 @@ router.get('/check-lab-admin-access', async (req, res) => {
                     }
                 } catch (error) {
                     logger.error(`${portalType} portal processing failed:`, error.message || error);
+                    logger.error('Portal processing error stack:', error.stack || 'No stack trace');
+                    logger.error('Portal processing error details:', {
+                        customerId,
+                        email,
+                        portalType,
+                        session,
+                        error: error.toString()
+                    });
                     sessionManager.updatePollingSession(session, {
                         status: 'error',
-                        error: `${portalType} portal access failed`
+                        error: `${portalType} portal access failed: ${error.message || 'Unknown error'}`
                     });
                 }
             }, 1000);
