@@ -123,6 +123,16 @@ function replaceAnalyticsTables() {
                     overflow-x: auto !important;
                 }
             }
+            
+            /* Visual test styles */
+            .test-red { background: red !important; color: white !important; padding: 20px !important; }
+            .test-blue { background: blue !important; color: white !important; padding: 20px !important; }
+            .test-green { background: green !important; color: white !important; padding: 20px !important; }
+            .test-purple { background: purple !important; color: white !important; padding: 20px !important; }
+            .test-lime { background: lime !important; padding: 20px !important; }
+            .test-yellow { background: yellow !important; padding: 10px !important; }
+            .test-grid { display: grid !important; grid-template-columns: 1fr 1fr 1fr 1fr !important; gap: 10px !important; }
+            .test-center { text-align: center !important; }
         </style>
         <div style="width: 100% !important; margin-top: 30px;">
             <!-- Simple inline style test -->
@@ -131,15 +141,27 @@ function replaceAnalyticsTables() {
             </div>
             
             <!-- VISUAL DEBUG TEST -->
+            <div class="test-lime" style="margin-bottom: 20px !important;">
+                <h4 style="color: black !important;">VISUAL DEBUG TEST - CLASSES</h4>
+                <div class="test-grid test-yellow">
+                    <div class="test-red test-center">RED</div>
+                    <div class="test-blue test-center">BLUE</div>
+                    <div class="test-green test-center">GREEN</div>
+                    <div class="test-purple test-center">PURPLE</div>
+                </div>
+                <p style="color: black !important; margin-top: 10px !important;">CLASS-BASED: If this shows 4 colored boxes side-by-side, CSS classes work. If not, there's aggressive CSS stripping.</p>
+            </div>
+            
+            <!-- INLINE STYLE TEST -->
             <div style="background: lime !important; padding: 20px !important; margin-bottom: 20px !important;">
-                <h4 style="color: black !important;">VISUAL DEBUG TEST</h4>
+                <h4 style="color: black !important;">VISUAL DEBUG TEST - INLINE</h4>
                 <div style="display: grid !important; grid-template-columns: 1fr 1fr 1fr 1fr !important; gap: 10px !important; background: yellow !important; padding: 10px !important;">
                     <div style="background: red !important; color: white !important; padding: 20px !important; text-align: center !important;">RED</div>
                     <div style="background: blue !important; color: white !important; padding: 20px !important; text-align: center !important;">BLUE</div>
                     <div style="background: green !important; color: white !important; padding: 20px !important; text-align: center !important;">GREEN</div>
                     <div style="background: purple !important; color: white !important; padding: 20px !important; text-align: center !important;">PURPLE</div>
                 </div>
-                <p style="color: black !important; margin-top: 10px !important;">If this shows 4 colored boxes side-by-side, CSS Grid works. If stacked vertically, there's a browser/viewport issue.</p>
+                <p style="color: black !important; margin-top: 10px !important;">INLINE: If this shows 4 colored boxes side-by-side, inline styles work. Compare with class-based version above.</p>
             </div>
             
             <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
