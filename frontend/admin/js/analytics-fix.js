@@ -130,6 +130,18 @@ function replaceAnalyticsTables() {
                 INLINE STYLE TEST - This should have a RED background
             </div>
             
+            <!-- VISUAL DEBUG TEST -->
+            <div style="background: lime !important; padding: 20px !important; margin-bottom: 20px !important;">
+                <h4 style="color: black !important;">VISUAL DEBUG TEST</h4>
+                <div style="display: grid !important; grid-template-columns: 1fr 1fr 1fr 1fr !important; gap: 10px !important; background: yellow !important; padding: 10px !important;">
+                    <div style="background: red !important; color: white !important; padding: 20px !important; text-align: center !important;">RED</div>
+                    <div style="background: blue !important; color: white !important; padding: 20px !important; text-align: center !important;">BLUE</div>
+                    <div style="background: green !important; color: white !important; padding: 20px !important; text-align: center !important;">GREEN</div>
+                    <div style="background: purple !important; color: white !important; padding: 20px !important; text-align: center !important;">PURPLE</div>
+                </div>
+                <p style="color: black !important; margin-top: 10px !important;">If this shows 4 colored boxes side-by-side, CSS Grid works. If stacked vertically, there's a browser/viewport issue.</p>
+            </div>
+            
             <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <h4 style="margin: 0 0 20px 0; color: #333;">🏆 Top Performing Users - CSS GRID TEST</h4>
                 
