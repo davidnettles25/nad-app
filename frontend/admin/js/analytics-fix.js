@@ -85,9 +85,14 @@ function updateAnalyticsDisplay(stats) {
  * Load top performing users (horizontal layout)
  */
 function loadTopUsers() {
+    console.log('🔍 Loading top users data...');
     const tbody = document.getElementById('top-users-tbody');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error('❌ Top users tbody not found!');
+        return;
+    }
     
+    console.log('✅ Found top users tbody, populating with data');
     const mockUsers = [
         { customer_id: 'CU-1001', tests: 15, avg_score: 87, rank: '#1' },
         { customer_id: 'CU-1002', tests: 12, avg_score: 82, rank: '#2' },
@@ -104,15 +109,21 @@ function loadTopUsers() {
             <td style="text-align: center;"><span class="badge badge-primary">${user.rank}</span></td>
         </tr>
     `).join('');
+    console.log('✅ Top users data loaded successfully');
 }
 
 /**
  * Load popular supplements (horizontal layout)
  */
 function loadPopularSupplements() {
+    console.log('🔍 Loading popular supplements data...');
     const tbody = document.getElementById('popular-supplements-tbody');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error('❌ Popular supplements tbody not found!');
+        return;
+    }
     
+    console.log('✅ Found supplements tbody, populating with data');
     const mockSupplements = [
         { name: 'NAD+ Precursor', usage: 89, avg_score: 84, popularity: '89%' },
         { name: 'Vitamin B3', usage: 67, avg_score: 78, popularity: '67%' },
@@ -129,6 +140,7 @@ function loadPopularSupplements() {
             <td style="text-align: center;"><span class="badge badge-success">${supplement.popularity}</span></td>
         </tr>
     `).join('');
+    console.log('✅ Supplements data loaded successfully');
 }
 
 /**
