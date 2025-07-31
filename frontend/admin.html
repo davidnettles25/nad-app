@@ -1100,10 +1100,12 @@
 
         // Dashboard statistics
         async function loadDashboardStats() {
-            // Loading dashboard statistics...
+            console.log('🔄 Loading dashboard statistics from:', `${API_BASE}/api/dashboard/stats`);
             try {
                 const response = await fetch(`${API_BASE}/api/dashboard/stats`);
+                console.log('📊 Dashboard stats response status:', response.status);
                 const data = await response.json();
+                console.log('📊 Dashboard stats data:', data);
         
                 if (response.ok && data.success) {
                     // Dashboard stats loaded

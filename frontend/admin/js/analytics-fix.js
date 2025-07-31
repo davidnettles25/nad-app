@@ -59,7 +59,7 @@ function updateAnalyticsDisplay(stats) {
     const total = stats.total_tests || 1;
     const activationRate = ((stats.activated_tests / total) * 100).toFixed(1);
     const completionRate = ((stats.completed_tests / total) * 100).toFixed(1);
-    const avgScore = Math.floor(Math.random() * 30) + 65; // Mock average score
+    const avgScore = stats.average_score || 0; // Use real average score from API
     
     // Update analytics stat cards
     const updateElement = (id, value) => {
