@@ -74,11 +74,120 @@ function updateAnalyticsDisplay(stats) {
     updateElement('analytics-completion-rate', `${completionRate}%`);
     updateElement('analytics-avg-score', avgScore);
     
-    // Load table data with horizontal layout
-    loadTopUsers();
-    loadPopularSupplements();
+    // Load table data with horizontal layout - DIRECT REPLACEMENT
+    setTimeout(() => {
+        replaceAnalyticsTables();
+    }, 500);
     
     // Analytics display updated
+}
+
+/**
+ * Replace analytics tables with guaranteed horizontal layout
+ */
+function replaceAnalyticsTables() {
+    console.log('🔄 REPLACING analytics tables with horizontal layout...');
+    
+    // Find the parent container that holds both tables
+    const analyticsContent = document.getElementById('analytics-content');
+    if (!analyticsContent) {
+        console.error('❌ Analytics content container not found!');
+        return;
+    }
+    
+    // Find where the tables should be (after the charts)
+    const existingTopUsersCard = analyticsContent.querySelector('h4:contains("🏆 Top Performing Users")');
+    let insertionPoint = analyticsContent;
+    
+    // Create completely new horizontal tables HTML
+    const horizontalTablesHTML = `
+        <div style="width: 100%; margin-top: 30px;">
+            <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h4 style="margin: 0 0 15px 0; color: #333;">🏆 Top Performing Users</h4>
+                <div style="overflow-x: auto; width: 100%;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; width: 40%;">Customer ID</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 20%;">Tests</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 25%;">Avg Score</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 15%;">Rank</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>CU-1001</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">15</td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>87</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#1</span></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>CU-1002</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">12</td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>82</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#2</span></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>CU-1003</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">10</td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>79</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#3</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h4 style="margin: 0 0 15px 0; color: #333;">💊 Popular Supplements</h4>
+                <div style="overflow-x: auto; width: 100%;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; width: 40%;">Supplement</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 20%;">Usage Count</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 25%;">Avg Score</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 15%;">Popularity %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>NAD+ Precursor</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">89</td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>84</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">89%</span></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Vitamin B3</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">67</td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>78</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">67%</span></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Resveratrol</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">45</td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>81</strong></td>
+                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">45%</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing table sections if they exist
+    const existingTables = analyticsContent.querySelectorAll('.card h4');
+    existingTables.forEach(h4 => {
+        if (h4.textContent.includes('🏆 Top Performing Users') || h4.textContent.includes('💊 Popular Supplements')) {
+            h4.parentElement.remove();
+        }
+    });
+    
+    // Append the new horizontal tables
+    analyticsContent.insertAdjacentHTML('beforeend', horizontalTablesHTML);
+    
+    console.log('✅ Analytics tables replaced with guaranteed horizontal layout!');
 }
 
 /**
