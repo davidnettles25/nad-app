@@ -3,6 +3,7 @@
 window.NADLab = {
     // Lab interface state
     user: null,
+    originalBodyContent: null,
     
     // Configuration
     config: {
@@ -107,6 +108,11 @@ window.NADLab = {
      * Show loading screen
      */
     showLoading() {
+        // Store original content before replacing it
+        if (!this.originalBodyContent) {
+            this.originalBodyContent = document.body.innerHTML;
+        }
+        
         document.body.innerHTML = `
             <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8f9fa;">
                 <div style="text-align: center;">
@@ -127,7 +133,12 @@ window.NADLab = {
      * Hide loading screen
      */
     hideLoading() {
-        // The interface will be loaded by the existing components
+        // Restore original content if we stored it
+        if (this.originalBodyContent) {
+            document.body.innerHTML = this.originalBodyContent;
+            // Clear the stored content
+            this.originalBodyContent = null;
+        }
         console.log('Lab interface loaded successfully');
     },
 
