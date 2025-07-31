@@ -870,49 +870,50 @@
                             </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                            <div class="card" style="margin: 0;">
-                                <h4>🏆 Top Performing Users</h4>
-                                <div id="top-users-table">
-                                    <table class="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Customer ID</th>
-                                                <th>Tests</th>
-                                                <th>Avg Score</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="top-users-tbody">
-                                            <tr>
-                                                <td colspan="3" style="text-align: center; padding: 20px; color: #666;">
-                                                    Loading user performance data...
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                        <!-- Horizontal layout for better score visibility -->
+                        <div class="card">
+                            <h4>🏆 Top Performing Users</h4>
+                            <div id="top-users-table" style="overflow-x: auto;">
+                                <table class="data-table" style="width: 100%; min-width: 600px;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40%;">Customer ID</th>
+                                            <th style="width: 20%; text-align: center;">Tests</th>
+                                            <th style="width: 25%; text-align: center;">Avg Score</th>
+                                            <th style="width: 15%; text-align: center;">Rank</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="top-users-tbody">
+                                        <tr>
+                                            <td colspan="4" style="text-align: center; padding: 20px; color: #666;">
+                                                Loading user performance data...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
+                        </div>
 
-                            <div class="card" style="margin: 0;">
-                                <h4>💊 Popular Supplements</h4>
-                                <div id="popular-supplements-table">
-                                    <table class="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Supplement</th>
-                                                <th>Usage Count</th>
-                                                <th>Avg Score</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="popular-supplements-tbody">
-                                            <tr>
-                                                <td colspan="3" style="text-align: center; padding: 20px; color: #666;">
-                                                    Loading supplement usage data...
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                        <div class="card">
+                            <h4>💊 Popular Supplements</h4>
+                            <div id="popular-supplements-table" style="overflow-x: auto;">
+                                <table class="data-table" style="width: 100%; min-width: 600px;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40%;">Supplement</th>
+                                            <th style="width: 20%; text-align: center;">Usage Count</th>
+                                            <th style="width: 25%; text-align: center;">Avg Score</th>
+                                            <th style="width: 15%; text-align: center;">Popularity %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="popular-supplements-tbody">
+                                        <tr>
+                                            <td colspan="4" style="text-align: center; padding: 20px; color: #666;">
+                                                Loading supplement usage data...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
