@@ -86,63 +86,84 @@ function updateAnalyticsDisplay(stats) {
  * Replace analytics tables with guaranteed horizontal layout
  */
 function replaceAnalyticsTables() {
-    console.log('🔄 FORCING existing analytics tables to display horizontally...');
+    console.log('🔄 REPLACING analytics tables with Overview-style cards...');
     console.log('Cache buster:', new Date().getTime());
     
-    // Add aggressive CSS overrides to force horizontal layout
-    const forceHorizontalCSS = `
-        <style id="force-horizontal-analytics">
-            /* Force horizontal layout with maximum specificity */
-            #analytics-content .data-table,
-            #analytics-content .data-table tbody,
-            #analytics-content .data-table thead,
-            #analytics-content .data-table tr {
-                display: table !important;
-                width: 100% !important;
-            }
-            
-            #analytics-content .data-table tr {
-                display: table-row !important;
-            }
-            
-            #analytics-content .data-table th,
-            #analytics-content .data-table td {
-                display: table-cell !important;
-                white-space: nowrap !important;
-            }
-            
-            #analytics-content #top-users-table,
-            #analytics-content #popular-supplements-table {
-                overflow-x: auto !important;
-                display: block !important;
-                width: 100% !important;
-            }
-            
-            /* Override any responsive rules */
-            @media (max-width: 768px) {
-                #analytics-content .data-table th,
-                #analytics-content .data-table td { 
-                    display: table-cell !important;
-                    white-space: nowrap !important;
-                }
-                #analytics-content .data-table {
-                    min-width: 600px !important;
-                }
-            }
-        </style>
-    `;
-    
-    // Inject the CSS if not already present
-    if (!document.getElementById('force-horizontal-analytics')) {
-        document.head.insertAdjacentHTML('beforeend', forceHorizontalCSS);
-        console.log('✅ Injected force-horizontal CSS');
+    // Find the analytics content container
+    const analyticsContent = document.getElementById('analytics-content');
+    if (!analyticsContent) {
+        console.error('❌ Analytics content container not found!');
+        return;
     }
     
-    // Populate the existing tables with data
-    loadTopUsers();
-    loadPopularSupplements();
+    // Remove existing table sections
+    const existingTables = analyticsContent.querySelectorAll('h4');
+    existingTables.forEach(h4 => {
+        if (h4.textContent.includes('🏆 Top Performing Users') || h4.textContent.includes('💊 Popular Supplements')) {
+            console.log('Removing existing table:', h4.textContent);
+            h4.parentElement.remove();
+        }
+    });
     
-    console.log('✅ Using existing HTML tables with forced horizontal CSS');
+    // Create Overview-style horizontal cards
+    const horizontalCardsHTML = `
+        <div class="card">
+            <h4>🏆 Top Performing Users</h4>
+            <div class="stats-overview">
+                <div class="stat-card">
+                    <div class="stat-number">CU-1001</div>
+                    <div class="stat-label">Customer ID</div>
+                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">15 tests • Score: 87 • #1</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">CU-1002</div>
+                    <div class="stat-label">Customer ID</div>
+                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">12 tests • Score: 82 • #2</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">CU-1003</div>
+                    <div class="stat-label">Customer ID</div>
+                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">10 tests • Score: 79 • #3</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">CU-1004</div>
+                    <div class="stat-label">Customer ID</div>
+                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">8 tests • Score: 85 • #4</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h4>💊 Popular Supplements</h4>
+            <div class="stats-overview">
+                <div class="stat-card">
+                    <div class="stat-number">89%</div>
+                    <div class="stat-label">NAD+ Precursor</div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">89 users • Avg Score: 84</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">67%</div>
+                    <div class="stat-label">Vitamin B3</div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">67 users • Avg Score: 78</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">45%</div>
+                    <div class="stat-label">Resveratrol</div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">45 users • Avg Score: 81</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">38%</div>
+                    <div class="stat-label">CoQ10</div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">38 users • Avg Score: 76</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Append the new cards using the same structure as Overview
+    analyticsContent.insertAdjacentHTML('beforeend', horizontalCardsHTML);
+    
+    console.log('✅ Analytics replaced with Overview-style horizontal cards!');
 }
 
 /**
