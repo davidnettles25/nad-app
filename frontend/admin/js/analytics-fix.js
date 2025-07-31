@@ -74,7 +74,61 @@ function updateAnalyticsDisplay(stats) {
     updateElement('analytics-completion-rate', `${completionRate}%`);
     updateElement('analytics-avg-score', avgScore);
     
+    // Load table data with horizontal layout
+    loadTopUsers();
+    loadPopularSupplements();
+    
     // Analytics display updated
+}
+
+/**
+ * Load top performing users (horizontal layout)
+ */
+function loadTopUsers() {
+    const tbody = document.getElementById('top-users-tbody');
+    if (!tbody) return;
+    
+    const mockUsers = [
+        { customer_id: 'CU-1001', tests: 15, avg_score: 87, rank: '#1' },
+        { customer_id: 'CU-1002', tests: 12, avg_score: 82, rank: '#2' },
+        { customer_id: 'CU-1003', tests: 10, avg_score: 79, rank: '#3' },
+        { customer_id: 'CU-1004', tests: 8, avg_score: 85, rank: '#4' },
+        { customer_id: 'CU-1005', tests: 7, avg_score: 76, rank: '#5' }
+    ];
+    
+    tbody.innerHTML = mockUsers.map(user => `
+        <tr>
+            <td><strong>${user.customer_id}</strong></td>
+            <td style="text-align: center;">${user.tests}</td>
+            <td style="text-align: center;"><strong>${user.avg_score}</strong></td>
+            <td style="text-align: center;"><span class="badge badge-primary">${user.rank}</span></td>
+        </tr>
+    `).join('');
+}
+
+/**
+ * Load popular supplements (horizontal layout)
+ */
+function loadPopularSupplements() {
+    const tbody = document.getElementById('popular-supplements-tbody');
+    if (!tbody) return;
+    
+    const mockSupplements = [
+        { name: 'NAD+ Precursor', usage: 89, avg_score: 84, popularity: '89%' },
+        { name: 'Vitamin B3', usage: 67, avg_score: 78, popularity: '67%' },
+        { name: 'Resveratrol', usage: 45, avg_score: 81, popularity: '45%' },
+        { name: 'CoQ10', usage: 38, avg_score: 76, popularity: '38%' },
+        { name: 'Alpha Lipoic Acid', usage: 32, avg_score: 79, popularity: '32%' }
+    ];
+    
+    tbody.innerHTML = mockSupplements.map(supplement => `
+        <tr>
+            <td><strong>${supplement.name}</strong></td>
+            <td style="text-align: center;">${supplement.usage}</td>
+            <td style="text-align: center;"><strong>${supplement.avg_score}</strong></td>
+            <td style="text-align: center;"><span class="badge badge-success">${supplement.popularity}</span></td>
+        </tr>
+    `).join('');
 }
 
 /**
@@ -490,6 +544,8 @@ function getPeriodLabel(period) {
 // Make functions globally accessible
 window.loadAnalytics = loadAnalytics;
 window.updateAnalyticsDisplay = updateAnalyticsDisplay;
+window.loadTopUsers = loadTopUsers;
+window.loadPopularSupplements = loadPopularSupplements;
 window.exportAnalytics = exportAnalytics;
 window.exportTestDetails = exportTestDetails;
 
