@@ -127,24 +127,9 @@ function replaceAnalyticsTables() {
         return;
     }
     
-    // Remove ALL existing table sections (both vertical cards and tables)
-    const existingTables = analyticsContent.querySelectorAll('.card');
-    existingTables.forEach(card => {
-        const h4 = card.querySelector('h4');
-        if (h4 && (h4.textContent.includes('🏆 Top Performing Users') || h4.textContent.includes('💊 Popular Supplements'))) {
-            console.log('Removing existing vertical card:', h4.textContent);
-            card.remove();
-        }
-    });
-    
-    // Also remove any existing table elements
-    const existingTableDivs = analyticsContent.querySelectorAll('div[id*="table"]');
-    existingTableDivs.forEach(div => {
-        if (div.id.includes('users') || div.id.includes('supplements')) {
-            console.log('Removing table div:', div.id);
-            div.parentElement?.remove();
-        }
-    });
+    // Clear ALL existing content in analytics to avoid duplicates
+    console.log('Removing all existing analytics content to avoid vertical/horizontal duplicates');
+    analyticsContent.innerHTML = '';
     
     // Create horizontal analytics cards using unique class name  
     const horizontalCardsHTML = `
@@ -220,15 +205,8 @@ function replaceAnalyticsTables() {
         </div>
     `;
     
-    // Replace analytics content with horizontal cards only
-    const existingContent = analyticsContent.querySelector('.card:first-child'); // Keep the first analytics card with stats
-    if (existingContent) {
-        // Insert after the first card (stats overview)
-        existingContent.insertAdjacentHTML('afterend', horizontalCardsHTML);
-    } else {
-        // If no existing content, append normally
-        analyticsContent.insertAdjacentHTML('beforeend', horizontalCardsHTML);
-    }
+    // Set the clean horizontal-only content
+    analyticsContent.innerHTML = horizontalCardsHTML;
     
     console.log('✅ Analytics successfully displaying horizontally!');
 }
