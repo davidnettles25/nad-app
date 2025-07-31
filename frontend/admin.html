@@ -1541,19 +1541,153 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             }
         }
 
-        // Activate test
+        // Activate test with customer selection
         async function activateTest(testId) {
-            if (!confirm(`Activate test ${testId}?`)) {return;}
+            showCustomerSelectionModal(testId);
+        }
         
+        // Show customer selection modal
+        function showCustomerSelectionModal(testId) {
+            // Remove any existing modal
+            const existingModal = document.getElementById('customer-selection-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            const modal = document.createElement('div');
+            modal.id = 'customer-selection-modal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;';
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 12px; width: 500px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                    <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; margin: -30px -30px 20px -30px; padding: 20px; border-radius: 12px 12px 0 0;">
+                        <h3 style="margin: 0;">⚡ Activate Test ${testId}</h3>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9;">Select a customer to link this test to</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Search Customer:</label>
+                        <input type="text" id="customer-search" placeholder="Enter customer email or name..." 
+                               style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px;">
+                        <button type="button" onclick="searchCustomers()" 
+                                style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                            🔍 Search
+                        </button>
+                    </div>
+                    
+                    <div id="customer-results" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px;">
+                        <p style="color: #666; text-align: center;">Enter search terms and click Search to find customers</p>
+                    </div>
+                    
+                    <div style="text-align: right; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                        <button type="button" onclick="closeCustomerSelectionModal()" 
+                                style="margin-right: 10px; padding: 10px 20px; border: 2px solid #d1d5db; background: #f9fafb; border-radius: 6px; cursor: pointer;">
+                            Cancel
+                        </button>
+                        <button type="button" id="activate-with-customer-btn" onclick="activateTestWithCustomer('${testId}')" disabled
+                                style="padding: 10px 20px; border: none; background: #28a745; color: white; border-radius: 6px; cursor: pointer; opacity: 0.5;">
+                            ⚡ Activate Test
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Focus on search input
+            setTimeout(() => {
+                document.getElementById('customer-search').focus();
+            }, 100);
+        }
+        
+        // Global variable to store selected customer
+        let selectedCustomer = null;
+        
+        // Search customers
+        async function searchCustomers() {
+            const searchTerm = document.getElementById('customer-search').value.trim();
+            const resultsDiv = document.getElementById('customer-results');
+            
+            if (!searchTerm) {
+                resultsDiv.innerHTML = '<p style="color: #666; text-align: center;">Please enter search terms</p>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<p style="color: #666; text-align: center;">🔍 Searching...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/customers/search?q=${encodeURIComponent(searchTerm)}`);
+                const result = await response.json();
+                
+                if (result.success && result.customers.length > 0) {
+                    const customersHtml = result.customers.map(customer => `
+                        <div class="customer-option" onclick="selectCustomer(${customer.shopify_customer_id}, '${customer.email}', '${customer.first_name}', '${customer.last_name}')"
+                             style="padding: 10px; border: 1px solid #e5e7eb; border-radius: 4px; margin-bottom: 8px; cursor: pointer; transition: background 0.2s;"
+                             onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                            <div style="font-weight: 600;">${customer.first_name} ${customer.last_name}</div>
+                            <div style="color: #666; font-size: 14px;">${customer.email}</div>
+                            <div style="color: #666; font-size: 12px;">ID: ${customer.shopify_customer_id}</div>
+                        </div>
+                    `).join('');
+                    
+                    resultsDiv.innerHTML = customersHtml;
+                } else {
+                    resultsDiv.innerHTML = '<p style="color: #666; text-align: center;">No customers found matching your search</p>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<p style="color: #dc3545; text-align: center;">Error searching customers: ' + error.message + '</p>';
+            }
+        }
+        
+        // Select customer
+        function selectCustomer(customerId, email, firstName, lastName) {
+            selectedCustomer = {
+                id: customerId,
+                email: email,
+                firstName: firstName,
+                lastName: lastName
+            };
+            
+            // Highlight selected customer
+            document.querySelectorAll('.customer-option').forEach(option => {
+                option.style.background = 'white';
+                option.style.border = '1px solid #e5e7eb';
+            });
+            
+            event.target.closest('.customer-option').style.background = '#e7f3ff';
+            event.target.closest('.customer-option').style.border = '2px solid #007bff';
+            
+            // Enable activate button
+            const activateBtn = document.getElementById('activate-with-customer-btn');
+            activateBtn.disabled = false;
+            activateBtn.style.opacity = '1';
+            activateBtn.style.cursor = 'pointer';
+        }
+        
+        // Activate test with selected customer
+        async function activateTestWithCustomer(testId) {
+            if (!selectedCustomer) {
+                showAlert('❌ Please select a customer first', 'error');
+                return;
+            }
+            
             try {
                 const response = await fetch(`${API_BASE}/api/admin/tests/${testId}/activate`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        customerId: selectedCustomer.id,
+                        customerEmail: selectedCustomer.email
+                    })
                 });
-        
+                
                 const result = await response.json();
-        
+                
                 if (result.success) {
-                    showAlert(`✅ Test ${testId} activated successfully`, 'success');
+                    showAlert(`✅ Test ${testId} activated and linked to ${selectedCustomer.firstName} ${selectedCustomer.lastName} (${selectedCustomer.email})`, 'success');
+                    closeCustomerSelectionModal();
                     loadTestsFromAPI(); // Refresh the table
                 } else {
                     showAlert('❌ Failed to activate test: ' + result.message, 'error');
@@ -1562,10 +1696,19 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 showAlert('❌ Network error: ' + error.message, 'error');
             }
         }
+        
+        // Close customer selection modal
+        function closeCustomerSelectionModal() {
+            const modal = document.getElementById('customer-selection-modal');
+            if (modal) {
+                modal.remove();
+            }
+            selectedCustomer = null;
+        }
 
         // Deactivate test
         async function deactivateTest(testId) {
-            if (!confirm(`Deactivate test ${testId}? This will return it to pending status.`)) {return;}
+            if (!confirm(`Deactivate test ${testId}?\n\nThis will:\n• Return test to pending status\n• Clear activation date\n• Remove customer linkage\n\nAre you sure?`)) {return;}
         
             try {
                 const response = await fetch(`${API_BASE}/api/admin/tests/${testId}/deactivate`, {
@@ -1956,6 +2099,10 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         window.setupSearchAndFilter = setupSearchAndFilter;
         window.clearFilters = clearFilters;
         window.applyFilters = applyFilters;
+        window.searchCustomers = searchCustomers;
+        window.selectCustomer = selectCustomer;
+        window.activateTestWithCustomer = activateTestWithCustomer;
+        window.closeCustomerSelectionModal = closeCustomerSelectionModal;
 
         // Batch Printing function
         function showBatchPrinting() {

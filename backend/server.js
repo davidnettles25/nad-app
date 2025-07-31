@@ -2567,11 +2567,40 @@ app.post('/api/admin/tests/:testId/activate', async (req, res) => {
             });
         }
         
-        const [updateResult] = await db.execute(`
-            UPDATE nad_test_ids 
-            SET status = 'activated', activated_date = NOW()
-            WHERE UPPER(test_id) = UPPER(?)
-        `, [testId]);
+        // Get customer info from request body if provided
+        const { customerId, customerEmail } = req.body || {};
+        
+        let updateQuery, updateParams;
+        
+        if (customerId && customerEmail) {
+            // Activate with customer linking
+            updateQuery = `
+                UPDATE nad_test_ids 
+                SET status = 'activated', activated_date = NOW(), customer_id = ?
+                WHERE UPPER(test_id) = UPPER(?)
+            `;
+            updateParams = [customerEmail, testId];
+            
+            req.logger.info('Activating test with customer linkage', {
+                testId,
+                customerId,
+                customerEmail
+            });
+        } else {
+            // Legacy activation without customer (keep for backward compatibility)
+            updateQuery = `
+                UPDATE nad_test_ids 
+                SET status = 'activated', activated_date = NOW()
+                WHERE UPPER(test_id) = UPPER(?)
+            `;
+            updateParams = [testId];
+            
+            req.logger.warn('Activating test without customer linkage (legacy mode)', {
+                testId
+            });
+        }
+        
+        const [updateResult] = await db.execute(updateQuery, updateParams);
         
         if (updateResult.affectedRows === 0) {
             req.logger.error('Test activation failed: no rows updated', {
@@ -2671,7 +2700,7 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
         
         const [updateResult] = await db.execute(`
             UPDATE nad_test_ids 
-            SET status = 'pending', activated_date = NULL
+            SET status = 'pending', activated_date = NULL, customer_id = NULL
             WHERE UPPER(test_id) = UPPER(?)
         `, [testId]);
         
@@ -2725,6 +2754,64 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
     }
 });
 
+// Customer search endpoint for admin
+app.get('/api/admin/customers/search', async (req, res) => {
+    const startTime = Date.now();
+    const searchTerm = req.query.q;
+    
+    req.logger.admin('customer_search_request', 'admin', { searchTerm });
+    
+    try {
+        if (!searchTerm || searchTerm.trim() === '') {
+            return res.status(400).json({
+                success: false,
+                error: 'Search term is required'
+            });
+        }
+        
+        const searchPattern = `%${searchTerm.trim()}%`;
+        
+        // Search in nad_shopify_customers table
+        const [customers] = await db.execute(`
+            SELECT shopify_customer_id, email, first_name, last_name, tags
+            FROM nad_shopify_customers 
+            WHERE email LIKE ? OR first_name LIKE ? OR last_name LIKE ?
+            ORDER BY first_name, last_name
+            LIMIT 20
+        `, [searchPattern, searchPattern, searchPattern]);
+        
+        const processingTime = Date.now() - startTime;
+        req.logger.info('Customer search completed', {
+            searchTerm,
+            resultsCount: customers.length,
+            processingTime: `${processingTime}ms`
+        });
+        
+        res.json({
+            success: true,
+            customers: customers,
+            count: customers.length,
+            searchTerm: searchTerm,
+            processing_time_ms: processingTime
+        });
+        
+    } catch (error) {
+        const processingTime = Date.now() - startTime;
+        req.logger.error('Customer search failed', {
+            searchTerm,
+            processingTime: `${processingTime}ms`,
+            error: error.message,
+            stack: error.stack
+        });
+        
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            search_term: searchTerm,
+            processing_time_ms: processingTime
+        });
+    }
+});
 
 // Bulk test deactivation
 app.post('/api/admin/tests/bulk-deactivate', async (req, res) => {
@@ -2738,7 +2825,7 @@ app.post('/api/admin/tests/bulk-deactivate', async (req, res) => {
         const placeholders = test_ids.map(() => '?').join(',');
         const [result] = await db.execute(`
             UPDATE nad_test_ids 
-            SET status = 'pending', activated_date = NULL
+            SET status = 'pending', activated_date = NULL, customer_id = NULL
             WHERE test_id IN (${placeholders})
         `, test_ids);
         
