@@ -199,7 +199,23 @@ function replaceAnalyticsTables() {
         console.log('Parent container style:', {
             display: parentStyle.display,
             flexDirection: parentStyle.flexDirection,
-            gridTemplateColumns: parentStyle.gridTemplateColumns
+            gridTemplateColumns: parentStyle.gridTemplateColumns,
+            width: parentStyle.width
+        });
+        
+        // Check the flex children within each row
+        const dataRows = analyticsContent.querySelectorAll('div[style*="display: flex"][style*="padding: 10px"]');
+        console.log('🔍 Checking flex children in data rows:', dataRows.length);
+        
+        dataRows.forEach((row, index) => {
+            const children = row.children;
+            console.log(`Data row ${index} children:`, Array.from(children).map(child => ({
+                text: child.textContent.trim(),
+                computedFlex: window.getComputedStyle(child).flex,
+                computedWidth: window.getComputedStyle(child).width,
+                offsetLeft: child.offsetLeft,
+                offsetTop: child.offsetTop
+            })));
         });
     }, 100);
     
