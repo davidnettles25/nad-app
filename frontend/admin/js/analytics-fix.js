@@ -74,7 +74,9 @@ function updateAnalyticsDisplay(stats) {
     updateElement('analytics-completion-rate', `${completionRate}%`);
     updateElement('analytics-avg-score', avgScore);
     
-    // Load table data with horizontal layout - DIRECT REPLACEMENT
+    // Load table data with horizontal layout - DIRECT REPLACEMENT  
+    // Reset the flag in case this is a refresh/reload
+    window.analyticsReplaced = false;
     setTimeout(() => {
         replaceAnalyticsTables();
     }, 500);
@@ -86,6 +88,12 @@ function updateAnalyticsDisplay(stats) {
  * Replace analytics tables with guaranteed horizontal layout
  */
 function replaceAnalyticsTables() {
+    // Prevent multiple executions
+    if (window.analyticsReplaced) {
+        console.log('Analytics already replaced, skipping...');
+        return;
+    }
+    
     console.log('🔄 REPLACING analytics tables with Overview-style cards...');
     console.log('Cache buster:', new Date().getTime());
     
@@ -130,6 +138,9 @@ function replaceAnalyticsTables() {
     // Clear ALL existing content in analytics to avoid duplicates
     console.log('Removing all existing analytics content to avoid vertical/horizontal duplicates');
     analyticsContent.innerHTML = '';
+    
+    // Mark as replaced to prevent future executions
+    window.analyticsReplaced = true;
     
     // Create horizontal analytics cards using unique class name  
     const horizontalCardsHTML = `
