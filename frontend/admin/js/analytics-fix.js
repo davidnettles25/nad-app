@@ -179,6 +179,30 @@ function replaceAnalyticsTables() {
     // Append the new horizontal tables
     analyticsContent.insertAdjacentHTML('beforeend', horizontalTablesHTML);
     
+    // Diagnose what CSS is being applied
+    setTimeout(() => {
+        const flexRows = analyticsContent.querySelectorAll('div[style*="display: flex"]');
+        console.log('🔍 DIAGNOSTICS: Found', flexRows.length, 'flex rows');
+        
+        flexRows.forEach((row, index) => {
+            const computedStyle = window.getComputedStyle(row);
+            console.log(`Row ${index}:`, {
+                display: computedStyle.display,
+                flexDirection: computedStyle.flexDirection,
+                width: computedStyle.width,
+                actualHTML: row.outerHTML.substring(0, 100) + '...'
+            });
+        });
+        
+        // Also check if the parent container has any forced styling
+        const parentStyle = window.getComputedStyle(analyticsContent);
+        console.log('Parent container style:', {
+            display: parentStyle.display,
+            flexDirection: parentStyle.flexDirection,
+            gridTemplateColumns: parentStyle.gridTemplateColumns
+        });
+    }, 100);
+    
     console.log('✅ Analytics tables replaced with guaranteed horizontal layout!');
 }
 
