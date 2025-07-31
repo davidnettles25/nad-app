@@ -107,6 +107,23 @@ function replaceAnalyticsTables() {
     
     // ULTIMATE SOLUTION: Use CSS Grid to force horizontal layout
     const horizontalTablesHTML = `
+        <style>
+            /* Override responsive CSS for analytics grid */
+            .force-horizontal-grid {
+                display: grid !important;
+                grid-template-columns: 2fr 1fr 1fr 1fr !important;
+                min-width: 600px !important;
+                width: 100% !important;
+            }
+            @media (max-width: 768px) {
+                .force-horizontal-grid {
+                    display: grid !important;
+                    grid-template-columns: 2fr 1fr 1fr 1fr !important;
+                    min-width: 600px !important;
+                    overflow-x: auto !important;
+                }
+            }
+        </style>
         <div style="width: 100% !important; margin-top: 30px;">
             <!-- Simple inline style test -->
             <div style="background: red !important; color: white !important; padding: 20px !important; margin-bottom: 10px !important;">
@@ -117,7 +134,7 @@ function replaceAnalyticsTables() {
                 <h4 style="margin: 0 0 20px 0; color: #333;">🏆 Top Performing Users - CSS GRID TEST</h4>
                 
                 <!-- CSS Grid Container -->
-                <div style="display: grid !important; grid-template-columns: 2fr 1fr 1fr 1fr !important; gap: 0 !important; width: 100% !important; border: 2px solid #000;">
+                <div class="force-horizontal-grid" style="display: grid !important; grid-template-columns: 2fr 1fr 1fr 1fr !important; gap: 0 !important; width: 100% !important; border: 2px solid #000; min-width: 600px !important;">
                     <!-- Headers -->
                     <div style="background: #333 !important; color: white !important; padding: 10px !important; border-right: 1px solid #fff;">Customer ID</div>
                     <div style="background: #333 !important; color: white !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #fff;">Tests</div>
@@ -148,7 +165,7 @@ function replaceAnalyticsTables() {
                 <h4 style="margin: 0 0 20px 0; color: #333;">💊 Popular Supplements - CSS GRID TEST</h4>
                 
                 <!-- CSS Grid Container -->
-                <div style="display: grid !important; grid-template-columns: 2fr 1fr 1fr 1fr !important; gap: 0 !important; width: 100% !important; border: 2px solid #000;">
+                <div class="force-horizontal-grid" style="display: grid !important; grid-template-columns: 2fr 1fr 1fr 1fr !important; gap: 0 !important; width: 100% !important; border: 2px solid #000; min-width: 600px !important;">
                     <!-- Headers -->
                     <div style="background: #333 !important; color: white !important; padding: 10px !important; border-right: 1px solid #fff;">Supplement</div>
                     <div style="background: #333 !important; color: white !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #fff;">Usage</div>
