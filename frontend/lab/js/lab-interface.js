@@ -29,18 +29,21 @@ window.NADLab = {
             console.log('Lab authentication succeeded, loading interface...');
             this.user = authResult.user;
             
-            // Initialize NAD Lab Interface
-            const labContainer = document.querySelector('.lab-container');
-            
-            // Ensure modal container exists BEFORE loading components
-            this.ensureModalContainer();
-            
-            this.loadComponents();
-            this.loadStats();
-            this.setupEventListeners();
-            
-            // Hide loading screen
+            // Hide loading screen FIRST to restore original DOM
             this.hideLoading();
+            
+            // Small delay to ensure DOM is ready
+            setTimeout(() => {
+                // Initialize NAD Lab Interface
+                const labContainer = document.querySelector('.lab-container');
+                
+                // Ensure modal container exists BEFORE loading components
+                this.ensureModalContainer();
+                
+                this.loadComponents();
+                this.loadStats();
+                this.setupEventListeners();
+            }, 100);
             
         } catch (error) {
             console.error('Lab interface initialization failed:', error);
