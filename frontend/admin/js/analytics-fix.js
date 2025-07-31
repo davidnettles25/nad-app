@@ -89,6 +89,24 @@ function replaceAnalyticsTables() {
     console.log('🔄 REPLACING analytics tables with Overview-style cards...');
     console.log('Cache buster:', new Date().getTime());
     
+    // Add the missing stats-grid CSS that Overview uses
+    const statsGridCSS = `
+        <style id="stats-grid-css">
+            .stats-grid {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+                gap: 20px !important;
+                margin-bottom: 30px !important;
+            }
+        </style>
+    `;
+    
+    // Inject CSS if not already present
+    if (!document.getElementById('stats-grid-css')) {
+        document.head.insertAdjacentHTML('beforeend', statsGridCSS);
+        console.log('✅ Injected stats-grid CSS');
+    }
+    
     // Find the analytics content container
     const analyticsContent = document.getElementById('analytics-content');
     if (!analyticsContent) {
@@ -105,11 +123,11 @@ function replaceAnalyticsTables() {
         }
     });
     
-    // Create Overview-style horizontal cards
+    // Create EXACT Overview HTML structure that works
     const horizontalCardsHTML = `
         <div class="card">
             <h4>🏆 Top Performing Users</h4>
-            <div class="stats-overview">
+            <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-number">CU-1001</div>
                     <div class="stat-label">Customer ID</div>
@@ -135,7 +153,7 @@ function replaceAnalyticsTables() {
         
         <div class="card">
             <h4>💊 Popular Supplements</h4>
-            <div class="stats-overview">
+            <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-number">89%</div>
                     <div class="stat-label">NAD+ Precursor</div>
