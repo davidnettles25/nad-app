@@ -157,27 +157,8 @@ function replaceAnalyticsTables() {
     // Mark as replaced to prevent future executions
     window.analyticsReplaced = true;
     
-    // Create horizontal analytics cards using unique class name  
+    // Create horizontal analytics cards (only the detailed analytics, not the basic stats)
     const horizontalCardsHTML = `
-        <div class="horizontal-stats-grid">
-            <div class="stat-card">
-                <div class="stat-number">113</div>
-                <div class="stat-label">Total Tests</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">31</div>
-                <div class="stat-label">Activated Tests</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">8</div>
-                <div class="stat-label">Completed Tests</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">105</div>
-                <div class="stat-label">Pending Tests</div>
-            </div>
-        </div>
-        
         <div class="card">
             <h4>🏆 Top Performing Users</h4>
             <div class="horizontal-stats-grid">
