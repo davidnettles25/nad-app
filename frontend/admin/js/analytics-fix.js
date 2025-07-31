@@ -131,10 +131,10 @@ function replaceAnalyticsTables() {
             .test-purple { background: purple !important; color: white !important; padding: 20px !important; }
             .test-lime { background: lime !important; padding: 20px !important; }
             .test-yellow { background: yellow !important; padding: 10px !important; }
-            .test-grid { display: grid !important; grid-template-columns: 1fr 1fr 1fr 1fr !important; gap: 10px !important; }
+            .test-grid { display: grid !important; grid-template-columns: 1fr 1fr 1fr 1fr !important; gap: 10px !important; min-width: 600px !important; }
             .test-center { text-align: center !important; }
         </style>
-        <div style="width: 100% !important; margin-top: 30px;">
+        <div style="width: 100% !important; margin-top: 30px; overflow-x: auto !important;">
             <!-- Simple inline style test -->
             <div style="background: red !important; color: white !important; padding: 20px !important; margin-bottom: 10px !important;">
                 INLINE STYLE TEST - This should have a RED background
@@ -155,7 +155,7 @@ function replaceAnalyticsTables() {
             <!-- INLINE STYLE TEST -->
             <div style="background: lime !important; padding: 20px !important; margin-bottom: 20px !important;">
                 <h4 style="color: black !important;">VISUAL DEBUG TEST - INLINE</h4>
-                <div style="display: grid !important; grid-template-columns: 1fr 1fr 1fr 1fr !important; gap: 10px !important; background: yellow !important; padding: 10px !important;">
+                <div style="display: grid !important; grid-template-columns: 1fr 1fr 1fr 1fr !important; gap: 10px !important; background: yellow !important; padding: 10px !important; min-width: 600px !important;">
                     <div style="background: red !important; color: white !important; padding: 20px !important; text-align: center !important;">RED</div>
                     <div style="background: blue !important; color: white !important; padding: 20px !important; text-align: center !important;">BLUE</div>
                     <div style="background: green !important; color: white !important; padding: 20px !important; text-align: center !important;">GREEN</div>
