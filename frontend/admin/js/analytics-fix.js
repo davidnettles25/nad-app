@@ -136,28 +136,8 @@ function replaceAnalyticsTables() {
         }
     });
     
-    // Use unique class name to avoid .analytics-grid CSS conflicts
+    // Create horizontal analytics cards using unique class name
     const horizontalCardsHTML = `
-        <h3>🧪 FIXED: Using unique class to avoid analytics-grid conflicts</h3>
-        <div class="horizontal-stats-grid">
-            <div class="stat-card">
-                <div class="stat-number">113</div>
-                <div class="stat-label">Total Tests</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">31</div>
-                <div class="stat-label">Activated Tests</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">8</div>
-                <div class="stat-label">Completed Tests</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">105</div>
-                <div class="stat-label">Pending Tests</div>
-            </div>
-        </div>
-        
         <div class="card">
             <h4>🏆 Top Performing Users</h4>
             <div class="horizontal-stats-grid">
@@ -214,7 +194,7 @@ function replaceAnalyticsTables() {
     // Append the new cards using the same structure as Overview
     analyticsContent.insertAdjacentHTML('beforeend', horizontalCardsHTML);
     
-    console.log('✅ Analytics replaced with Overview-style horizontal cards!');
+    console.log('✅ Analytics successfully displaying horizontally!');
 }
 
 /**
