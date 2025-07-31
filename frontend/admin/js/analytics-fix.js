@@ -103,78 +103,74 @@ function replaceAnalyticsTables() {
         }
     });
     
-    // Create completely new horizontal tables HTML
+    // Create horizontal list layout (no tables - to avoid CSS conflicts)
     const horizontalTablesHTML = `
-        <div style="width: 100%; margin-top: 30px;">
-            <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h4 style="margin: 0 0 15px 0; color: #333;">🏆 Top Performing Users</h4>
-                <div style="overflow-x: auto; width: 100%;">
-                    <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
-                        <thead>
-                            <tr style="background: #f8f9fa;">
-                                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; width: 40%;">Customer ID</th>
-                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 20%;">Tests</th>
-                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 25%;">Avg Score</th>
-                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 15%;">Rank</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>CU-1001</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">15</td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>87</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#1</span></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>CU-1002</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">12</td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>82</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#2</span></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>CU-1003</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">10</td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>79</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#3</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
+        <div style="width: 100% !important; margin-top: 30px; display: block !important;">
+            <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: block !important; width: 100% !important;">
+                <h4 style="margin: 0 0 15px 0; color: #333; display: block !important;">🏆 Top Performing Users</h4>
+                
+                <!-- Header Row -->
+                <div style="display: flex !important; background: #f8f9fa; padding: 12px; border: 1px solid #dee2e6; font-weight: bold; margin-bottom: 2px;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important;">Customer ID</div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important;">Tests</div>  
+                    <div style="flex: 0 0 25% !important; text-align: center !important;">Avg Score</div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important;">Rank</div>
+                </div>
+                
+                <!-- Data Rows -->
+                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>CU-1001</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important;">15</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>87</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#1</span></div>
+                </div>
+                
+                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>CU-1002</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important;">12</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>82</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#2</span></div>
+                </div>
+                
+                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>CU-1003</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important;">10</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>79</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#3</span></div>
                 </div>
             </div>
             
-            <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h4 style="margin: 0 0 15px 0; color: #333;">💊 Popular Supplements</h4>
-                <div style="overflow-x: auto; width: 100%;">
-                    <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
-                        <thead>
-                            <tr style="background: #f8f9fa;">
-                                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; width: 40%;">Supplement</th>
-                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 20%;">Usage Count</th>
-                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 25%;">Avg Score</th>
-                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6; width: 15%;">Popularity %</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>NAD+ Precursor</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">89</td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>84</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">89%</span></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Vitamin B3</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">67</td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>78</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">67%</span></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Resveratrol</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">45</td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><strong>81</strong></td>
-                                <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">45%</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: block !important; width: 100% !important;">
+                <h4 style="margin: 0 0 15px 0; color: #333; display: block !important;">💊 Popular Supplements</h4>
+                
+                <!-- Header Row -->
+                <div style="display: flex !important; background: #f8f9fa; padding: 12px; border: 1px solid #dee2e6; font-weight: bold; margin-bottom: 2px;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important;">Supplement</div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important;">Usage Count</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important;">Avg Score</div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important;">Popularity %</div>
+                </div>
+                
+                <!-- Data Rows -->
+                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>NAD+ Precursor</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important;">89</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>84</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">89%</span></div>
+                </div>
+                
+                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>Vitamin B3</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important;">67</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>78</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">67%</span></div>
+                </div>
+                
+                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>Resveratrol</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important;">45</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>81</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">45%</span></div>
                 </div>
             </div>
         </div>
