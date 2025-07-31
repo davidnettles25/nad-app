@@ -95,9 +95,13 @@ function replaceAnalyticsTables() {
         return;
     }
     
-    // Find where the tables should be (after the charts)
-    const existingTopUsersCard = analyticsContent.querySelector('h4:contains("🏆 Top Performing Users")');
-    let insertionPoint = analyticsContent;
+    // Remove existing table sections if they exist (fix selector)
+    const allH4s = analyticsContent.querySelectorAll('h4');
+    allH4s.forEach(h4 => {
+        if (h4.textContent.includes('🏆 Top Performing Users') || h4.textContent.includes('💊 Popular Supplements')) {
+            h4.parentElement.remove();
+        }
+    });
     
     // Create completely new horizontal tables HTML
     const horizontalTablesHTML = `
@@ -175,14 +179,6 @@ function replaceAnalyticsTables() {
             </div>
         </div>
     `;
-    
-    // Remove existing table sections if they exist
-    const existingTables = analyticsContent.querySelectorAll('.card h4');
-    existingTables.forEach(h4 => {
-        if (h4.textContent.includes('🏆 Top Performing Users') || h4.textContent.includes('💊 Popular Supplements')) {
-            h4.parentElement.remove();
-        }
-    });
     
     // Append the new horizontal tables
     analyticsContent.insertAdjacentHTML('beforeend', horizontalTablesHTML);
