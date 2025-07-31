@@ -103,69 +103,69 @@ function replaceAnalyticsTables() {
         }
     });
     
-    // NUCLEAR OPTION: Use absolute positioning to force horizontal layout
+    // ULTIMATE SOLUTION: Use CSS Grid to force horizontal layout
     const horizontalTablesHTML = `
-        <div style="width: 100% !important; margin-top: 30px; display: block !important; position: relative !important;">
-            <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: block !important; width: 100% !important; position: relative !important;">
-                <h4 style="margin: 0 0 60px 0; color: #333; display: block !important;">🏆 Top Performing Users - ABSOLUTE POSITIONING TEST</h4>
+        <div style="width: 100% !important; margin-top: 30px;">
+            <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h4 style="margin: 0 0 20px 0; color: #333;">🏆 Top Performing Users - CSS GRID TEST</h4>
                 
-                <!-- ABSOLUTE POSITIONED ROW 1 -->
-                <div style="position: absolute !important; top: 80px; left: 20px; width: 600px; height: 40px; background: #f0f0f0; border: 2px solid #000;">
-                    <div style="position: absolute !important; top: 0; left: 0; width: 240px; height: 40px; background: #ff0000 !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">CU-1001</div>
-                    <div style="position: absolute !important; top: 0; left: 240px; width: 120px; height: 40px; background: #00ff00 !important; color: black; line-height: 40px; text-align: center; border-right: 1px solid #000;">15</div>
-                    <div style="position: absolute !important; top: 0; left: 360px; width: 150px; height: 40px; background: #0000ff !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">87</div>
-                    <div style="position: absolute !important; top: 0; left: 510px; width: 90px; height: 40px; background: #ffff00 !important; color: black; line-height: 40px; text-align: center;">#1</div>
+                <!-- CSS Grid Container -->
+                <div style="display: grid !important; grid-template-columns: 2fr 1fr 1fr 1fr !important; gap: 0 !important; width: 100% !important; border: 2px solid #000;">
+                    <!-- Headers -->
+                    <div style="background: #333 !important; color: white !important; padding: 10px !important; border-right: 1px solid #fff;">Customer ID</div>
+                    <div style="background: #333 !important; color: white !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #fff;">Tests</div>
+                    <div style="background: #333 !important; color: white !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #fff;">Avg Score</div>
+                    <div style="background: #333 !important; color: white !important; padding: 10px !important; text-align: center !important;">Rank</div>
+                    
+                    <!-- Row 1 -->
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">CU-1001</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">15</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc; font-weight: bold;">87</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-top: 1px solid #ccc;"><span style="background: #007bff; color: white; padding: 2px 8px; border-radius: 4px;">#1</span></div>
+                    
+                    <!-- Row 2 -->
+                    <div style="background: white !important; padding: 10px !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">CU-1002</div>
+                    <div style="background: white !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">12</div>
+                    <div style="background: white !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc; font-weight: bold;">82</div>
+                    <div style="background: white !important; padding: 10px !important; text-align: center !important; border-top: 1px solid #ccc;"><span style="background: #007bff; color: white; padding: 2px 8px; border-radius: 4px;">#2</span></div>
+                    
+                    <!-- Row 3 -->
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">CU-1003</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">10</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc; font-weight: bold;">79</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-top: 1px solid #ccc;"><span style="background: #007bff; color: white; padding: 2px 8px; border-radius: 4px;">#3</span></div>
                 </div>
-                
-                <!-- ABSOLUTE POSITIONED ROW 2 -->
-                <div style="position: absolute !important; top: 125px; left: 20px; width: 600px; height: 40px; background: #f0f0f0; border: 2px solid #000;">
-                    <div style="position: absolute !important; top: 0; left: 0; width: 240px; height: 40px; background: #ff0000 !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">CU-1002</div>
-                    <div style="position: absolute !important; top: 0; left: 240px; width: 120px; height: 40px; background: #00ff00 !important; color: black; line-height: 40px; text-align: center; border-right: 1px solid #000;">12</div>
-                    <div style="position: absolute !important; top: 0; left: 360px; width: 150px; height: 40px; background: #0000ff !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">82</div>
-                    <div style="position: absolute !important; top: 0; left: 510px; width: 90px; height: 40px; background: #ffff00 !important; color: black; line-height: 40px; text-align: center;">#2</div>
-                </div>
-                
-                <!-- ABSOLUTE POSITIONED ROW 3 -->
-                <div style="position: absolute !important; top: 170px; left: 20px; width: 600px; height: 40px; background: #f0f0f0; border: 2px solid #000;">
-                    <div style="position: absolute !important; top: 0; left: 0; width: 240px; height: 40px; background: #ff0000 !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">CU-1003</div>
-                    <div style="position: absolute !important; top: 0; left: 240px; width: 120px; height: 40px; background: #00ff00 !important; color: black; line-height: 40px; text-align: center; border-right: 1px solid #000;">10</div>
-                    <div style="position: absolute !important; top: 0; left: 360px; width: 150px; height: 40px; background: #0000ff !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">79</div>
-                    <div style="position: absolute !important; top: 0; left: 510px; width: 90px; height: 40px; background: #ffff00 !important; color: black; line-height: 40px; text-align: center;">#3</div>
-                </div>
-                
-                <!-- Add space for absolute elements -->
-                <div style="height: 150px;"></div>
             </div>
             
-            <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: block !important; width: 100% !important; position: relative !important;">
-                <h4 style="margin: 0 0 60px 0; color: #333; display: block !important;">💊 Popular Supplements - ABSOLUTE POSITIONING TEST</h4>
+            <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h4 style="margin: 0 0 20px 0; color: #333;">💊 Popular Supplements - CSS GRID TEST</h4>
                 
-                <!-- ABSOLUTE POSITIONED ROW 1 -->
-                <div style="position: absolute !important; top: 80px; left: 20px; width: 600px; height: 40px; background: #f0f0f0; border: 2px solid #000;">
-                    <div style="position: absolute !important; top: 0; left: 0; width: 240px; height: 40px; background: #ff6b6b !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">NAD+ Precursor</div>
-                    <div style="position: absolute !important; top: 0; left: 240px; width: 120px; height: 40px; background: #4ecdc4 !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">89</div>
-                    <div style="position: absolute !important; top: 0; left: 360px; width: 150px; height: 40px; background: #45b7d1 !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">84</div>
-                    <div style="position: absolute !important; top: 0; left: 510px; width: 90px; height: 40px; background: #f9ca24 !important; color: black; line-height: 40px; text-align: center;">89%</div>
+                <!-- CSS Grid Container -->
+                <div style="display: grid !important; grid-template-columns: 2fr 1fr 1fr 1fr !important; gap: 0 !important; width: 100% !important; border: 2px solid #000;">
+                    <!-- Headers -->
+                    <div style="background: #333 !important; color: white !important; padding: 10px !important; border-right: 1px solid #fff;">Supplement</div>
+                    <div style="background: #333 !important; color: white !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #fff;">Usage</div>
+                    <div style="background: #333 !important; color: white !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #fff;">Avg Score</div>
+                    <div style="background: #333 !important; color: white !important; padding: 10px !important; text-align: center !important;">Popularity</div>
+                    
+                    <!-- Row 1 -->
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">NAD+ Precursor</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">89</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc; font-weight: bold;">84</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-top: 1px solid #ccc;"><span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 4px;">89%</span></div>
+                    
+                    <!-- Row 2 -->
+                    <div style="background: white !important; padding: 10px !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">Vitamin B3</div>
+                    <div style="background: white !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">67</div>
+                    <div style="background: white !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc; font-weight: bold;">78</div>
+                    <div style="background: white !important; padding: 10px !important; text-align: center !important; border-top: 1px solid #ccc;"><span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 4px;">67%</span></div>
+                    
+                    <!-- Row 3 -->
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">Resveratrol</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc;">45</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-right: 1px solid #ccc; border-top: 1px solid #ccc; font-weight: bold;">81</div>
+                    <div style="background: #f0f0f0 !important; padding: 10px !important; text-align: center !important; border-top: 1px solid #ccc;"><span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 4px;">45%</span></div>
                 </div>
-                
-                <!-- ABSOLUTE POSITIONED ROW 2 -->
-                <div style="position: absolute !important; top: 125px; left: 20px; width: 600px; height: 40px; background: #f0f0f0; border: 2px solid #000;">
-                    <div style="position: absolute !important; top: 0; left: 0; width: 240px; height: 40px; background: #ff6b6b !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">Vitamin B3</div>
-                    <div style="position: absolute !important; top: 0; left: 240px; width: 120px; height: 40px; background: #4ecdc4 !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">67</div>
-                    <div style="position: absolute !important; top: 0; left: 360px; width: 150px; height: 40px; background: #45b7d1 !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">78</div>
-                    <div style="position: absolute !important; top: 0; left: 510px; width: 90px; height: 40px; background: #f9ca24 !important; color: black; line-height: 40px; text-align: center;">67%</div>
-                </div>
-                
-                <!-- ABSOLUTE POSITIONED ROW 3 -->
-                <div style="position: absolute !important; top: 170px; left: 20px; width: 600px; height: 40px; background: #f0f0f0; border: 2px solid #000;">
-                    <div style="position: absolute !important; top: 0; left: 0; width: 240px; height: 40px; background: #ff6b6b !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">Resveratrol</div>
-                    <div style="position: absolute !important; top: 0; left: 240px; width: 120px; height: 40px; background: #4ecdc4 !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">45</div>
-                    <div style="position: absolute !important; top: 0; left: 360px; width: 150px; height: 40px; background: #45b7d1 !important; color: white; line-height: 40px; text-align: center; border-right: 1px solid #000;">81</div>
-                    <div style="position: absolute !important; top: 0; left: 510px; width: 90px; height: 40px; background: #f9ca24 !important; color: black; line-height: 40px; text-align: center;">45%</div>
-                </div>
-                
-                <!-- Add space for absolute elements -->
-                <div style="height: 150px;"></div>
             </div>
         </div>
     `;
