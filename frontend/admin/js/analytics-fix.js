@@ -86,24 +86,17 @@ function updateAnalyticsDisplay(stats) {
  * Replace analytics tables with guaranteed horizontal layout
  */
 function replaceAnalyticsTables() {
-    console.log('🔄 REPLACING analytics tables with horizontal layout...');
+    console.log('🔄 USING existing analytics tables with horizontal layout...');
     console.log('Cache buster:', new Date().getTime());
     
-    // Find the parent container that holds both tables
-    const analyticsContent = document.getElementById('analytics-content');
-    if (!analyticsContent) {
-        console.error('❌ Analytics content container not found!');
-        return;
-    }
+    // Work with existing tables instead of replacing them
+    console.log('✅ Using existing HTML tables - no replacement needed');
     
-    // Remove existing table sections if they exist (fix selector)
-    const allH4s = analyticsContent.querySelectorAll('h4');
-    allH4s.forEach(h4 => {
-        if (h4.textContent.includes('🏆 Top Performing Users') || h4.textContent.includes('💊 Popular Supplements')) {
-            console.log('Removing old table:', h4.textContent);
-            h4.parentElement.remove();
-        }
-    });
+    // Just populate the existing tables with data
+    loadTopUsers();
+    loadPopularSupplements();
+    
+    return; // Skip the injection, use existing HTML
     
     // ULTIMATE SOLUTION: Use CSS Grid to force horizontal layout
     const horizontalTablesHTML = `
