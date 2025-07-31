@@ -5,6 +5,7 @@ let filteredSupplements = [];
 
 // Admin dashboard state
 let adminUser = null;
+let originalBodyContent = null;
 
 // Initialize admin dashboard with authentication
 async function initAdminDashboard() {
@@ -99,6 +100,11 @@ async function checkAdminAuthentication() {
  * Show loading screen
  */
 function showAdminLoading() {
+    // Store original content before replacing it
+    if (!originalBodyContent) {
+        originalBodyContent = document.body.innerHTML;
+    }
+    
     document.body.innerHTML = `
         <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8f9fa;">
             <div style="text-align: center;">
@@ -119,7 +125,12 @@ function showAdminLoading() {
  * Hide loading screen
  */
 function hideAdminLoading() {
-    // The interface will be loaded by the existing components
+    // Restore original content if we stored it
+    if (originalBodyContent) {
+        document.body.innerHTML = originalBodyContent;
+        // Clear the stored content
+        originalBodyContent = null;
+    }
     console.log('Admin dashboard loaded successfully');
 }
 
