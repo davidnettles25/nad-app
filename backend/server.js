@@ -2698,6 +2698,18 @@ app.post('/api/admin/tests/:testId/deactivate', async (req, res) => {
             });
         }
         
+        // Delete supplement data before deactivating test
+        req.logger.debugArea('analytics', 'Deleting supplement data for test', { testId });
+        const [supplementDeleteResult] = await db.execute(`
+            DELETE FROM nad_user_supplements 
+            WHERE test_id = ?
+        `, [testId]);
+        
+        req.logger.info('Supplement data deleted during deactivation', {
+            testId,
+            deletedSupplementRecords: supplementDeleteResult.affectedRows
+        });
+        
         const [updateResult] = await db.execute(`
             UPDATE nad_test_ids 
             SET status = 'pending', activated_date = NULL, customer_id = NULL
@@ -2823,6 +2835,15 @@ app.post('/api/admin/tests/bulk-deactivate', async (req, res) => {
         }
         
         const placeholders = test_ids.map(() => '?').join(',');
+        
+        // Delete supplement data for all tests being deactivated
+        const [supplementDeleteResult] = await db.execute(`
+            DELETE FROM nad_user_supplements 
+            WHERE test_id IN (${placeholders})
+        `, test_ids);
+        
+        console.log(`Deleted ${supplementDeleteResult.affectedRows} supplement records during bulk deactivation`);
+        
         const [result] = await db.execute(`
             UPDATE nad_test_ids 
             SET status = 'pending', activated_date = NULL, customer_id = NULL

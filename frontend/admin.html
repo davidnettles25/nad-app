@@ -1708,7 +1708,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         // Deactivate test
         async function deactivateTest(testId) {
-            if (!confirm(`Deactivate test ${testId}?\n\nThis will:\n• Return test to pending status\n• Clear activation date\n• Remove customer linkage\n\nAre you sure?`)) {return;}
+            if (!confirm(`Deactivate test ${testId}?\n\nThis will:\n• Return test to pending status\n• Clear activation date\n• Remove customer linkage\n• Delete all supplement data\n\nAre you sure?`)) {return;}
         
             try {
                 const response = await fetch(`${API_BASE}/api/admin/tests/${testId}/deactivate`, {
