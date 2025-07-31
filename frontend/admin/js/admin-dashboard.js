@@ -130,6 +130,12 @@ function hideAdminLoading() {
         document.body.innerHTML = originalBodyContent;
         // Clear the stored content
         originalBodyContent = null;
+        
+        // Re-initialize dashboard functionality after restoring content
+        setTimeout(async () => {
+            await loadSupplements();
+            setupAdminNavigation();
+        }, 100);
     }
     console.log('Admin dashboard loaded successfully');
 }
