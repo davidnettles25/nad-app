@@ -87,6 +87,7 @@ function updateAnalyticsDisplay(stats) {
  */
 function replaceAnalyticsTables() {
     console.log('🔄 REPLACING analytics tables with horizontal layout...');
+    console.log('Cache buster:', new Date().getTime());
     
     // Find the parent container that holds both tables
     const analyticsContent = document.getElementById('analytics-content');
@@ -99,6 +100,7 @@ function replaceAnalyticsTables() {
     const allH4s = analyticsContent.querySelectorAll('h4');
     allH4s.forEach(h4 => {
         if (h4.textContent.includes('🏆 Top Performing Users') || h4.textContent.includes('💊 Popular Supplements')) {
+            console.log('Removing old table:', h4.textContent);
             h4.parentElement.remove();
         }
     });
@@ -106,6 +108,11 @@ function replaceAnalyticsTables() {
     // ULTIMATE SOLUTION: Use CSS Grid to force horizontal layout
     const horizontalTablesHTML = `
         <div style="width: 100% !important; margin-top: 30px;">
+            <!-- Simple inline style test -->
+            <div style="background: red !important; color: white !important; padding: 20px !important; margin-bottom: 10px !important;">
+                INLINE STYLE TEST - This should have a RED background
+            </div>
+            
             <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <h4 style="margin: 0 0 20px 0; color: #333;">🏆 Top Performing Users - CSS GRID TEST</h4>
                 
@@ -175,45 +182,49 @@ function replaceAnalyticsTables() {
     
     // Diagnose what CSS is being applied
     setTimeout(() => {
-        const flexRows = analyticsContent.querySelectorAll('div[style*="display: flex"]');
-        console.log('🔍 DIAGNOSTICS: Found', flexRows.length, 'flex rows');
+        // Check for grid containers
+        const gridContainers = analyticsContent.querySelectorAll('div[style*="display: grid"]');
+        console.log('🔍 GRID DIAGNOSTICS: Found', gridContainers.length, 'grid containers');
         
-        flexRows.forEach((row, index) => {
-            const computedStyle = window.getComputedStyle(row);
-            console.log(`Row ${index}:`, {
+        gridContainers.forEach((grid, index) => {
+            const computedStyle = window.getComputedStyle(grid);
+            console.log(`Grid ${index}:`, {
                 display: computedStyle.display,
-                flexDirection: computedStyle.flexDirection,
+                gridTemplateColumns: computedStyle.gridTemplateColumns,
                 width: computedStyle.width,
-                actualHTML: row.outerHTML.substring(0, 100) + '...'
+                childCount: grid.children.length
             });
-        });
-        
-        // Also check if the parent container has any forced styling
-        const parentStyle = window.getComputedStyle(analyticsContent);
-        console.log('Parent container style:', {
-            display: parentStyle.display,
-            flexDirection: parentStyle.flexDirection,
-            gridTemplateColumns: parentStyle.gridTemplateColumns,
-            width: parentStyle.width
-        });
-        
-        // Check the flex children within each row
-        const dataRows = analyticsContent.querySelectorAll('div[style*="display: flex"][style*="padding: 10px"]');
-        console.log('🔍 Checking flex children in data rows:', dataRows.length);
-        
-        dataRows.forEach((row, index) => {
-            const children = row.children;
-            console.log(`Data row ${index} children:`, Array.from(children).map(child => ({
+            
+            // Check first few children
+            const firstChildren = Array.from(grid.children).slice(0, 4);
+            console.log(`Grid ${index} first 4 children:`, firstChildren.map(child => ({
                 text: child.textContent.trim(),
-                computedFlex: window.getComputedStyle(child).flex,
-                computedWidth: window.getComputedStyle(child).width,
+                computedDisplay: window.getComputedStyle(child).display,
                 offsetLeft: child.offsetLeft,
-                offsetTop: child.offsetTop
+                offsetTop: child.offsetTop,
+                offsetWidth: child.offsetWidth
             })));
+        });
+        
+        // Also check if the CSS Grid test headers exist
+        const testHeaders = analyticsContent.querySelectorAll('h4');
+        testHeaders.forEach(h4 => {
+            if (h4.textContent.includes('CSS GRID TEST')) {
+                console.log('✅ Found CSS Grid test header:', h4.textContent);
+                const nextSibling = h4.nextElementSibling;
+                if (nextSibling) {
+                    const style = window.getComputedStyle(nextSibling);
+                    console.log('Next sibling after header:', {
+                        tagName: nextSibling.tagName,
+                        display: style.display,
+                        gridTemplateColumns: style.gridTemplateColumns
+                    });
+                }
+            }
         });
     }, 100);
     
-    console.log('✅ Analytics tables replaced with guaranteed horizontal layout!');
+    console.log('✅ Analytics tables replaced with CSS Grid layout!');
 }
 
 /**
