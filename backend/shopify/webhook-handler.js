@@ -318,7 +318,7 @@ async function createPollingSession(connection, sessionId, customer, testKitId, 
     `, [
         portalToken,
         sessionType,
-        customer.email,
+        customer.id,         // Fixed: customer_id should be the ID, not email
         customer.id,
         customer.email,
         customer.first_name,
