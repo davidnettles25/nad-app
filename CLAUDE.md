@@ -4,6 +4,7 @@
 - the app on the server is nad-api
 - on remote server we use vi instead of nano
 - the ssh to the remote server is ssh bitnami@18.189.59.176
+- the database is not running local.  there is no development system locally. everything runs on the remote server
 
 ## Deployment
 - The deployment scenario is in /development/deploy.sh

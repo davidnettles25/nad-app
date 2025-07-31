@@ -907,6 +907,66 @@ async function markBatchAsFullyPrinted(batchId, exportFormat = 'xlsx_export') {
     }
 }
 
+// Download batch data as CSV
+function downloadBatchCSV(batchId) {
+    if (!batchId) {
+        if (typeof showAlert === 'function') {
+            showAlert('❌ No batch ID provided for CSV download', 'error');
+        }
+        return;
+    }
+    
+    // Find the batch data
+    const batch = window.currentBatches?.find(b => b.id === batchId);
+    if (!batch) {
+        if (typeof showAlert === 'function') {
+            showAlert('❌ Batch not found for CSV download', 'error');
+        }
+        return;
+    }
+    
+    try {
+        // Create CSV content
+        const csvHeaders = ['Test ID', 'Customer ID', 'Activated Date', 'Status'];
+        const csvRows = [csvHeaders.join(',')];
+        
+        if (batch.tests && batch.tests.length > 0) {
+            batch.tests.forEach(test => {
+                const row = [
+                    `"${test.test_id || ''}"`,
+                    `"${test.customer_id || ''}"`,
+                    `"${test.activated_date ? new Date(test.activated_date).toLocaleDateString() : ''}"`,
+                    `"${test.status || 'activated'}"`
+                ];
+                csvRows.push(row.join(','));
+            });
+        }
+        
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        
+        // Create download link
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `batch-${batchId}-tests.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        if (typeof showAlert === 'function') {
+            showAlert('✅ CSV file downloaded successfully', 'success');
+        }
+        
+    } catch (error) {
+        console.error('Failed to download CSV:', error);
+        if (typeof showAlert === 'function') {
+            showAlert(`❌ Failed to download CSV: ${error.message}`, 'error');
+        }
+    }
+}
+
 // Global functions
 window.loadPrintableBatches = loadPrintableBatches;
 window.selectBatchForPrint = selectBatchForPrint;

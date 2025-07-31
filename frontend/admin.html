@@ -10,6 +10,9 @@
     
     <!-- Bypass parameter security check -->
     <script src="shared/js/bypass-security.js"></script>
+    
+    <!-- Admin dashboard authentication and initialization -->
+    <script src="admin/js/admin-dashboard.js"></script>
     <!-- Load Shared CSS -->
     <link rel="stylesheet" href="shared/css/variables.css">
     <link rel="stylesheet" href="shared/css/base.css">
@@ -509,7 +512,7 @@
                 <a href="#supplements" class="nav-link" data-section="supplements">💊 Supplements</a>
                 <a href="#analytics" class="nav-link" data-section="analytics">📈 Analytics</a>
                 <a href="#logs" class="nav-link" data-section="logs">📋 Log Management</a>
-                <a href="test-components.html" target="_blank" style="display: block; padding: 12px 20px; color: #495057; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#e9ecef'; this.style.paddingLeft='25px';" onmouseout="this.style.backgroundColor='transparent'; this.style.paddingLeft='20px';">🧪 System Testing</a>
+                <a href="javascript:void(0)" onclick="openSystemTesting()" style="display: block; padding: 12px 20px; color: #495057; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#e9ecef'; this.style.paddingLeft='25px';" onmouseout="this.style.backgroundColor='transparent'; this.style.paddingLeft='20px';">🧪 System Testing</a>
             </div>
         </nav>
 
@@ -1963,6 +1966,22 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             }
         }
         window.showBatchPrinting = showBatchPrinting;
+
+        // Open System Testing with authentication token
+        function openSystemTesting() {
+            // Get current authentication token from sessionStorage
+            const authToken = sessionStorage.getItem('nad_auth_token');
+            const authType = sessionStorage.getItem('nad_auth_type');
+            
+            if (authToken && authType === 'admin') {
+                // Open test-components.html with the token
+                window.open(`test-components.html?t=${authToken}`, '_blank');
+            } else {
+                // Fallback - open without token (will show access denied)
+                window.open('test-components.html', '_blank');
+            }
+        }
+        window.openSystemTesting = openSystemTesting;
 
         // NAD Admin Dashboard ready!
     </script>
