@@ -85,45 +85,53 @@ function updateAnalyticsDisplay(stats) {
  * Load top performing users (horizontal layout)
  */
 function loadTopUsers() {
-    console.log('🔍 Loading top users data...');
     const tbody = document.getElementById('top-users-tbody');
-    if (!tbody) {
-        console.error('❌ Top users tbody not found!');
-        return;
+    if (!tbody) return;
+    
+    // Force parent containers to horizontal layout
+    const tableContainer = document.getElementById('top-users-table');
+    const analyticsContent = document.getElementById('analytics-content');
+    
+    if (tableContainer) {
+        tableContainer.style.cssText = 'width: 100% !important; display: block !important; overflow-x: auto !important;';
+    }
+    if (analyticsContent) {
+        analyticsContent.style.cssText = 'width: 100% !important; display: block !important;';
     }
     
-    console.log('✅ Found top users tbody, populating with data');
     const mockUsers = [
         { customer_id: 'CU-1001', tests: 15, avg_score: 87, rank: '#1' },
-        { customer_id: 'CU-1002', tests: 12, avg_score: 82, rank: '#2' },
+        { customer_id: 'CU-1002', tests: 12, avg_score: 82, rank: '#2' },  
         { customer_id: 'CU-1003', tests: 10, avg_score: 79, rank: '#3' },
         { customer_id: 'CU-1004', tests: 8, avg_score: 85, rank: '#4' },
         { customer_id: 'CU-1005', tests: 7, avg_score: 76, rank: '#5' }
     ];
     
+    // Create simple horizontal table - no complex styling
     tbody.innerHTML = mockUsers.map(user => `
-        <tr>
-            <td><strong>${user.customer_id}</strong></td>
-            <td style="text-align: center;">${user.tests}</td>
-            <td style="text-align: center;"><strong>${user.avg_score}</strong></td>
-            <td style="text-align: center;"><span class="badge badge-primary">${user.rank}</span></td>
+        <tr style="display: table-row !important;">
+            <td style="display: table-cell !important; padding: 8px; border: 1px solid #ddd;"><strong>${user.customer_id}</strong></td>
+            <td style="display: table-cell !important; padding: 8px; border: 1px solid #ddd; text-align: center;">${user.tests}</td>
+            <td style="display: table-cell !important; padding: 8px; border: 1px solid #ddd; text-align: center;"><strong>${user.avg_score}</strong></td>
+            <td style="display: table-cell !important; padding: 8px; border: 1px solid #ddd; text-align: center;"><span style="background: #007bff; color: white; padding: 2px 6px; border-radius: 3px;">${user.rank}</span></td>
         </tr>
     `).join('');
-    console.log('✅ Top users data loaded successfully');
 }
 
 /**
  * Load popular supplements (horizontal layout)
  */
 function loadPopularSupplements() {
-    console.log('🔍 Loading popular supplements data...');
     const tbody = document.getElementById('popular-supplements-tbody');
-    if (!tbody) {
-        console.error('❌ Popular supplements tbody not found!');
-        return;
+    if (!tbody) return;
+    
+    // Force parent containers to horizontal layout
+    const tableContainer = document.getElementById('popular-supplements-table');
+    
+    if (tableContainer) {
+        tableContainer.style.cssText = 'width: 100% !important; display: block !important; overflow-x: auto !important;';
     }
     
-    console.log('✅ Found supplements tbody, populating with data');
     const mockSupplements = [
         { name: 'NAD+ Precursor', usage: 89, avg_score: 84, popularity: '89%' },
         { name: 'Vitamin B3', usage: 67, avg_score: 78, popularity: '67%' },
@@ -132,15 +140,15 @@ function loadPopularSupplements() {
         { name: 'Alpha Lipoic Acid', usage: 32, avg_score: 79, popularity: '32%' }
     ];
     
+    // Create simple horizontal table - no complex styling
     tbody.innerHTML = mockSupplements.map(supplement => `
-        <tr>
-            <td><strong>${supplement.name}</strong></td>
-            <td style="text-align: center;">${supplement.usage}</td>
-            <td style="text-align: center;"><strong>${supplement.avg_score}</strong></td>
-            <td style="text-align: center;"><span class="badge badge-success">${supplement.popularity}</span></td>
+        <tr style="display: table-row !important;">
+            <td style="display: table-cell !important; padding: 8px; border: 1px solid #ddd;"><strong>${supplement.name}</strong></td>
+            <td style="display: table-cell !important; padding: 8px; border: 1px solid #ddd; text-align: center;">${supplement.usage}</td>
+            <td style="display: table-cell !important; padding: 8px; border: 1px solid #ddd; text-align: center;"><strong>${supplement.avg_score}</strong></td>
+            <td style="display: table-cell !important; padding: 8px; border: 1px solid #ddd; text-align: center;"><span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 3px;">${supplement.popularity}</span></td>
         </tr>
     `).join('');
-    console.log('✅ Supplements data loaded successfully');
 }
 
 /**
