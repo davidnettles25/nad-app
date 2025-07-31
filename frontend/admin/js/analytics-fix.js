@@ -117,26 +117,26 @@ function replaceAnalyticsTables() {
                     <div style="flex: 0 0 15% !important; text-align: center !important;">Rank</div>
                 </div>
                 
-                <!-- Data Rows -->
-                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
-                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>CU-1001</strong></div>
-                    <div style="flex: 0 0 20% !important; text-align: center !important;">15</div>
-                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>87</strong></div>
-                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#1</span></div>
+                <!-- Data Rows - WITH COLORED BACKGROUNDS TO MAKE COLUMNS OBVIOUS -->
+                <div style="display: flex !important; padding: 10px 12px; border: 2px solid #dee2e6; margin-bottom: 2px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important; background: #ffcccc !important; padding: 5px !important; margin-right: 2px;"><strong>CU-1001</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important; background: #ccffcc !important; padding: 5px !important; margin-right: 2px;">15</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important; background: #ccccff !important; padding: 5px !important; margin-right: 2px;"><strong>87</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important; background: #ffffcc !important; padding: 5px !important;">#1</div>
                 </div>
                 
-                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
-                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>CU-1002</strong></div>
-                    <div style="flex: 0 0 20% !important; text-align: center !important;">12</div>
-                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>82</strong></div>
-                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#2</span></div>
+                <div style="display: flex !important; padding: 10px 12px; border: 2px solid #dee2e6; margin-bottom: 2px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important; background: #ffcccc !important; padding: 5px !important; margin-right: 2px;"><strong>CU-1002</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important; background: #ccffcc !important; padding: 5px !important; margin-right: 2px;">12</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important; background: #ccccff !important; padding: 5px !important; margin-right: 2px;"><strong>82</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important; background: #ffffcc !important; padding: 5px !important;">#2</div>
                 </div>
                 
-                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
-                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>CU-1003</strong></div>
-                    <div style="flex: 0 0 20% !important; text-align: center !important;">10</div>
-                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>79</strong></div>
-                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">#3</span></div>
+                <div style="display: flex !important; padding: 10px 12px; border: 2px solid #dee2e6; margin-bottom: 2px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important; background: #ffcccc !important; padding: 5px !important; margin-right: 2px;"><strong>CU-1003</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important; background: #ccffcc !important; padding: 5px !important; margin-right: 2px;">10</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important; background: #ccccff !important; padding: 5px !important; margin-right: 2px;"><strong>79</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important; background: #ffffcc !important; padding: 5px !important;">#3</div>
                 </div>
             </div>
             
@@ -151,26 +151,26 @@ function replaceAnalyticsTables() {
                     <div style="flex: 0 0 15% !important; text-align: center !important;">Popularity %</div>
                 </div>
                 
-                <!-- Data Rows -->
-                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
-                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>NAD+ Precursor</strong></div>
-                    <div style="flex: 0 0 20% !important; text-align: center !important;">89</div>
-                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>84</strong></div>
-                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">89%</span></div>
+                <!-- Data Rows - WITH COLORED BACKGROUNDS TO MAKE COLUMNS OBVIOUS -->
+                <div style="display: flex !important; padding: 10px 12px; border: 2px solid #dee2e6; margin-bottom: 2px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important; background: #ffcccc !important; padding: 5px !important; margin-right: 2px;"><strong>NAD+ Precursor</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important; background: #ccffcc !important; padding: 5px !important; margin-right: 2px;">89</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important; background: #ccccff !important; padding: 5px !important; margin-right: 2px;"><strong>84</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important; background: #ffffcc !important; padding: 5px !important;">89%</div>
                 </div>
                 
-                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
-                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>Vitamin B3</strong></div>
-                    <div style="flex: 0 0 20% !important; text-align: center !important;">67</div>
-                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>78</strong></div>
-                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">67%</span></div>
+                <div style="display: flex !important; padding: 10px 12px; border: 2px solid #dee2e6; margin-bottom: 2px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important; background: #ffcccc !important; padding: 5px !important; margin-right: 2px;"><strong>Vitamin B3</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important; background: #ccffcc !important; padding: 5px !important; margin-right: 2px;">67</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important; background: #ccccff !important; padding: 5px !important; margin-right: 2px;"><strong>78</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important; background: #ffffcc !important; padding: 5px !important;">67%</div>
                 </div>
                 
-                <div style="display: flex !important; padding: 10px 12px; border: 1px solid #dee2e6; margin-bottom: 1px; background: white;">
-                    <div style="flex: 0 0 40% !important; text-align: left !important;"><strong>Resveratrol</strong></div>
-                    <div style="flex: 0 0 20% !important; text-align: center !important;">45</div>
-                    <div style="flex: 0 0 25% !important; text-align: center !important;"><strong>81</strong></div>
-                    <div style="flex: 0 0 15% !important; text-align: center !important;"><span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">45%</span></div>
+                <div style="display: flex !important; padding: 10px 12px; border: 2px solid #dee2e6; margin-bottom: 2px; background: white;">
+                    <div style="flex: 0 0 40% !important; text-align: left !important; background: #ffcccc !important; padding: 5px !important; margin-right: 2px;"><strong>Resveratrol</strong></div>
+                    <div style="flex: 0 0 20% !important; text-align: center !important; background: #ccffcc !important; padding: 5px !important; margin-right: 2px;">45</div>
+                    <div style="flex: 0 0 25% !important; text-align: center !important; background: #ccccff !important; padding: 5px !important; margin-right: 2px;"><strong>81</strong></div>
+                    <div style="flex: 0 0 15% !important; text-align: center !important; background: #ffffcc !important; padding: 5px !important;">45%</div>
                 </div>
             </div>
         </div>
