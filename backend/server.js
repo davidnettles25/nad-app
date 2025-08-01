@@ -1328,31 +1328,30 @@ app.get('/api/dashboard/stats', async (req, res) => {
             ip: req.ip
         });
 
+        // Use nad_test_ids as single source of truth for all statistics
         const [testStats] = await db.execute(`
             SELECT 
                 COUNT(*) as total_tests,
                 COUNT(CASE WHEN status = 'activated' THEN 1 END) as activated_tests,
-                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_tests
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_tests,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_tests
             FROM nad_test_ids
         `);
         
-        const [completedTests] = await db.execute(`
-            SELECT COUNT(DISTINCT test_id) as completed_tests
-            FROM nad_test_scores 
-            WHERE score IS NOT NULL AND score != ''
+        // Calculate average score from actual completed tests
+        const [avgScoreResult] = await db.execute(`
+            SELECT AVG(CAST(ts.score AS DECIMAL(10,2))) as average_score
+            FROM nad_test_ids ti
+            JOIN nad_test_scores ts ON ti.test_id = ts.test_id
+            WHERE ti.status = 'completed' AND ts.score IS NOT NULL AND ts.score != ''
         `);
-        
-        // REMOVED: User statistics
-        // const [userStats] = await db.execute(`
-        //     SELECT COUNT(*) as active_users FROM nad_user_roles
-        // `);
 
         const stats = {
             total_tests: testStats[0].total_tests,
             activated_tests: testStats[0].activated_tests,
             pending_tests: testStats[0].pending_tests,
-            completed_tests: completedTests[0].completed_tests
-            // REMOVED: active_users: userStats[0].active_users
+            completed_tests: testStats[0].completed_tests,
+            average_score: Math.round(avgScoreResult[0].average_score || 0)
         };
         
         const duration = Date.now() - startTime;
