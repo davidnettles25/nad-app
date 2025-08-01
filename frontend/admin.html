@@ -1834,23 +1834,44 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 
                 const supplement = result.supplement;
                 
-                // Populate form with current data
-                document.getElementById('edit-supplement-name').value = supplement.name || '';
-                document.getElementById('edit-supplement-category').value = supplement.category || '';
-                document.getElementById('edit-supplement-description').value = supplement.description || '';
-                document.getElementById('edit-supplement-default-dose').value = supplement.default_dose || '';
-                document.getElementById('edit-supplement-unit').value = supplement.unit || 'mg';
-                document.getElementById('edit-supplement-min-dose').value = supplement.min_dose || '';
-                document.getElementById('edit-supplement-max-dose').value = supplement.max_dose || '';
-                document.getElementById('edit-supplement-notes').value = supplement.notes || '';
-                document.getElementById('edit-supplement-active').checked = supplement.is_active == 1;
-                document.getElementById('edit-supplement-featured').checked = supplement.is_featured == 1;
+                // Populate form with current data - check if elements exist first
+                const nameField = document.getElementById('edit-supplement-name');
+                const categoryField = document.getElementById('edit-supplement-category');
+                const descriptionField = document.getElementById('edit-supplement-description');
+                const defaultDoseField = document.getElementById('edit-supplement-default-dose');
+                const unitField = document.getElementById('edit-supplement-unit');
+                const minDoseField = document.getElementById('edit-supplement-min-dose');
+                const maxDoseField = document.getElementById('edit-supplement-max-dose');
+                const notesField = document.getElementById('edit-supplement-notes');
+                const activeField = document.getElementById('edit-supplement-active');
+                const featuredField = document.getElementById('edit-supplement-featured');
+                
+                if (!nameField || !categoryField) {
+                    throw new Error('Edit modal not found. Please make sure you are in the Supplements section.');
+                }
+                
+                nameField.value = supplement.name || '';
+                categoryField.value = supplement.category || '';
+                if (descriptionField) descriptionField.value = supplement.description || '';
+                if (defaultDoseField) defaultDoseField.value = supplement.default_dose || '';
+                if (unitField) unitField.value = supplement.unit || 'mg';
+                if (minDoseField) minDoseField.value = supplement.min_dose || '';
+                if (maxDoseField) maxDoseField.value = supplement.max_dose || '';
+                if (notesField) notesField.value = supplement.notes || '';
+                if (activeField) activeField.checked = supplement.is_active == 1;
+                if (featuredField) featuredField.checked = supplement.is_featured == 1;
                 
                 // Clear any previous errors
-                document.getElementById('edit-supplement-error').style.display = 'none';
+                const errorDiv = document.getElementById('edit-supplement-error');
+                if (errorDiv) errorDiv.style.display = 'none';
                 
                 // Show modal
-                document.getElementById('edit-supplement-modal').style.display = 'block';
+                const modal = document.getElementById('edit-supplement-modal');
+                if (modal) {
+                    modal.style.display = 'block';
+                } else {
+                    throw new Error('Edit modal element not found. Please navigate to the Supplements section first.');
+                }
                 
                 // Clear the loading message
                 const alertDiv = document.getElementById('global-alert');
@@ -1865,7 +1886,10 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         }
 
         function closeEditSupplementModal() {
-            document.getElementById('edit-supplement-modal').style.display = 'none';
+            const modal = document.getElementById('edit-supplement-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
             currentEditingSupplementId = null;
         }
 
@@ -1882,7 +1906,11 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 saveBtn.disabled = true;
                 
                 // Get form data
-                const formData = new FormData(document.getElementById('edit-supplement-form'));
+                const form = document.getElementById('edit-supplement-form');
+                if (!form) {
+                    throw new Error('Edit form not found. Please make sure you are in the Supplements section.');
+                }
+                const formData = new FormData(form);
                 
                 // Convert FormData to object
                 const updateData = {};
@@ -2214,6 +2242,102 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
     <script src="admin/js/sections/batch-printing.js"></script>
     <script src="admin/js/analytics-fix.js"></script>
     <script src="admin/js/log-management.js"></script>
+
+<!-- Edit Supplement Modal -->
+<div id="edit-supplement-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3>✏️ Edit Supplement</h3>
+            <span class="close" onclick="closeEditSupplementModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="edit-supplement-error" style="display: none;" class="alert alert-error"></div>
+            
+            <form id="edit-supplement-form">
+                <div class="form-row">
+                    <div class="form-group" style="width: 100%;">
+                        <label for="edit-supplement-name">Name *</label>
+                        <input type="text" id="edit-supplement-name" name="name" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="width: 48%;">
+                        <label for="edit-supplement-category">Category *</label>
+                        <select id="edit-supplement-category" name="category" required>
+                            <option value="">Select Category</option>
+                            <option value="Vitamin">Vitamin</option>
+                            <option value="Mineral">Mineral</option>
+                            <option value="Amino Acid">Amino Acid</option>
+                            <option value="Herb">Herb</option>
+                            <option value="Antioxidant">Antioxidant</option>
+                            <option value="Probiotic">Probiotic</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="width: 48%; margin-left: 4%;">
+                        <label for="edit-supplement-unit">Unit</label>
+                        <select id="edit-supplement-unit" name="unit">
+                            <option value="mg">mg</option>
+                            <option value="g">g</option>
+                            <option value="mcg">mcg</option>
+                            <option value="IU">IU</option>
+                            <option value="ml">ml</option>
+                            <option value="capsules">capsules</option>
+                            <option value="tablets">tablets</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="width: 100%;">
+                        <label for="edit-supplement-description">Description</label>
+                        <textarea id="edit-supplement-description" name="description" rows="3" placeholder="Brief description of the supplement..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="width: 32%;">
+                        <label for="edit-supplement-default-dose">Default Dose</label>
+                        <input type="number" id="edit-supplement-default-dose" name="default_dose" step="0.01" min="0">
+                    </div>
+                    <div class="form-group" style="width: 32%; margin-left: 2%;">
+                        <label for="edit-supplement-min-dose">Min Dose</label>
+                        <input type="number" id="edit-supplement-min-dose" name="min_dose" step="0.01" min="0">
+                    </div>
+                    <div class="form-group" style="width: 32%; margin-left: 2%;">
+                        <label for="edit-supplement-max-dose">Max Dose</label>
+                        <input type="number" id="edit-supplement-max-dose" name="max_dose" step="0.01" min="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="width: 100%;">
+                        <label for="edit-supplement-notes">Notes</label>
+                        <textarea id="edit-supplement-notes" name="notes" rows="2" placeholder="Additional notes or instructions..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="width: 48%;">
+                        <label>
+                            <input type="checkbox" id="edit-supplement-active" name="is_active" value="1"> Active
+                        </label>
+                    </div>
+                    <div class="form-group" style="width: 48%; margin-left: 4%;">
+                        <label>
+                            <input type="checkbox" id="edit-supplement-featured" name="is_featured" value="1"> Featured
+                        </label>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeEditSupplementModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="saveSupplementChanges()" id="save-supplement-btn">Save Changes</button>
+        </div>
+    </div>
+</div>
 
 <script src="admin/js/final-dropdown-fix.js"></script>
 </body>
