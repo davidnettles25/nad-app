@@ -157,65 +157,111 @@ function replaceAnalyticsTables() {
     // Mark as replaced to prevent future executions
     window.analyticsReplaced = true;
     
-    // Create horizontal analytics cards (only the detailed analytics, not the basic stats)
-    const horizontalCardsHTML = `
-        <div class="card">
-            <h4>🏆 Top Performing Users</h4>
-            <div class="horizontal-stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number">CU-1001</div>
-                    <div class="stat-label">Customer ID</div>
-                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">15 tests • Score: 87 • #1</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">CU-1002</div> 
-                    <div class="stat-label">Customer ID</div>
-                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">12 tests • Score: 82 • #2</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">CU-1003</div>
-                    <div class="stat-label">Customer ID</div>
-                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">10 tests • Score: 79 • #3</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">CU-1004</div>
-                    <div class="stat-label">Customer ID</div>
-                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">8 tests • Score: 85 • #4</div>
-                </div>
-            </div>
-        </div>
+    // Fetch and create horizontal analytics cards with real data
+    try {
+        const topUsersResponse = await fetch(`${API_BASE}/api/analytics/top-users`);
+        const topUsersData = await topUsersResponse.json();
         
-        <div class="card">
-            <h4>💊 Popular Supplements</h4>
-            <div class="horizontal-stats-grid">
+        let topUsersHTML = '';
+        if (topUsersData.success && topUsersData.users && topUsersData.users.length > 0) {
+            const userCards = topUsersData.users.slice(0, 4).map(user => `
                 <div class="stat-card">
-                    <div class="stat-number">89%</div>
-                    <div class="stat-label">NAD+ Precursor</div>
-                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">89 users • Avg Score: 84</div>
+                    <div class="stat-number">${user.customer_id}</div>
+                    <div class="stat-label">Customer ID</div>
+                    <div style="font-size: 12px; color: #007bff; margin-top: 5px;">${user.completed_tests} tests • Score: ${user.avg_score} • #${user.rank}</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number">67%</div>
-                    <div class="stat-label">Vitamin B3</div>
-                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">67 users • Avg Score: 78</div>
+            `).join('');
+            
+            topUsersHTML = `
+                <div class="card">
+                    <h4>🏆 Top Performing Users</h4>
+                    <div class="horizontal-stats-grid">
+                        ${userCards}
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number">45%</div>
-                    <div class="stat-label">Resveratrol</div>
-                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">45 users • Avg Score: 81</div>
+            `;
+        } else {
+            topUsersHTML = `
+                <div class="card">
+                    <h4>🏆 Top Performing Users</h4>
+                    <div class="horizontal-stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">No Data</div>
+                            <div class="stat-label">No completed tests found</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">Complete some tests to see rankings</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number">38%</div>
-                    <div class="stat-label">CoQ10</div>
-                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">38 users • Avg Score: 76</div>
+            `;
+        }
+        
+        // Popular Supplements (still using mock data for now)
+        const supplementsHTML = `
+            <div class="card">
+                <h4>💊 Popular Supplements</h4>
+                <div class="horizontal-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">89%</div>
+                        <div class="stat-label">NAD+ Precursor</div>
+                        <div style="font-size: 12px; color: #28a745; margin-top: 5px;">89 users • Avg Score: 84</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">67%</div>
+                        <div class="stat-label">Vitamin B3</div>
+                        <div style="font-size: 12px; color: #28a745; margin-top: 5px;">67 users • Avg Score: 78</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">45%</div>
+                        <div class="stat-label">Resveratrol</div>
+                        <div style="font-size: 12px; color: #28a745; margin-top: 5px;">45 users • Avg Score: 81</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">38%</div>
+                        <div class="stat-label">CoQ10</div>
+                        <div style="font-size: 12px; color: #28a745; margin-top: 5px;">38 users • Avg Score: 76</div>
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
-    
-    // Append horizontal cards to existing analytics content
-    analyticsContent.insertAdjacentHTML('beforeend', horizontalCardsHTML);
-    
-    console.log('✅ Analytics successfully displaying horizontally!');
+        `;
+        
+        const horizontalCardsHTML = topUsersHTML + supplementsHTML;
+        
+        // Append horizontal cards to existing analytics content
+        analyticsContent.insertAdjacentHTML('beforeend', horizontalCardsHTML);
+        
+        console.log('✅ Analytics successfully displaying horizontally with real user data!');
+        
+    } catch (error) {
+        console.error('❌ Error fetching analytics data:', error);
+        
+        // Fallback to basic display if API fails
+        const fallbackHTML = `
+            <div class="card">
+                <h4>🏆 Top Performing Users</h4>
+                <div class="horizontal-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">Loading...</div>
+                        <div class="stat-label">Unable to load data</div>
+                        <div style="font-size: 12px; color: #dc3545; margin-top: 5px;">Please refresh the page</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h4>💊 Popular Supplements</h4>
+                <div class="horizontal-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">Loading...</div>
+                        <div class="stat-label">Unable to load data</div>
+                        <div style="font-size: 12px; color: #dc3545; margin-top: 5px;">Please refresh the page</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        analyticsContent.insertAdjacentHTML('beforeend', fallbackHTML);
+        console.log('⚠️ Analytics displaying with fallback data due to API error');
+    }
 }
 
 /**

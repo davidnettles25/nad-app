@@ -3136,6 +3136,65 @@ app.get('/api/analytics/performance', async (req, res) => {
     }
 });
 
+// Top Performing Users Analytics
+app.get('/api/analytics/top-users', async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+        req.logger.info('Top performing users request started', {
+            endpoint: '/api/analytics/top-users'
+        });
+
+        // Get top performing users based on completed tests with scores
+        const [topUsers] = await db.execute(`
+            SELECT 
+                ti.customer_id,
+                COUNT(DISTINCT ti.test_id) as total_tests,
+                COUNT(DISTINCT ts.test_id) as completed_tests,
+                AVG(CAST(ts.score AS DECIMAL(10,2))) as avg_score,
+                MAX(ts.score_submission_date) as last_test_date
+            FROM nad_test_ids ti
+            LEFT JOIN nad_test_scores ts ON ti.test_id = ts.test_id AND ts.score IS NOT NULL AND ts.score != ''
+            WHERE ti.customer_id IS NOT NULL AND ti.customer_id != ''
+            GROUP BY ti.customer_id
+            HAVING completed_tests > 0 AND avg_score IS NOT NULL
+            ORDER BY avg_score DESC, completed_tests DESC
+            LIMIT 10
+        `);
+
+        const duration = Date.now() - startTime;
+        req.logger.info('Top performing users request completed', {
+            endpoint: '/api/analytics/top-users',
+            duration: `${duration}ms`,
+            userCount: topUsers.length
+        });
+
+        res.json({
+            success: true,
+            users: topUsers.map((user, index) => ({
+                customer_id: user.customer_id,
+                total_tests: user.total_tests,
+                completed_tests: user.completed_tests,
+                avg_score: Math.round(user.avg_score || 0),
+                rank: index + 1,
+                last_test_date: user.last_test_date
+            }))
+        });
+    } catch (error) {
+        const duration = Date.now() - startTime;
+        req.logger.error('Top performing users request failed', {
+            endpoint: '/api/analytics/top-users',
+            duration: `${duration}ms`,
+            error: error.message,
+            stack: error.stack
+        });
+        res.status(500).json({ 
+            success: false, 
+            error: error.message
+        });
+    }
+});
+
 // ============================================================================
 // REPORTS ENDPOINTS
 // ============================================================================
