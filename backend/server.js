@@ -11,6 +11,9 @@ require('dotenv').config();
 // Shopify Integration
 const { initializeShopifyIntegration } = require('./shopify');
 
+// Authentication middleware
+const { optionalAuthentication, requireAuthentication } = require('./shopify/session-manager');
+
 // Initialize logger
 let logger;
 let createLogger;
@@ -2136,10 +2139,14 @@ app.get('/api/lab/recent-tests', async (req, res) => {
     }
 });
 
-app.put('/api/lab/update-test/:testId', upload.none(), async (req, res) => {
+app.put('/api/lab/update-test/:testId', optionalAuthentication, upload.none(), async (req, res) => {
     try {
         const { testId } = req.params;
         const { nadScore, technicianEmail, editReason, editNotes } = req.body;
+        
+        // Use authenticated user's email if available, otherwise fall back to provided email
+        const authenticatedEmail = req.customer?.email;
+        const finalTechnicianEmail = authenticatedEmail || technicianEmail || 'lab-tech@example.com';
         
         if (!testId) {
             return res.status(400).json({ success: false, message: 'Test ID is required' });
@@ -2153,7 +2160,7 @@ app.put('/api/lab/update-test/:testId', upload.none(), async (req, res) => {
             return res.status(400).json({ success: false, message: 'Edit reason and notes are required' });
         }
         
-        console.log('Updating test:', testId, 'with new score:', nadScore, 'by technician:', technicianEmail);
+        console.log('Updating test:', testId, 'with new score:', nadScore, 'by technician:', finalTechnicianEmail, authenticatedEmail ? '(authenticated)' : '(provided/fallback)');
         
         // Start a transaction
         const connection = await db.getConnection();
@@ -2174,7 +2181,7 @@ app.put('/api/lab/update-test/:testId', upload.none(), async (req, res) => {
                     technician_id = ?,
                     updated_date = NOW()
                 WHERE UPPER(test_id) = UPPER(?)
-            `, [parseFloat(nadScore), technicianEmail || 'lab-tech@example.com', testId]);
+            `, [parseFloat(nadScore), finalTechnicianEmail, testId]);
             
             // Create audit log entry
             await connection.execute(`
@@ -2182,7 +2189,7 @@ app.put('/api/lab/update-test/:testId', upload.none(), async (req, res) => {
                     test_id, original_score, new_score, edit_reason, 
                     edit_notes, edited_by, edited_date
                 ) VALUES (?, ?, ?, ?, ?, ?, NOW())
-            `, [testId, originalScore, parseFloat(nadScore), editReason, editNotes, technicianEmail || 'lab-tech@example.com']);
+            `, [testId, originalScore, parseFloat(nadScore), editReason, editNotes, finalTechnicianEmail]);
             
             await connection.commit();
             res.json({ 
@@ -2192,7 +2199,7 @@ app.put('/api/lab/update-test/:testId', upload.none(), async (req, res) => {
                     testId,
                     newScore: nadScore,
                     originalScore,
-                    editedBy: technicianEmail
+                    editedBy: finalTechnicianEmail
                 }
             });
             
@@ -2265,10 +2272,14 @@ app.post('/api/lab/submit-results', async (req, res) => {
     }
 });
 
-app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (req, res) => {
+app.post('/api/lab/process-test/:testId', optionalAuthentication, upload.single('resultFile'), async (req, res) => {
     try {
         const { testId } = req.params;
         const { nadScore, technicianEmail, labNotes } = req.body;
+        
+        // Use authenticated user's email if available, otherwise fall back to provided email
+        const authenticatedEmail = req.customer?.email;
+        const finalTechnicianEmail = authenticatedEmail || technicianEmail || 'lab-tech@example.com';
         
         if (!testId) {
             return res.status(400).json({ success: false, message: 'Test ID is required' });
@@ -2278,7 +2289,7 @@ app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (re
             return res.status(400).json({ success: false, message: 'Valid NAD+ score (0-100) is required' });
         }
         
-        console.log('Processing test:', testId, 'with score:', nadScore, 'by technician:', technicianEmail);
+        console.log('Processing test:', testId, 'with score:', nadScore, 'by technician:', finalTechnicianEmail, authenticatedEmail ? '(authenticated)' : '(provided/fallback)');
         
         // Start a transaction to update both tables
         // Architecture: nad_test_ids = single source of truth for status
@@ -2322,7 +2333,7 @@ app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (re
                     notes = VALUES(notes),
                     image = VALUES(image),
                     updated_date = VALUES(updated_date)
-            `, [testId, parseFloat(nadScore), technicianEmail || 'lab-tech@example.com', labNotes || null, filePath]);
+            `, [testId, parseFloat(nadScore), finalTechnicianEmail, labNotes || null, filePath]);
             
             await connection.commit();
             res.json({ 
@@ -2331,7 +2342,7 @@ app.post('/api/lab/process-test/:testId', upload.single('resultFile'), async (re
                 data: {
                     testId,
                     score: nadScore,
-                    technician: technicianEmail,
+                    technician: finalTechnicianEmail,
                     filePath
                 }
             });
