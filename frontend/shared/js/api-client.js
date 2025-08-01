@@ -64,6 +64,23 @@ NAD.API = {
             }
             
             if (!response.ok) {
+                // Check for authentication errors
+                if (response.status === 401) {
+                    // Session expired or not authenticated
+                    NAD.logger.warn('Authentication failed - session may have expired');
+                    
+                    // Clear local session data
+                    sessionStorage.removeItem('nad_auth_type');
+                    sessionStorage.removeItem('nad_auth_token');
+                    sessionStorage.removeItem('nad_user_data');
+                    sessionStorage.removeItem('nad_auth_timestamp');
+                    
+                    // Redirect to portal if on customer dashboard
+                    if (window.location.pathname.includes('customer-dashboard')) {
+                        window.location.href = '/customer-portal.html?error=session_expired';
+                    }
+                }
+                
                 throw new Error(responseData.error || `HTTP ${response.status} ${response.statusText}`);
             }
             

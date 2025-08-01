@@ -133,9 +133,10 @@ window.NADDashboard = {
                 NAD.logger.debug('Bypass authentication validated, using bypass user data');
                 const user = JSON.parse(bypassUser);
                 
-                // Store bypass authentication
+                // Store bypass authentication with timestamp
                 sessionStorage.setItem('nad_auth_type', 'bypass');
                 sessionStorage.setItem('nad_user_data', JSON.stringify(user));
+                sessionStorage.setItem('nad_auth_timestamp', Date.now().toString());
                 
                 // Clear bypass validation flags (one-time use)
                 sessionStorage.removeItem('nad_bypass_validated');
@@ -148,6 +149,28 @@ window.NADDashboard = {
             // Check existing session first (before trying URL tokens)
             const authType = sessionStorage.getItem('nad_auth_type');
             const storedUser = sessionStorage.getItem('nad_user_data');
+            const authTimestamp = sessionStorage.getItem('nad_auth_timestamp');
+            
+            // Check if session has expired
+            if (authTimestamp) {
+                const sessionAge = Date.now() - parseInt(authTimestamp);
+                // Determine max age based on session type
+                let maxAge = 30 * 60 * 1000; // Default 30 minutes for customers
+                
+                // Check if this is a special session (lab/admin via bypass)
+                if (authType === 'bypass' && storedUser) {
+                    const user = JSON.parse(storedUser);
+                    if (user.sessionType === 'lab' || user.sessionType === 'admin') {
+                        maxAge = 4 * 60 * 60 * 1000; // 4 hours for lab/admin
+                    }
+                }
+                
+                if (sessionAge > maxAge) {
+                    NAD.logger.info('Session expired, clearing authentication');
+                    this.clearAuthentication();
+                    return { success: false, error: 'Session expired' };
+                }
+            }
             
             if (authType === 'bypass' && storedUser) {
                 NAD.logger.debug('Existing bypass session found');
@@ -180,10 +203,11 @@ window.NADDashboard = {
                 });
                 
                 if (response.success) {
-                    // Store authentication
+                    // Store authentication with timestamp
                     sessionStorage.setItem('nad_auth_token', token);
                     sessionStorage.setItem('nad_auth_type', 'shopify');
                     sessionStorage.setItem('nad_user_data', JSON.stringify(response.data));
+                    sessionStorage.setItem('nad_auth_timestamp', Date.now().toString());
                     
                     // Remove token from URL to prevent reuse on refresh
                     const newUrl = new URL(window.location);
@@ -788,10 +812,20 @@ window.NADDashboard = {
      */
     startAutoRefresh() {
         setInterval(() => {
+            // Check session validity first
+            if (!this.checkSessionValidity()) {
+                return; // Session expired, stop refreshing
+            }
+            
             if (this.currentSection === 'dashboard') {
                 this.refreshDashboardData();
             }
         }, this.config.refreshInterval);
+        
+        // Also check session every minute
+        setInterval(() => {
+            this.checkSessionValidity();
+        }, 60000); // Check every minute
     },
 
     /**
@@ -816,6 +850,11 @@ window.NADDashboard = {
      * Show/hide sections
      */
     showSection(sectionName, updateHistory = true) {
+        // Check session validity before allowing navigation
+        if (!this.checkSessionValidity()) {
+            return; // Session expired, don't allow navigation
+        }
+        
         // Hide all sections
         document.querySelectorAll('.content-section').forEach(section => {
             section.classList.remove('active');
@@ -1717,7 +1756,52 @@ window.NADDashboard = {
         alert('Settings panel coming soon!');
     },
 
+    /**
+     * Clear authentication data
+     */
+    clearAuthentication() {
+        sessionStorage.removeItem('nad_auth_type');
+        sessionStorage.removeItem('nad_auth_token');
+        sessionStorage.removeItem('nad_user_data');
+        sessionStorage.removeItem('nad_auth_timestamp');
+        sessionStorage.removeItem('nad_customer_email');
+    },
+
+    /**
+     * Check if session is still valid
+     */
+    checkSessionValidity() {
+        const authTimestamp = sessionStorage.getItem('nad_auth_timestamp');
+        if (!authTimestamp) return false;
+        
+        const sessionAge = Date.now() - parseInt(authTimestamp);
+        
+        // Determine max age based on session type
+        let maxAge = 30 * 60 * 1000; // Default 30 minutes for customers
+        
+        const authType = sessionStorage.getItem('nad_auth_type');
+        const storedUser = sessionStorage.getItem('nad_user_data');
+        
+        // Check if this is a special session (lab/admin via bypass)
+        if (authType === 'bypass' && storedUser) {
+            const user = JSON.parse(storedUser);
+            if (user.sessionType === 'lab' || user.sessionType === 'admin') {
+                maxAge = 4 * 60 * 60 * 1000; // 4 hours for lab/admin
+            }
+        }
+        
+        if (sessionAge > maxAge) {
+            NAD.logger.info('Session expired during activity check');
+            this.clearAuthentication();
+            this.showAuthError();
+            return false;
+        }
+        
+        return true;
+    },
+
     logout() {
+        this.clearAuthentication();
         sessionStorage.clear();
         window.location.href = '/customer-portal.html';
     },
