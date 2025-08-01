@@ -3855,7 +3855,7 @@ app.get('/api/admin/debug-batch/:batchId', async (req, res) => {
 // CUSTOMER PORTAL ENDPOINTS  
 // ============================================================================
 
-app.post('/api/customer/verify-test', async (req, res) => {
+app.post('/api/customer/verify-test', optionalAuthentication, async (req, res) => {
     try {
         const { testId, email, firstName, lastName } = req.body;
         
@@ -3937,7 +3937,7 @@ app.post('/api/customer/verify-test', async (req, res) => {
     }
 });
 
-app.post('/api/customer/activate-test', async (req, res) => {
+app.post('/api/customer/activate-test', optionalAuthentication, async (req, res) => {
     try {
         const { testId, email, firstName, lastName, supplements } = req.body;
         
@@ -4104,11 +4104,13 @@ app.post('/api/customer/activate-test', async (req, res) => {
 // CUSTOMER PORTAL ENDPOINTS  
 // ============================================================================
 
-app.get('/api/customer/test-history', async (req, res) => {
+app.get('/api/customer/test-history', optionalAuthentication, async (req, res) => {
     try {
-        // Extract customer_id from Multipass authentication or request
+        // Extract customer_id from authenticated session, Multipass, or request
         let customerId = null;
-        if (req.user && req.user.customer_id) {
+        if (req.customer && req.customer.email) {
+            customerId = req.customer.email; // From session authentication
+        } else if (req.user && req.user.customer_id) {
             customerId = req.user.customer_id; // From Multipass authentication
         } else if (req.query.customer_id) {
             customerId = normalizeCustomerId(req.query.customer_id);
@@ -4227,7 +4229,7 @@ app.get('/api/customer/test-history', async (req, res) => {
 });
 
 // Create sample test data for john.doe@example.com (for chart testing)
-app.post('/api/customer/create-sample-data', async (req, res) => {
+app.post('/api/customer/create-sample-data', optionalAuthentication, async (req, res) => {
     try {
         const customerId = 'john.doe@example.com';
         
@@ -4308,14 +4310,16 @@ app.post('/api/customer/create-sample-data', async (req, res) => {
     }
 });
 
-app.get('/api/customer/test-detail/:testId', async (req, res) => {
+app.get('/api/customer/test-detail/:testId', optionalAuthentication, async (req, res) => {
     try {
         const { testId } = req.params;
         
-        // Extract customer_id from Multipass authentication
+        // Extract customer_id from authenticated session, Multipass, or request
         let customerId = null;
-        if (req.user && req.user.customer_id) {
-            customerId = req.user.customer_id;
+        if (req.customer && req.customer.email) {
+            customerId = req.customer.email; // From session authentication
+        } else if (req.user && req.user.customer_id) {
+            customerId = req.user.customer_id; // From Multipass authentication
         } else if (req.query.customer_id) {
             customerId = normalizeCustomerId(req.query.customer_id);
         } else {
@@ -4604,9 +4608,15 @@ app.get('/api/test', (req, res) => {
 });
 
 // Get customer tests for dashboard
-app.post('/api/customer/tests', async (req, res) => {
+app.post('/api/customer/tests', optionalAuthentication, async (req, res) => {
     try {
-        const { email, customerId } = req.body;
+        // Prioritize authenticated customer info over request body
+        let { email, customerId } = req.body;
+        
+        if (req.customer && req.customer.authenticated) {
+            email = req.customer.email;
+            customerId = req.customer.customerId || req.customer.email;
+        }
         
         if (!email && !customerId) {
             return res.status(400).json({
@@ -4736,9 +4746,15 @@ app.post('/api/customer/tests', async (req, res) => {
 // Note: Dashboard activation endpoint removed - all activations now flow through Shopify webhooks
 
 // Get customer dashboard statistics
-app.post('/api/customer/stats', async (req, res) => {
+app.post('/api/customer/stats', optionalAuthentication, async (req, res) => {
     try {
-        const { email, customerId } = req.body;
+        // Prioritize authenticated customer info over request body
+        let { email, customerId } = req.body;
+        
+        if (req.customer && req.customer.authenticated) {
+            email = req.customer.email;
+            customerId = req.customer.customerId || req.customer.email;
+        }
         
         if (!email && !customerId) {
             return res.status(400).json({
@@ -4800,9 +4816,15 @@ app.post('/api/customer/stats', async (req, res) => {
 });
 
 // Get test results for customer
-app.post('/api/customer/results', async (req, res) => {
+app.post('/api/customer/results', optionalAuthentication, async (req, res) => {
     try {
-        const { email, customerId, testId } = req.body;
+        // Prioritize authenticated customer info over request body
+        let { email, customerId, testId } = req.body;
+        
+        if (req.customer && req.customer.authenticated) {
+            email = req.customer.email;
+            customerId = req.customer.customerId || req.customer.email;
+        }
         
         if (!email && !customerId) {
             return res.status(400).json({
