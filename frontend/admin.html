@@ -1757,7 +1757,6 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                             const dose = supplement.default_dose ?
                                 `${supplement.default_dose} ${supplement.unit || 'mg'}` : 'Not set';
         
-                            console.log('📝 Creating supplement row for:', supplement.name, 'ID:', supplement.id);
                             row.innerHTML = `
                                 <td><strong>${supplement.name}</strong><br><small style="color: #666;">${supplement.description || 'No description'}</small></td>
                                 <td>${supplement.category || 'Uncategorized'}</td>
@@ -1819,19 +1818,11 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         let currentEditingSupplementId = null;
 
-        // Test function to verify function availability
-        function testEditFunction() {
-            console.log('✅ Test edit function works!');
-            alert('Edit function test successful!');
-        }
-        window.testEditFunction = testEditFunction;
 
         async function editSupplement(id) {
-            console.log('🔍 Edit supplement called with ID:', id);
             currentEditingSupplementId = id;
             
             try {
-                console.log('📥 Starting supplement edit process...');
                 showAlert('Loading supplement data...', 'info');
                 
                 // Fetch supplement data
@@ -1856,13 +1847,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 const activeField = document.getElementById('edit-supplement-active');
                 const featuredField = document.getElementById('edit-supplement-featured');
                 
-                console.log('🔍 Checking modal elements...');
-                console.log('Name field:', nameField);
-                console.log('Category field:', categoryField);
-                console.log('Modal element:', document.getElementById('edit-supplement-modal'));
-                
                 if (!nameField || !categoryField) {
-                    console.error('❌ Modal elements not found!');
                     throw new Error('Edit modal not found. Please make sure you are in the Supplements section.');
                 }
                 
