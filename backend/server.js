@@ -3234,17 +3234,14 @@ app.get('/api/analytics/popular-supplements', async (req, res) => {
             LIMIT 10
         `);
 
-        // Get total tests with supplements for percentage calculation
+        // Get total completed tests for percentage calculation
         const [totalTests] = await db.execute(`
-            SELECT COUNT(DISTINCT us.test_id) as total
-            FROM nad_user_supplements us
-            JOIN nad_test_scores ts ON us.test_id = ts.test_id
-            WHERE us.supplements_with_dose IS NOT NULL
-                AND us.supplements_with_dose != ''
-                AND ts.score IS NOT NULL
+            SELECT COUNT(*) as total
+            FROM nad_test_ids
+            WHERE status = 'completed'
         `);
 
-        const total = totalTests[0].total || 1;
+        const totalCompleted = totalTests[0].total || 1;
 
         const duration = Date.now() - startTime;
         req.logger.info('Popular supplements request completed', {
@@ -3259,11 +3256,13 @@ app.get('/api/analytics/popular-supplements', async (req, res) => {
                 name: supplement.supplement_name,
                 usage_count: supplement.usage_count,
                 unique_users: supplement.unique_users,
-                usage_percentage: Math.round((supplement.usage_count / total) * 100),
+                usage_percentage: Math.round((supplement.usage_count / totalCompleted) * 100),
                 avg_score: Math.round(supplement.avg_score || 0),
                 rank: index + 1
             })),
-            total_tests_with_supplements: total
+            total_completed_tests: totalCompleted,
+            tests_with_supplements: popularSupplements.length > 0 ? 
+                popularSupplements.reduce((sum, s) => sum + s.usage_count, 0) : 0
         });
     } catch (error) {
         const duration = Date.now() - startTime;
@@ -3336,16 +3335,24 @@ app.get('/api/analytics/popular-supplements', async (req, res) => {
                     .sort((a, b) => b.usage_count - a.usage_count)
                     .slice(0, 10);
 
-                const totalTests = allSupplements.length;
+                // Get total completed tests for proper percentage calculation
+                const [completedTestCount] = await db.execute(`
+                    SELECT COUNT(*) as total
+                    FROM nad_test_ids
+                    WHERE status = 'completed'
+                `);
+                
+                const totalCompleted = completedTestCount[0].total || 1;
 
                 res.json({
                     success: true,
                     supplements: popularSupplements.map((supplement, index) => ({
                         ...supplement,
-                        usage_percentage: Math.round((supplement.usage_count / totalTests) * 100),
+                        usage_percentage: Math.round((supplement.usage_count / totalCompleted) * 100),
                         rank: index + 1
                     })),
-                    total_tests_with_supplements: totalTests
+                    total_completed_tests: totalCompleted,
+                    tests_with_supplements: allSupplements.length
                 });
             } catch (fallbackError) {
                 req.logger.error('Popular supplements fallback failed', {

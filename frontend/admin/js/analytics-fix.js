@@ -201,13 +201,20 @@ async function replaceAnalyticsTables() {
         
         let supplementsHTML = '';
         if (supplementsData.success && supplementsData.supplements && supplementsData.supplements.length > 0) {
-            const supplementCards = supplementsData.supplements.slice(0, 4).map(supplement => `
-                <div class="stat-card">
-                    <div class="stat-number">${supplement.usage_percentage}%</div>
-                    <div class="stat-label">${supplement.name}</div>
-                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">${supplement.unique_users} users • Avg Score: ${supplement.avg_score}</div>
-                </div>
-            `).join('');
+            const supplementCards = supplementsData.supplements.slice(0, 4).map(supplement => {
+                // For very low percentages, show the count instead
+                const displayValue = supplement.usage_percentage > 0 ? 
+                    `${supplement.usage_percentage}%` : 
+                    `${supplement.usage_count}/${supplementsData.total_completed_tests}`;
+                
+                return `
+                    <div class="stat-card">
+                        <div class="stat-number">${displayValue}</div>
+                        <div class="stat-label">${supplement.name}</div>
+                        <div style="font-size: 12px; color: #28a745; margin-top: 5px;">${supplement.unique_users} user${supplement.unique_users !== 1 ? 's' : ''} • Avg Score: ${supplement.avg_score}</div>
+                    </div>
+                `;
+            }).join('');
             
             supplementsHTML = `
                 <div class="card">
