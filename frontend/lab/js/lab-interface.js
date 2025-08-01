@@ -450,19 +450,37 @@ window.NADLab = {
     getTechnicianEmail() {
         // Get technician email from various sources
         
-        // Try to get from multipass data first
+        // First priority: authenticated user data from this.user (most reliable)
+        if (this.user && this.user.email) {
+            return this.user.email;
+        }
+        
+        // Second priority: sessionStorage user data (current session)
+        const sessionUser = sessionStorage.getItem('nad_user_data');
+        if (sessionUser) {
+            try {
+                const userData = JSON.parse(sessionUser);
+                if (userData.email) {
+                    return userData.email;
+                }
+            } catch (e) {
+                console.warn('Failed to parse session user data');
+            }
+        }
+        
+        // Third priority: multipass data (legacy)
         if (window.shopifyMultipass && window.shopifyMultipass.email) {
             return window.shopifyMultipass.email;
         }
         
-        // Fallback to localStorage or URL params
+        // Fourth priority: URL params (legacy)
         const urlParams = new URLSearchParams(window.location.search);
         const emailFromUrl = urlParams.get('email');
         if (emailFromUrl) {
             return emailFromUrl;
         }
         
-        // Check localStorage for stored user data
+        // Fifth priority: localStorage (legacy)
         const storedUser = localStorage.getItem('nad_user_data');
         if (storedUser) {
             try {
@@ -471,7 +489,7 @@ window.NADLab = {
                     return userData.email;
                 }
             } catch (e) {
-                // Failed to parse stored user data
+                console.warn('Failed to parse stored user data');
             }
         }
         
