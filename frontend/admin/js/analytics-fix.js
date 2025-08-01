@@ -358,8 +358,8 @@ async function exportAnalytics() {
         
         // Fetch comprehensive analytics data from backend
         const [overviewResponse, performanceResponse] = await Promise.all([
-            fetch('/api/analytics/overview'),
-            fetch('/api/analytics/performance')
+            fetch(`${API_BASE}/api/analytics/overview`),
+            fetch(`${API_BASE}/api/analytics/performance`)
         ]);
         
         if (!overviewResponse.ok) {
@@ -504,7 +504,7 @@ async function exportTestDetails() {
         const period = periodElement ? periodElement.value : '30';
         
         // Fetch comprehensive test details from backend
-        const response = await fetch(`/api/admin/export/test-details?period=${period}`);
+        const response = await fetch(`${API_BASE}/api/admin/export/test-details?period=${period}`);
         
         if (!response.ok) {
             throw new Error(`API error: ${response.status}`);

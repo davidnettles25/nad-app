@@ -569,9 +569,19 @@
                     <h2 style="color: #333; margin-bottom: 20px;">📈 Analytics & Reports</h2>
                     <p style="color: #666; margin-bottom: 25px;">Comprehensive analytics and performance metrics</p>
                     
-                    <div style="display: flex; gap: 15px; margin-bottom: 25px;">
-                        <button class="btn btn-primary" onclick="loadAnalytics()">🔄 Refresh Analytics</button>
-                        <button class="btn btn-secondary" onclick="exportAnalytics()">📤 Export Report</button>
+                    <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; align-items: flex-start;">
+                        <div>
+                            <button class="btn btn-primary" onclick="loadAnalytics()">🔄 Refresh Analytics</button>
+                            <div style="font-size: 11px; color: #666; margin-top: 5px;">Update all metrics</div>
+                        </div>
+                        <div>
+                            <button class="btn btn-secondary" onclick="exportAnalytics()">📊 Export Analytics Report</button>
+                            <div style="font-size: 11px; color: #666; margin-top: 5px;">Summary statistics & trends</div>
+                        </div>
+                        <div>
+                            <button class="btn btn-warning" onclick="exportTestDetails()">📋 Export Test Details</button>
+                            <div style="font-size: 11px; color: #666; margin-top: 5px;">Complete test data with supplements</div>
+                        </div>
                     </div>
                     
                     <div id="analytics-content">
@@ -1106,6 +1116,15 @@
                 console.log('📊 Dashboard stats response status:', response.status);
                 const data = await response.json();
                 console.log('📊 Dashboard stats data:', data);
+                console.log('🔍 Detailed stats breakdown:');
+                console.log('  Total Tests:', data.stats.total_tests);
+                console.log('  Activated Tests:', data.stats.activated_tests);
+                console.log('  Completed Tests:', data.stats.completed_tests);
+                console.log('  Pending Tests:', data.stats.pending_tests);
+                console.log('  Math Check: Activated + Completed + Pending =', 
+                    (data.stats.activated_tests || 0) + (data.stats.completed_tests || 0) + (data.stats.pending_tests || 0));
+                console.log('  Difference from Total:', 
+                    (data.stats.total_tests || 0) - ((data.stats.activated_tests || 0) + (data.stats.completed_tests || 0) + (data.stats.pending_tests || 0)));
         
                 if (response.ok && data.success) {
                     // Dashboard stats loaded
