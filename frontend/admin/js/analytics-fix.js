@@ -774,6 +774,11 @@ async function renderTestStatusChart() {
         
         const ctx = document.getElementById('test-status-chart');
         
+        if (!ctx) {
+            console.log('⚠️ Test status chart canvas not found, skipping render');
+            return;
+        }
+        
         // Clear any existing chart
         if (window.testStatusChart) {
             window.testStatusChart.destroy();
@@ -848,6 +853,11 @@ async function renderScoreDistributionChart() {
         }
         
         const ctx = document.getElementById('score-distribution-chart');
+        
+        if (!ctx) {
+            console.log('⚠️ Score distribution chart canvas not found, skipping render');
+            return;
+        }
         
         // Clear any existing chart
         if (window.scoreDistributionChart) {
@@ -927,6 +937,11 @@ async function renderTimelineChart() {
         }
         
         const ctx = document.getElementById('timeline-chart');
+        
+        if (!ctx) {
+            console.log('⚠️ Timeline chart canvas not found, skipping render');
+            return;
+        }
         
         // Clear any existing chart
         if (window.timelineChart) {
