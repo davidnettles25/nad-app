@@ -166,7 +166,7 @@ async function replaceAnalyticsTables() {
         if (topUsersData.success && topUsersData.users && topUsersData.users.length > 0) {
             const userCards = topUsersData.users.slice(0, 4).map(user => `
                 <div class="stat-card">
-                    <div class="stat-number">${user.customer_id}</div>
+                    <div style="font-size: 14px; font-weight: bold; color: #333; word-break: break-all; line-height: 1.2; margin-bottom: 8px;">${user.customer_id}</div>
                     <div class="stat-label">Customer ID</div>
                     <div style="font-size: 12px; color: #007bff; margin-top: 5px;">${user.completed_tests} tests • Score: ${user.avg_score} • #${user.rank}</div>
                 </div>
@@ -186,7 +186,7 @@ async function replaceAnalyticsTables() {
                     <h4>🏆 Top Performing Users</h4>
                     <div class="horizontal-stats-grid">
                         <div class="stat-card">
-                            <div class="stat-number">No Data</div>
+                            <div style="font-size: 14px; font-weight: bold; color: #666; margin-bottom: 8px;">No Data</div>
                             <div class="stat-label">No completed tests found</div>
                             <div style="font-size: 12px; color: #666; margin-top: 5px;">Complete some tests to see rankings</div>
                         </div>
@@ -240,7 +240,7 @@ async function replaceAnalyticsTables() {
                 <h4>🏆 Top Performing Users</h4>
                 <div class="horizontal-stats-grid">
                     <div class="stat-card">
-                        <div class="stat-number">Loading...</div>
+                        <div style="font-size: 14px; font-weight: bold; color: #dc3545; margin-bottom: 8px;">Loading...</div>
                         <div class="stat-label">Unable to load data</div>
                         <div style="font-size: 12px; color: #dc3545; margin-top: 5px;">Please refresh the page</div>
                     </div>
@@ -251,7 +251,7 @@ async function replaceAnalyticsTables() {
                 <h4>💊 Popular Supplements</h4>
                 <div class="horizontal-stats-grid">
                     <div class="stat-card">
-                        <div class="stat-number">Loading...</div>
+                        <div style="font-size: 14px; font-weight: bold; color: #dc3545; margin-bottom: 8px;">Loading...</div>
                         <div class="stat-label">Unable to load data</div>
                         <div style="font-size: 12px; color: #dc3545; margin-top: 5px;">Please refresh the page</div>
                     </div>
