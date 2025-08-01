@@ -3195,6 +3195,184 @@ app.get('/api/analytics/top-users', async (req, res) => {
     }
 });
 
+// Popular Supplements Analytics
+app.get('/api/analytics/popular-supplements', async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+        req.logger.info('Popular supplements request started', {
+            endpoint: '/api/analytics/popular-supplements'
+        });
+
+        // Get popular supplements based on usage in completed tests
+        const [popularSupplements] = await db.execute(`
+            SELECT 
+                supplement_name,
+                COUNT(DISTINCT test_id) as usage_count,
+                COUNT(DISTINCT customer_id) as unique_users,
+                AVG(avg_score) as avg_score
+            FROM (
+                SELECT 
+                    us.test_id,
+                    us.customer_id,
+                    JSON_UNQUOTE(JSON_EXTRACT(supplement.value, '$.name')) as supplement_name,
+                    ts.score as avg_score
+                FROM nad_user_supplements us
+                CROSS JOIN JSON_TABLE(
+                    us.supplements_with_dose,
+                    '$.selected[*]' COLUMNS (value JSON PATH '$')
+                ) AS supplement
+                LEFT JOIN nad_test_scores ts ON us.test_id = ts.test_id
+                WHERE us.supplements_with_dose IS NOT NULL
+                    AND us.supplements_with_dose != ''
+                    AND JSON_EXTRACT(us.supplements_with_dose, '$.selected') IS NOT NULL
+                    AND ts.score IS NOT NULL
+            ) AS supplement_data
+            WHERE supplement_name IS NOT NULL
+            GROUP BY supplement_name
+            ORDER BY usage_count DESC
+            LIMIT 10
+        `);
+
+        // Get total tests with supplements for percentage calculation
+        const [totalTests] = await db.execute(`
+            SELECT COUNT(DISTINCT us.test_id) as total
+            FROM nad_user_supplements us
+            JOIN nad_test_scores ts ON us.test_id = ts.test_id
+            WHERE us.supplements_with_dose IS NOT NULL
+                AND us.supplements_with_dose != ''
+                AND ts.score IS NOT NULL
+        `);
+
+        const total = totalTests[0].total || 1;
+
+        const duration = Date.now() - startTime;
+        req.logger.info('Popular supplements request completed', {
+            endpoint: '/api/analytics/popular-supplements',
+            duration: `${duration}ms`,
+            supplementCount: popularSupplements.length
+        });
+
+        res.json({
+            success: true,
+            supplements: popularSupplements.map((supplement, index) => ({
+                name: supplement.supplement_name,
+                usage_count: supplement.usage_count,
+                unique_users: supplement.unique_users,
+                usage_percentage: Math.round((supplement.usage_count / total) * 100),
+                avg_score: Math.round(supplement.avg_score || 0),
+                rank: index + 1
+            })),
+            total_tests_with_supplements: total
+        });
+    } catch (error) {
+        const duration = Date.now() - startTime;
+        
+        // Check if it's a JSON_TABLE error (MySQL version issue)
+        if (error.message.includes('JSON_TABLE')) {
+            req.logger.warn('JSON_TABLE not supported, using fallback method', {
+                endpoint: '/api/analytics/popular-supplements',
+                error: error.message
+            });
+            
+            // Fallback method without JSON_TABLE
+            try {
+                const [allSupplements] = await db.execute(`
+                    SELECT 
+                        us.test_id,
+                        us.customer_id,
+                        us.supplements_with_dose,
+                        ts.score
+                    FROM nad_user_supplements us
+                    JOIN nad_test_scores ts ON us.test_id = ts.test_id
+                    WHERE us.supplements_with_dose IS NOT NULL
+                        AND us.supplements_with_dose != ''
+                        AND ts.score IS NOT NULL
+                `);
+
+                // Process supplements in JavaScript
+                const supplementStats = {};
+                
+                allSupplements.forEach(row => {
+                    try {
+                        const supplementData = typeof row.supplements_with_dose === 'string' 
+                            ? JSON.parse(row.supplements_with_dose) 
+                            : row.supplements_with_dose;
+                        
+                        if (supplementData && supplementData.selected && Array.isArray(supplementData.selected)) {
+                            supplementData.selected.forEach(supplement => {
+                                if (supplement && supplement.name) {
+                                    if (!supplementStats[supplement.name]) {
+                                        supplementStats[supplement.name] = {
+                                            name: supplement.name,
+                                            tests: new Set(),
+                                            users: new Set(),
+                                            scores: []
+                                        };
+                                    }
+                                    supplementStats[supplement.name].tests.add(row.test_id);
+                                    supplementStats[supplement.name].users.add(row.customer_id);
+                                    if (row.score) {
+                                        supplementStats[supplement.name].scores.push(parseFloat(row.score));
+                                    }
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        // Skip invalid JSON
+                    }
+                });
+
+                // Convert to array and calculate stats
+                const popularSupplements = Object.values(supplementStats)
+                    .map(stat => ({
+                        name: stat.name,
+                        usage_count: stat.tests.size,
+                        unique_users: stat.users.size,
+                        avg_score: stat.scores.length > 0 
+                            ? Math.round(stat.scores.reduce((a, b) => a + b, 0) / stat.scores.length)
+                            : 0
+                    }))
+                    .sort((a, b) => b.usage_count - a.usage_count)
+                    .slice(0, 10);
+
+                const totalTests = allSupplements.length;
+
+                res.json({
+                    success: true,
+                    supplements: popularSupplements.map((supplement, index) => ({
+                        ...supplement,
+                        usage_percentage: Math.round((supplement.usage_count / totalTests) * 100),
+                        rank: index + 1
+                    })),
+                    total_tests_with_supplements: totalTests
+                });
+            } catch (fallbackError) {
+                req.logger.error('Popular supplements fallback failed', {
+                    endpoint: '/api/analytics/popular-supplements',
+                    duration: `${Date.now() - startTime}ms`,
+                    error: fallbackError.message
+                });
+                res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to fetch supplement data'
+                });
+            }
+        } else {
+            req.logger.error('Popular supplements request failed', {
+                endpoint: '/api/analytics/popular-supplements',
+                duration: `${duration}ms`,
+                error: error.message,
+                stack: error.stack
+            });
+            res.status(500).json({ 
+                success: false, 
+                error: error.message
+            });
+        }
+    }
+});
+
 // ============================================================================
 // REPORTS ENDPOINTS
 // ============================================================================

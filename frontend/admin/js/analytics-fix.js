@@ -195,34 +195,42 @@ async function replaceAnalyticsTables() {
             `;
         }
         
-        // Popular Supplements (still using mock data for now)
-        const supplementsHTML = `
-            <div class="card">
-                <h4>💊 Popular Supplements</h4>
-                <div class="horizontal-stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number">89%</div>
-                        <div class="stat-label">NAD+ Precursor</div>
-                        <div style="font-size: 12px; color: #28a745; margin-top: 5px;">89 users • Avg Score: 84</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">67%</div>
-                        <div class="stat-label">Vitamin B3</div>
-                        <div style="font-size: 12px; color: #28a745; margin-top: 5px;">67 users • Avg Score: 78</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">45%</div>
-                        <div class="stat-label">Resveratrol</div>
-                        <div style="font-size: 12px; color: #28a745; margin-top: 5px;">45 users • Avg Score: 81</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">38%</div>
-                        <div class="stat-label">CoQ10</div>
-                        <div style="font-size: 12px; color: #28a745; margin-top: 5px;">38 users • Avg Score: 76</div>
+        // Fetch popular supplements data
+        const supplementsResponse = await fetch(`${API_BASE}/api/analytics/popular-supplements`);
+        const supplementsData = await supplementsResponse.json();
+        
+        let supplementsHTML = '';
+        if (supplementsData.success && supplementsData.supplements && supplementsData.supplements.length > 0) {
+            const supplementCards = supplementsData.supplements.slice(0, 4).map(supplement => `
+                <div class="stat-card">
+                    <div class="stat-number">${supplement.usage_percentage}%</div>
+                    <div class="stat-label">${supplement.name}</div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 5px;">${supplement.unique_users} users • Avg Score: ${supplement.avg_score}</div>
+                </div>
+            `).join('');
+            
+            supplementsHTML = `
+                <div class="card">
+                    <h4>💊 Popular Supplements</h4>
+                    <div class="horizontal-stats-grid">
+                        ${supplementCards}
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            supplementsHTML = `
+                <div class="card">
+                    <h4>💊 Popular Supplements</h4>
+                    <div class="horizontal-stats-grid">
+                        <div class="stat-card">
+                            <div style="font-size: 14px; font-weight: bold; color: #666; margin-bottom: 8px;">No Data</div>
+                            <div class="stat-label">No supplement data found</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">Complete tests with supplements to see rankings</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
         
         const horizontalCardsHTML = topUsersHTML + supplementsHTML;
         
