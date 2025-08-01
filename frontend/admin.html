@@ -1318,27 +1318,23 @@
 
         // Load all batches from API
         async function loadAllBatches() {
-            // Loading all batches...
+            console.log('📊 Loading all batches...');
             
-            // TODO: Implement batch loading when endpoint is available
-            // Batch loading not yet implemented
-            return;
-        
             try {
-                const response = await fetch(`${API_BASE}/api/admin/test-batches`);
+                const response = await fetch(`${API_BASE}/api/admin/printable-batches`);
                 const result = await response.json();
-        
+                
                 if (result.success) {
                     window.allBatches = result.data;
-                    renderBatchList(result.data);
-                    // Loaded batches
+                    console.log(`✅ Loaded ${result.data.length} batches`);
+                    updateTestStats(); // Update statistics after loading batches
                 } else {
-                    // Failed to load batches
-                    showBatchesError('Failed to load batches');
+                    console.error('Failed to load batches:', result.message);
+                    window.allBatches = [];
                 }
             } catch (error) {
-                // Error loading batches
-                showBatchesError('Network error loading batches');
+                console.error('Error loading batches:', error);
+                window.allBatches = [];
             }
         }
 
@@ -1872,7 +1868,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                         // Auto-loading tests
                         initTestManagement();
                         loadTestsFromAPI();
-                        // Batch loading removed - use Batch Printing navigation
+                        loadAllBatches(); // Load batches for statistics
                         break;
                     case 'batch-printing':
                         // Auto-loading batch printing...
@@ -1973,7 +1969,7 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                 case 'tests':
                     initTestManagement();
                     loadTestsFromAPI();
-                    // Batch loading removed - use Batch Printing navigation
+                    loadAllBatches(); // Load batches for statistics
                     break;
                 case 'supplements':
                     loadSupplements();
