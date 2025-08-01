@@ -77,8 +77,8 @@ function updateAnalyticsDisplay(stats) {
     // Load table data with horizontal layout - DIRECT REPLACEMENT  
     // Reset the flag in case this is a refresh/reload
     window.analyticsReplaced = false;
-    setTimeout(() => {
-        replaceAnalyticsTables();
+    setTimeout(async () => {
+        await replaceAnalyticsTables();
     }, 500);
     
     // Analytics display updated
@@ -87,7 +87,7 @@ function updateAnalyticsDisplay(stats) {
 /**
  * Replace analytics tables with guaranteed horizontal layout
  */
-function replaceAnalyticsTables() {
+async function replaceAnalyticsTables() {
     // Prevent multiple executions
     if (window.analyticsReplaced) {
         console.log('Analytics already replaced, skipping...');
@@ -751,6 +751,7 @@ window.loadTopUsers = loadTopUsers;
 window.loadPopularSupplements = loadPopularSupplements;
 window.exportAnalytics = exportAnalytics;
 window.exportTestDetails = exportTestDetails;
+window.replaceAnalyticsTables = replaceAnalyticsTables;
 
 // Analytics functions fix loaded successfully
 // loadAnalytics function now available globally
