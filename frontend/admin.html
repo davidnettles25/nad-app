@@ -1820,9 +1820,54 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             showAlert(`✏️ Edit supplement ${id} - Coming soon!`, 'info');
         }
 
-        function toggleSupplement(id, isActive) {
+        async function toggleSupplement(id, isActive) {
             const action = isActive ? 'deactivate' : 'activate';
-            showAlert(`${isActive ? '❌' : '⚡'} ${action} supplement ${id} - Coming soon!`, 'info');
+            const actionText = isActive ? 'Deactivating' : 'Activating';
+            
+            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} supplement ${id}?`)) {
+                return;
+            }
+            
+            try {
+                showAlert(`${actionText} supplement...`, 'info');
+                
+                // First get the current supplement data
+                const getResponse = await fetch(`${API_BASE}/api/supplements/${id}`);
+                const getResult = await getResponse.json();
+                
+                if (!getResult.success) {
+                    throw new Error(getResult.error || 'Failed to get supplement data');
+                }
+                
+                const supplement = getResult.supplement;
+                
+                // Update the supplement with the new active status
+                const updateData = {
+                    ...supplement,
+                    is_active: isActive ? 0 : 1  // Toggle the status
+                };
+                
+                const response = await fetch(`${API_BASE}/api/supplements/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(`✅ Supplement ${action}d successfully!`, 'success');
+                    loadSupplements(); // Reload the supplements list
+                } else {
+                    throw new Error(result.error || `Failed to ${action} supplement`);
+                }
+                
+            } catch (error) {
+                console.error(`Error ${action}ing supplement:`, error);
+                showAlert(`❌ Error ${action}ing supplement: ${error.message}`, 'error');
+            }
         }
 
         // Section navigation
