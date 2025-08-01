@@ -79,6 +79,7 @@ function updateAnalyticsDisplay(stats) {
     window.analyticsReplaced = false;
     setTimeout(async () => {
         await replaceAnalyticsTables();
+        await renderAllCharts();
     }, 500);
     
     // Analytics display updated
@@ -759,6 +760,254 @@ function getPeriodLabel(period) {
     return labels[period] || 'Unknown Period';
 }
 
+/**
+ * Render Test Status Distribution Chart
+ */
+async function renderTestStatusChart() {
+    try {
+        const response = await fetch(`${API_BASE}/api/dashboard/stats`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load stats');
+        }
+        
+        const ctx = document.getElementById('test-status-chart');
+        
+        // Clear any existing chart
+        if (window.testStatusChart) {
+            window.testStatusChart.destroy();
+        }
+        
+        window.testStatusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Activated', 'Completed', 'Pending'],
+                datasets: [{
+                    data: [
+                        data.stats.activated_tests,
+                        data.stats.completed_tests,
+                        data.stats.pending_tests
+                    ],
+                    backgroundColor: [
+                        '#007bff',  // Blue for activated
+                        '#28a745',  // Green for completed
+                        '#ffc107'   // Yellow for pending
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = data.stats.total_tests;
+                                const value = context.raw;
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${context.label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('✅ Test Status Chart rendered successfully');
+    } catch (error) {
+        console.error('❌ Error rendering test status chart:', error);
+        document.getElementById('test-status-chart').innerHTML = `
+            <div style="text-align: center; color: #dc3545; padding: 40px;">
+                <div style="font-size: 2em; margin-bottom: 10px;">⚠️</div>
+                <p>Unable to load chart</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Render Score Distribution Chart
+ */
+async function renderScoreDistributionChart() {
+    try {
+        const response = await fetch(`${API_BASE}/api/analytics/overview`);
+        const data = await response.json();
+        
+        if (!data.success || !data.analytics || !data.analytics.score_distribution) {
+            throw new Error('No score distribution data available');
+        }
+        
+        const ctx = document.getElementById('score-distribution-chart');
+        
+        // Clear any existing chart
+        if (window.scoreDistributionChart) {
+            window.scoreDistributionChart.destroy();
+        }
+        
+        const scoreData = data.analytics.score_distribution;
+        
+        window.scoreDistributionChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: scoreData.map(item => item.score_range),
+                datasets: [{
+                    label: 'Number of Tests',
+                    data: scoreData.map(item => item.count),
+                    backgroundColor: [
+                        '#dc3545',  // Red for Poor
+                        '#ffc107',  // Yellow for Fair
+                        '#28a745',  // Green for Good
+                        '#007bff'   // Blue for Excellent
+                    ],
+                    borderWidth: 1,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = scoreData.reduce((sum, item) => sum + item.count, 0);
+                                const value = context.raw;
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `Tests: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('✅ Score Distribution Chart rendered successfully');
+    } catch (error) {
+        console.error('❌ Error rendering score distribution chart:', error);
+        document.getElementById('score-distribution-chart').innerHTML = `
+            <div style="text-align: center; color: #dc3545; padding: 40px;">
+                <div style="font-size: 2em; margin-bottom: 10px;">⚠️</div>
+                <p>Unable to load chart</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Render Tests Over Time Chart
+ */
+async function renderTimelineChart() {
+    try {
+        const response = await fetch(`${API_BASE}/api/analytics/overview`);
+        const data = await response.json();
+        
+        if (!data.success || !data.analytics || !data.analytics.daily_completions) {
+            throw new Error('No timeline data available');
+        }
+        
+        const ctx = document.getElementById('timeline-chart');
+        
+        // Clear any existing chart
+        if (window.timelineChart) {
+            window.timelineChart.destroy();
+        }
+        
+        const timelineData = data.analytics.daily_completions;
+        
+        window.timelineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timelineData.map(item => {
+                    const date = new Date(item.date);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }),
+                datasets: [{
+                    label: 'Tests Completed',
+                    data: timelineData.map(item => item.count),
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Tests'
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('✅ Timeline Chart rendered successfully');
+    } catch (error) {
+        console.error('❌ Error rendering timeline chart:', error);
+        document.getElementById('timeline-chart').innerHTML = `
+            <div style="text-align: center; color: #dc3545; padding: 40px;">
+                <div style="font-size: 2em; margin-bottom: 10px;">⚠️</div>
+                <p>Unable to load chart</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Render all charts
+ */
+async function renderAllCharts() {
+    console.log('🎯 Rendering all analytics charts...');
+    await Promise.all([
+        renderTestStatusChart(),
+        renderScoreDistributionChart(),
+        renderTimelineChart()
+    ]);
+    console.log('✅ All charts rendered');
+}
+
 // Make functions globally accessible
 window.loadAnalytics = loadAnalytics;
 window.updateAnalyticsDisplay = updateAnalyticsDisplay;
@@ -767,6 +1016,10 @@ window.loadPopularSupplements = loadPopularSupplements;
 window.exportAnalytics = exportAnalytics;
 window.exportTestDetails = exportTestDetails;
 window.replaceAnalyticsTables = replaceAnalyticsTables;
+window.renderTestStatusChart = renderTestStatusChart;
+window.renderScoreDistributionChart = renderScoreDistributionChart;
+window.renderTimelineChart = renderTimelineChart;
+window.renderAllCharts = renderAllCharts;
 
 // Analytics functions fix loaded successfully
 // loadAnalytics function now available globally

@@ -11,6 +11,9 @@
     <!-- Bypass parameter security check -->
     <script src="shared/js/bypass-security.js"></script>
     
+    <!-- Chart.js for analytics graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <!-- Admin dashboard authentication and initialization -->
     <script src="admin/js/admin-dashboard.js"></script>
     <!-- Load Shared CSS -->
@@ -589,6 +592,41 @@
                         <p style="text-align: center; color: #666; padding: 40px;">Loading analytics data...</p>
                     </div>
                 </div>
+                
+                <!-- Charts Section -->
+                <div style="margin-top: 30px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                        <div class="card" style="margin: 0;">
+                            <h4>🧪 Test Status Distribution</h4>
+                            <div id="test-status-chart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
+                                <div style="text-align: center; color: #666;">
+                                    <div style="font-size: 2em; margin-bottom: 10px;">📊</div>
+                                    <p>Loading chart data...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin: 0;">
+                            <h4>🎯 Score Distribution</h4>
+                            <div id="score-distribution-chart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
+                                <div style="text-align: center; color: #666;">
+                                    <div style="font-size: 2em; margin-bottom: 10px;">🎯</div>
+                                    <p>Loading score data...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4>📈 Tests Over Time</h4>
+                        <div id="timeline-chart" style="height: 400px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
+                            <div style="text-align: center; color: #666;">
+                                <div style="font-size: 3em; margin-bottom: 15px;">📈</div>
+                                <p>Loading timeline data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
             </div>
 
@@ -645,37 +683,7 @@
                         </div>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
-                        <div class="card" style="margin: 0;">
-                            <h4>🧪 Test Status Distribution</h4>
-                            <div id="test-status-chart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
-                                <div style="text-align: center; color: #666;">
-                                    <div style="font-size: 2em; margin-bottom: 10px;">📊</div>
-                                    <p>Loading chart data...</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="card" style="margin: 0;">
-                            <h4>🎯 Score Distribution</h4>
-                            <div id="score-distribution-chart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
-                                <div style="text-align: center; color: #666;">
-                                    <div style="font-size: 2em; margin-bottom: 10px;">🎯</div>
-                                    <p>Loading score data...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h4>📈 Tests Over Time</h4>
-                        <div id="timeline-chart" style="height: 400px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
-                            <div style="text-align: center; color: #666;">
-                                <div style="font-size: 3em; margin-bottom: 15px;">📈</div>
-                                <p>Loading timeline data...</p>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Charts moved to Overview page -->
 
                     <!-- HORIZONTAL TABLES -->
                     <div class="card">
