@@ -513,7 +513,6 @@
                 <a href="#tests" class="nav-link" data-section="tests">🧪 Test Management</a>
                 <a href="#batch-printing" class="nav-link" data-section="batch-printing">🖨️ Batch Printing</a>
                 <a href="#supplements" class="nav-link" data-section="supplements">💊 Supplements</a>
-                <a href="#analytics" class="nav-link" data-section="analytics">📈 Analytics</a>
                 <a href="#logs" class="nav-link" data-section="logs">📋 Log Management</a>
                 <a href="javascript:void(0)" onclick="openSystemTesting()" style="display: block; padding: 12px 20px; color: #495057; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#e9ecef'; this.style.paddingLeft='25px';" onmouseout="this.style.backgroundColor='transparent'; this.style.paddingLeft='20px';">🧪 System Testing</a>
             </div>
@@ -621,115 +620,6 @@
 
             </div>
 
-            <!-- Analytics Section -->
-            <div id="analytics" class="content-section">
-                <div class="card">
-                    <h3>📈 Analytics Dashboard</h3>
-                    
-                    <div id="analytics-alert"></div>
-                    
-                    <div class="stats-overview">
-                        <div class="stat-card">
-                            <div class="stat-number primary" id="analytics-total-tests">0</div>
-                            <div class="stat-label">Total Tests</div>
-                            <div style="font-size: 12px; color: #666;" id="analytics-tests-trend">Loading...</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number success" id="analytics-activation-rate">0%</div>
-                            <div class="stat-label">Activation Rate</div>
-                            <div style="font-size: 12px; color: #666;" id="analytics-activation-trend">Loading...</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number warning" id="analytics-completion-rate">0%</div>
-                            <div class="stat-label">Completion Rate</div>
-                            <div style="font-size: 12px; color: #666;" id="analytics-completion-trend">Loading...</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number info" id="analytics-avg-score">0</div>
-                            <div class="stat-label">Average Score</div>
-                            <div style="font-size: 12px; color: #666;" id="analytics-score-trend">Loading...</div>
-                        </div>
-                    </div>
-
-                    <div class="filters-section">
-                        <div class="filter-grid">
-                            <div class="form-group">
-                                <label for="analytics-period">Time Period</label>
-                                <select id="analytics-period" onchange="loadAnalytics()">
-                                    <option value="30">Last 30 Days</option>
-                                    <option value="90">Last 90 Days</option>
-                                    <option value="180">Last 6 Months</option>
-                                    <option value="365">Last Year</option>
-                                    <option value="all">All Time</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>&nbsp;</label>
-                                <button class="btn" onclick="loadAnalytics()">🔄 Refresh Analytics</button>
-                            </div>
-                            <div class="form-group">
-                                <label>&nbsp;</label>
-                                <button class="btn btn-warning" onclick="exportAnalytics()">📊 Export Report</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Charts moved to Overview page -->
-
-                    <!-- HORIZONTAL TABLES -->
-                    <div class="card">
-                        <h4>🏆 Top Performing Users</h4>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
-                            <div class="stat-card">
-                                <div class="stat-number">CU-1001</div>
-                                <div class="stat-label">Customer ID</div>
-                                <div style="font-size: 12px; color: #007bff;">15 tests • Score: 87 • #1</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">CU-1002</div>
-                                <div class="stat-label">Customer ID</div>
-                                <div style="font-size: 12px; color: #007bff;">12 tests • Score: 82 • #2</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">CU-1003</div>
-                                <div class="stat-label">Customer ID</div>
-                                <div style="font-size: 12px; color: #007bff;">10 tests • Score: 79 • #3</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">CU-1004</div>
-                                <div class="stat-label">Customer ID</div>
-                                <div style="font-size: 12px; color: #007bff;">8 tests • Score: 85 • #4</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h4>💊 Popular Supplements</h4>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
-                            <div class="stat-card">
-                                <div class="stat-number">89%</div>
-                                <div class="stat-label">NAD+ Precursor</div>
-                                <div style="font-size: 12px; color: #28a745;">89 users • Avg Score: 84</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">67%</div>
-                                <div class="stat-label">Vitamin B3</div>
-                                <div style="font-size: 12px; color: #28a745;">67 users • Avg Score: 78</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">45%</div>
-                                <div class="stat-label">Resveratrol</div>
-                                <div style="font-size: 12px; color: #28a745;">45 users • Avg Score: 81</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">38%</div>
-                                <div class="stat-label">CoQ10</div>
-                                <div style="font-size: 12px; color: #28a745;">38 users • Avg Score: 76</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Test Management Section -->
             <div id="tests" class="content-section">
@@ -1998,10 +1888,6 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                         // Auto-loading supplements
                         loadSupplements();
                         break;
-                    case 'analytics':
-                        // Auto-loading analytics
-                        loadAnalytics();
-                        break;
                     case 'logs':
                         // Auto-loading log management
                         initLogManagement();
@@ -2091,9 +1977,6 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
                     break;
                 case 'supplements':
                     loadSupplements();
-                    break;
-                case 'analytics':
-                    loadAnalytics();
                     break;
                 default:
                     showAlert('✅ Data refreshed!', 'success');
