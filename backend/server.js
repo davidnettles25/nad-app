@@ -3029,17 +3029,21 @@ app.get('/api/analytics/overview', async (req, res) => {
         
         const [dailyStats] = await db.execute(`
             SELECT 
-                DATE(score_submission_date) as date,
-                COUNT(*) as completions
-            FROM nad_test_scores 
-            WHERE score_submission_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-            GROUP BY DATE(score_submission_date)
+                DATE(ns.score_submission_date) as date,
+                COUNT(*) as count
+            FROM nad_test_scores ns
+            INNER JOIN nad_test_ids nti ON ns.test_id = nti.test_id
+            WHERE ns.score_submission_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                AND ns.score IS NOT NULL 
+                AND ns.score != ''
+                AND nti.status = 'completed'
+            GROUP BY DATE(ns.score_submission_date)
             ORDER BY date ASC
         `);
         
         req.logger.debugArea('analytics', 'Daily stats query completed', {
             daysWithData: dailyStats.length,
-            totalCompletions: dailyStats.reduce((sum, day) => sum + day.completions, 0),
+            totalCompletions: dailyStats.reduce((sum, day) => sum + day.count, 0),
             dateRange: dailyStats.length > 0 ? {
                 from: dailyStats[0].date,
                 to: dailyStats[dailyStats.length - 1].date
