@@ -211,6 +211,20 @@ class SessionManager {
     async authenticateCustomer(req) {
         // Check for Shopify session
         if (req.session?.shopify_customer) {
+            // Check if session has expired (4 hours for Shopify sessions)
+            if (req.session.shopify_customer.authenticatedAt) {
+                const sessionAge = Date.now() - req.session.shopify_customer.authenticatedAt;
+                const maxAge = 4 * 60 * 60 * 1000; // 4 hours for Shopify sessions
+                
+                if (sessionAge > maxAge) {
+                    // Session has expired, destroy it
+                    const userEmail = req.session.shopify_customer.email;
+                    req.session.destroy();
+                    logger.info(`Shopify session expired for ${userEmail} after ${Math.round(sessionAge / 60000)} minutes`);
+                    return null;
+                }
+            }
+            
             return {
                 type: 'shopify',
                 customerId: req.session.shopify_customer.id,
@@ -223,6 +237,19 @@ class SessionManager {
         
         // Check for portal session
         if (req.session?.customer?.authenticated) {
+            // Check if session has expired (30 minutes for customers, 4 hours for lab/admin)
+            const sessionAge = Date.now() - (req.session.customer.authenticatedAt || 0);
+            const sessionType = req.session.customer.sessionType || 'customer';
+            const maxAge = sessionType === 'customer' ? 30 * 60 * 1000 : 4 * 60 * 60 * 1000; // 30 min for customers, 4 hours for lab/admin
+            
+            if (sessionAge > maxAge) {
+                // Session has expired, destroy it
+                const userEmail = req.session.customer.email;
+                req.session.destroy();
+                logger.info(`Session expired for ${userEmail} after ${Math.round(sessionAge / 60000)} minutes`);
+                return null;
+            }
+            
             return {
                 type: req.session.customer.sessionType || 'email',
                 customerId: req.session.customer.customerId,
