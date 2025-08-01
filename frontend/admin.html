@@ -1816,8 +1816,125 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
             showAlert('📝 Add supplement form - Coming soon!', 'info');
         }
 
-        function editSupplement(id) {
-            showAlert(`✏️ Edit supplement ${id} - Coming soon!`, 'info');
+        let currentEditingSupplementId = null;
+
+        async function editSupplement(id) {
+            currentEditingSupplementId = id;
+            
+            try {
+                showAlert('Loading supplement data...', 'info');
+                
+                // Fetch supplement data
+                const response = await fetch(`${API_BASE}/api/supplements/${id}`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to load supplement data');
+                }
+                
+                const supplement = result.supplement;
+                
+                // Populate form with current data
+                document.getElementById('edit-supplement-name').value = supplement.name || '';
+                document.getElementById('edit-supplement-category').value = supplement.category || '';
+                document.getElementById('edit-supplement-description').value = supplement.description || '';
+                document.getElementById('edit-supplement-default-dose').value = supplement.default_dose || '';
+                document.getElementById('edit-supplement-unit').value = supplement.unit || 'mg';
+                document.getElementById('edit-supplement-min-dose').value = supplement.min_dose || '';
+                document.getElementById('edit-supplement-max-dose').value = supplement.max_dose || '';
+                document.getElementById('edit-supplement-notes').value = supplement.notes || '';
+                document.getElementById('edit-supplement-active').checked = supplement.is_active == 1;
+                document.getElementById('edit-supplement-featured').checked = supplement.is_featured == 1;
+                
+                // Clear any previous errors
+                document.getElementById('edit-supplement-error').style.display = 'none';
+                
+                // Show modal
+                document.getElementById('edit-supplement-modal').style.display = 'block';
+                
+                // Clear the loading message
+                const alertDiv = document.getElementById('global-alert');
+                if (alertDiv) {
+                    alertDiv.innerHTML = '';
+                }
+                
+            } catch (error) {
+                console.error('Error loading supplement for edit:', error);
+                showAlert(`❌ Error loading supplement: ${error.message}`, 'error');
+            }
+        }
+
+        function closeEditSupplementModal() {
+            document.getElementById('edit-supplement-modal').style.display = 'none';
+            currentEditingSupplementId = null;
+        }
+
+        async function saveSupplementChanges() {
+            if (!currentEditingSupplementId) {
+                showAlert('❌ No supplement selected for editing', 'error');
+                return;
+            }
+            
+            try {
+                const saveBtn = document.getElementById('save-supplement-btn');
+                const originalText = saveBtn.textContent;
+                saveBtn.textContent = 'Saving...';
+                saveBtn.disabled = true;
+                
+                // Get form data
+                const formData = new FormData(document.getElementById('edit-supplement-form'));
+                
+                // Convert FormData to object
+                const updateData = {};
+                for (let [key, value] of formData.entries()) {
+                    if (key === 'is_active' || key === 'is_featured') {
+                        updateData[key] = 1; // Checkbox was checked
+                    } else if (key === 'default_dose' || key === 'min_dose' || key === 'max_dose') {
+                        updateData[key] = value ? parseFloat(value) : null;
+                    } else {
+                        updateData[key] = value || null;
+                    }
+                }
+                
+                // Set unchecked checkboxes to 0
+                if (!formData.has('is_active')) updateData.is_active = 0;
+                if (!formData.has('is_featured')) updateData.is_featured = 0;
+                
+                // Validate required fields
+                if (!updateData.name || !updateData.category) {
+                    throw new Error('Name and category are required fields');
+                }
+                
+                // Make API call
+                const response = await fetch(`${API_BASE}/api/supplements/${currentEditingSupplementId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('✅ Supplement updated successfully!', 'success');
+                    closeEditSupplementModal();
+                    loadSupplements(); // Reload the supplements list
+                } else {
+                    throw new Error(result.error || 'Failed to update supplement');
+                }
+                
+            } catch (error) {
+                console.error('Error saving supplement changes:', error);
+                const errorDiv = document.getElementById('edit-supplement-error');
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+                showAlert(`❌ Error updating supplement: ${error.message}`, 'error');
+            } finally {
+                const saveBtn = document.getElementById('save-supplement-btn');
+                saveBtn.textContent = 'Save Changes';
+                saveBtn.disabled = false;
+            }
         }
 
         async function toggleSupplement(id, isActive) {
@@ -2050,8 +2167,10 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
         // loadAnalytics and exportAnalytics are defined in analytics-fix.js
         window.activateTest = activateTest;
         window.deactivateTest = deactivateTest;
-        window.showAddSupplementForm = showAddSupplementForm;
         window.editSupplement = editSupplement;
+        window.closeEditSupplementModal = closeEditSupplementModal;
+        window.saveSupplementChanges = saveSupplementChanges;
+        window.showAddSupplementForm = showAddSupplementForm;
         window.toggleSupplement = toggleSupplement;
         window.setupSearchAndFilter = setupSearchAndFilter;
         window.clearFilters = clearFilters;
