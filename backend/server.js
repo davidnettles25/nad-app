@@ -6,13 +6,14 @@ const crypto = require('crypto');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const session = require('express-session');
 require('dotenv').config();
 
 // Shopify Integration
 const { initializeShopifyIntegration } = require('./shopify');
 
-// Authentication middleware
-const { optionalAuthentication, requireAuthentication } = require('./shopify/session-manager');
+// Authentication middleware and session configuration
+const { optionalAuthentication, requireAuthentication, getSessionConfig } = require('./shopify/session-manager');
 
 // Initialize logger
 let logger;
@@ -74,6 +75,10 @@ app.use((req, res, next) => {
     }
     express.urlencoded({ extended: true, limit: '10mb' })(req, res, next);
 });
+
+// Session middleware - MUST come after body parsing
+app.use(session(getSessionConfig()));
+
 // Note: In production, uploads are served directly by the web server from htdocs/nad-app/uploads
 // This static middleware is only used in development
 if (process.env.NODE_ENV !== 'production') {
