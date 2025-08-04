@@ -2026,6 +2026,11 @@ ${test.activated_date ? `Activated: ${new Date(test.activated_date).toLocaleStri
 
         // Section navigation
         function showSection(sectionName) {
+            // Check session validity before allowing navigation
+            if (typeof checkAdminSessionValidity === 'function' && !checkAdminSessionValidity()) {
+                return; // Session expired, don't allow navigation
+            }
+            
             // Switching to section
         
             // Hide all sections and cleanup

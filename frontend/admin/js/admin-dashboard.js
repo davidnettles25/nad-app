@@ -41,6 +41,36 @@ async function initAdminDashboard() {
 }
 
 /**
+ * Clear admin authentication data
+ */
+function clearAdminAuthentication() {
+    sessionStorage.removeItem('nad_auth_type');
+    sessionStorage.removeItem('nad_auth_token');
+    sessionStorage.removeItem('nad_user_data');
+    sessionStorage.removeItem('nad_auth_timestamp');
+}
+
+/**
+ * Check if admin session is still valid
+ */
+function checkAdminSessionValidity() {
+    const authTimestamp = sessionStorage.getItem('nad_auth_timestamp');
+    if (!authTimestamp) return false;
+    
+    const sessionAge = Date.now() - parseInt(authTimestamp);
+    const maxAge = 4 * 60 * 60 * 1000; // 4 hours for admin
+    
+    if (sessionAge > maxAge) {
+        console.log('Admin session expired during activity check');
+        clearAdminAuthentication();
+        showAdminAuthError('Your session has expired. Please log in again.');
+        return false;
+    }
+    
+    return true;
+}
+
+/**
  * Check authentication for admin access
  */
 async function checkAdminAuthentication() {
@@ -48,6 +78,19 @@ async function checkAdminAuthentication() {
         // Check existing session first
         const authType = sessionStorage.getItem('nad_auth_type');
         const storedUser = sessionStorage.getItem('nad_user_data');
+        const authTimestamp = sessionStorage.getItem('nad_auth_timestamp');
+        
+        // Check if session has expired (4 hours for admin sessions)
+        if (authTimestamp) {
+            const sessionAge = Date.now() - parseInt(authTimestamp);
+            const maxAge = 4 * 60 * 60 * 1000; // 4 hours for admin
+            
+            if (sessionAge > maxAge) {
+                console.log('Admin session expired, clearing authentication');
+                clearAdminAuthentication();
+                return { success: false, error: 'Session expired' };
+            }
+        }
         
         if (authType === 'admin' && storedUser) {
             console.log('Existing admin session found');
@@ -71,10 +114,11 @@ async function checkAdminAuthentication() {
             const result = await response.json();
             
             if (result.success) {
-                // Store authentication
+                // Store authentication with timestamp
                 sessionStorage.setItem('nad_auth_token', token);
                 sessionStorage.setItem('nad_auth_type', 'admin');
                 sessionStorage.setItem('nad_user_data', JSON.stringify(result.data));
+                sessionStorage.setItem('nad_auth_timestamp', Date.now().toString());
                 
                 // Remove token from URL to prevent reuse on refresh
                 const newUrl = new URL(window.location);
@@ -142,6 +186,11 @@ function hideAdminLoading() {
             } else if (typeof window.loadDashboardStats === 'function') {
                 window.loadDashboardStats();
             }
+            
+            // Start periodic session checks
+            setInterval(() => {
+                checkAdminSessionValidity();
+            }, 60000); // Check every minute
         }, 200); // Increased timeout to ensure all functions are available
     }
     console.log('Admin dashboard loaded successfully');
