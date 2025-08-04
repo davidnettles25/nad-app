@@ -47,4 +47,71 @@
             </p>
         </div>
     </div>
+
+    <!-- Analytics Alert Container -->
+    <div id="analytics-alert"></div>
+
+    <!-- Analytics Content Container -->
+    <div id="analytics-content">
+        <!-- Analytics Statistics Cards -->
+        <div class="stats-overview" style="margin-bottom: 30px;">
+            <div class="stat-card">
+                <div class="stat-number primary" id="analytics-total-tests">0</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number warning" id="analytics-activation-rate">0%</div>
+                <div class="stat-label">Activation Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number info" id="analytics-completion-rate">0%</div>
+                <div class="stat-label">Completion Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number success" id="analytics-avg-score">0</div>
+                <div class="stat-label">Average Score</div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <div class="card">
+                <h4>📊 Test Status Distribution</h4>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="test-status-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h4>📈 Score Distribution</h4>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="score-distribution-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card" style="grid-column: 1 / -1;">
+                <h4>⏱️ Tests Completed Over Time</h4>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="timeline-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Actions -->
+        <div class="card">
+            <h4>📋 Export Data</h4>
+            <div class="quick-actions" style="justify-content: flex-start;">
+                <div class="action-card" onclick="exportAnalytics()">
+                    <h4>📊 Export Analytics</h4>
+                    <p>Download comprehensive analytics report</p>
+                </div>
+                <div class="action-card" onclick="exportTestDetails()">
+                    <h4>📋 Export Test Details</h4>
+                    <p>Download detailed test data</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tables will be inserted here by analytics-fix.js -->
+    </div>
 </div>
