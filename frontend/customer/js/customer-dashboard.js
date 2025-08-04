@@ -575,7 +575,7 @@ window.NADDashboard = {
                     ${supplementStatus}
                 </div>
                 <div class="test-actions">
-                    <span class="test-status ${statusClass}">${test.status === 'activated' ? 'In Lab' : test.status}</span>
+                    <span class="test-status ${statusClass}">${test.status === 'activated' ? 'Activated' : test.status}</span>
                     ${this.getTestActionButtons(test)}
                 </div>
             </div>
@@ -631,7 +631,7 @@ window.NADDashboard = {
                     ${supplementStatus}
                 </div>
                 <div class="test-actions">
-                    <span class="test-status ${statusClass}">${test.status === 'activated' ? 'In Lab' : test.status}</span>
+                    <span class="test-status ${statusClass}">${test.status === 'activated' ? 'Activated' : test.status}</span>
                     ${supplementButton}
                 </div>
             </div>
@@ -1128,7 +1128,7 @@ window.NADDashboard = {
             <div class="test-result-detail">
                 <div class="result-header">
                     <h2>Test Details: ${test.test_id}</h2>
-                    <div class="result-status status-${test.status}">In Lab</div>
+                    <div class="result-status status-${test.status}">Activated</div>
                 </div>
                 
                 <div class="result-main">
@@ -1146,7 +1146,7 @@ window.NADDashboard = {
                         </div>
                         <div class="info-row">
                             <span class="info-label">Status:</span>
-                            <span class="info-value">In Lab Processing</span>
+                            <span class="info-value">Activated Processing</span>
                         </div>
                         ${test.activated_date ? `
                         <div class="info-row">
@@ -1667,7 +1667,7 @@ window.NADDashboard = {
                     </div>
                     <div class="stat-box">
                         <div class="stat-number">${stats.activatedTests}</div>
-                        <div class="stat-label">In Lab</div>
+                        <div class="stat-label">Activated</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-number">${stats.avgScore > 0 ? stats.avgScore : '-'}</div>
@@ -1716,7 +1716,7 @@ window.NADDashboard = {
                         ${activatedTests.map(test => `
                             <tr>
                                 <td>${test.test_id}</td>
-                                <td><span class="status-activated">In Lab</span></td>
+                                <td><span class="status-activated">Activated</span></td>
                                 <td>${new Date(test.created_date).toLocaleDateString()}</td>
                                 <td>${test.activated_date ? new Date(test.activated_date).toLocaleDateString() : '-'}</td>
                             </tr>
