@@ -1316,6 +1316,147 @@ body {
     }
 }
 
+/* Supplement Status Indicators */
+.supplement-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+.supplement-status.incomplete {
+    background-color: rgba(243, 156, 18, 0.1);
+    color: #e67e22;
+    border: 1px solid rgba(243, 156, 18, 0.2);
+}
+
+.supplement-status.complete {
+    background-color: rgba(39, 174, 96, 0.1);
+    color: #27ae60;
+    border: 1px solid rgba(39, 174, 96, 0.2);
+}
+
+.supplement-status i {
+    font-size: 11px;
+}
+
+/* Test Item Enhancements */
+.test-item {
+    position: relative;
+    padding: 16px;
+    margin-bottom: 15px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.test-item:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+.test-details h4 {
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.test-details p {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin: 2px 0;
+}
+
+.test-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.test-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.test-status.status-activated {
+    background-color: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.test-status.status-completed {
+    background-color: rgba(39, 174, 96, 0.1);
+    color: #27ae60;
+    border: 1px solid rgba(39, 174, 96, 0.2);
+}
+
+.test-status.status-pending {
+    background-color: rgba(149, 165, 166, 0.1);
+    color: #95a5a6;
+    border: 1px solid rgba(149, 165, 166, 0.2);
+}
+
+/* Button Styles for Test Actions */
+.test-actions .btn-primary,
+.test-actions .btn-secondary,
+.test-actions .btn-link {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.test-actions .btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.test-actions .btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.test-actions .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.test-actions .btn-secondary:hover {
+    background-color: #5a6268;
+    transform: translateY(-1px);
+}
+
+.test-actions .btn-link {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.test-actions .btn-link:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
 /* Utilities */
 .text-center { text-align: center; }
 .mb-20 { margin-bottom: 20px; }

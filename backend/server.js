@@ -1730,6 +1730,69 @@ app.get('/api/supplements', async (req, res) => {
     }
 });
 
+// Get active supplements for customer dashboard
+app.get('/api/supplements/active', async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+        req.logger.info('Active supplements request started', {
+            endpoint: '/api/supplements/active'
+        });
+        
+        const query = `
+            SELECT 
+                id,
+                name,
+                category,
+                description,
+                default_dose,
+                unit,
+                min_dose,
+                max_dose,
+                notes,
+                is_featured
+            FROM nad_supplements 
+            WHERE is_active = 1
+            ORDER BY 
+                is_featured DESC,
+                category ASC,
+                name ASC
+        `;
+        
+        const [supplements] = await db.execute(query);
+        
+        const duration = Date.now() - startTime;
+        req.logger.info('Active supplements request completed', {
+            endpoint: '/api/supplements/active',
+            duration: `${duration}ms`,
+            supplementCount: supplements.length
+        });
+        
+        res.json({
+            success: true,
+            supplements: supplements,
+            count: supplements.length,
+            requestId: req.requestId
+        });
+        
+    } catch (error) {
+        const duration = Date.now() - startTime;
+        req.logger.error('Active supplements request failed', {
+            endpoint: '/api/supplements/active',
+            duration: `${duration}ms`,
+            error: error.message,
+            stack: error.stack
+        });
+        
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load active supplements',
+            message: error.message,
+            requestId: req.requestId
+        });
+    }
+});
+
 // Create new supplement
 app.post('/api/supplements', async (req, res) => {
     try {
@@ -4886,6 +4949,136 @@ app.post('/api/customer/results', optionalAuthentication, async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to load results'
+        });
+    }
+});
+
+// Save supplement data for customer test
+app.post('/api/customer/tests/:testId/supplements', optionalAuthentication, async (req, res) => {
+    try {
+        const { testId } = req.params;
+        let { email, customerId, supplements } = req.body;
+        
+        // Prioritize authenticated customer info over request body
+        if (req.customer && req.customer.authenticated) {
+            email = req.customer.email;
+            customerId = req.customer.customerId || req.customer.email;
+        }
+        
+        req.logger.info('Supplement update request', {
+            testId,
+            email,
+            customerId,
+            hasSupplements: !!supplements
+        });
+        
+        if (!email && !customerId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email or customer ID is required'
+            });
+        }
+        
+        if (!supplements) {
+            return res.status(400).json({
+                success: false,
+                error: 'Supplement data is required'
+            });
+        }
+        
+        // Get database connection
+        const db = req.app.locals.db;
+        if (!db) {
+            throw new Error('Database connection not available');
+        }
+        
+        // Verify test exists and belongs to customer (and is activated)
+        let testQuery = `
+            SELECT test_id, status, customer_id, shopify_customer_id, activated_date
+            FROM nad_test_ids 
+            WHERE UPPER(test_id) = UPPER(?) AND status IN ('activated', 'completed')
+        `;
+        const testParams = [testId];
+        
+        if (email && customerId && email === customerId) {
+            testQuery += ` AND (customer_id = ? OR shopify_customer_id = ?)`;
+            testParams.push(email, email);
+        } else {
+            if (email) {
+                testQuery += ` AND customer_id = ?`;
+                testParams.push(email);
+            }
+            if (customerId) {
+                testQuery += ` AND shopify_customer_id = ?`;
+                testParams.push(customerId);
+            }
+        }
+        
+        const [testRows] = await db.execute(testQuery, testParams);
+        
+        if (testRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Test not found, not activated, or does not belong to this customer'
+            });
+        }
+        
+        const test = testRows[0];
+        req.logger.info('Test verified', {
+            testId: test.test_id,
+            status: test.status,
+            customerId: test.customer_id,
+            shopifyCustomerId: test.shopify_customer_id
+        });
+        
+        // Convert supplement data to JSON string
+        const supplementsJson = JSON.stringify(supplements);
+        
+        // Store/update supplement data in nad_user_supplements table
+        const supplementQuery = `
+            INSERT INTO nad_user_supplements (
+                test_id, customer_id, supplements_with_dose, created_at, updated_at
+            ) VALUES (?, ?, ?, NOW(), NOW())
+            ON DUPLICATE KEY UPDATE
+                supplements_with_dose = VALUES(supplements_with_dose),
+                updated_at = NOW()
+        `;
+        
+        // Use the primary customer identifier from the test
+        const customerIdForSupplements = test.customer_id || test.shopify_customer_id;
+        
+        await db.execute(supplementQuery, [test.test_id, customerIdForSupplements, supplementsJson]);
+        
+        req.logger.info('Supplement data saved successfully', {
+            testId: test.test_id,
+            customerId: customerIdForSupplements,
+            supplementsLength: supplementsJson.length
+        });
+        
+        // Verify the data was stored
+        const [verifyRows] = await db.execute(`
+            SELECT test_id, customer_id, supplements_with_dose, updated_at
+            FROM nad_user_supplements 
+            WHERE UPPER(test_id) = UPPER(?) AND customer_id = ?
+        `, [test.test_id, customerIdForSupplements]);
+        
+        res.json({
+            success: true,
+            message: 'Supplement information saved successfully',
+            data: {
+                test_id: test.test_id,
+                customer_id: customerIdForSupplements,
+                updated_at: verifyRows[0]?.updated_at || new Date(),
+                supplements_count: supplements.selected ? supplements.selected.length : 0
+            }
+        });
+        
+    } catch (error) {
+        req.logger.error('Failed to save supplement data:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to save supplement information',
+            details: error.message
         });
     }
 });

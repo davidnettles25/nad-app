@@ -545,12 +545,34 @@ window.NADDashboard = {
         if (!dateInfo) {
             dateInfo = `<p>Created: ${new Date(test.created_date).toLocaleDateString()}</p>`;
         }
+
+        // Check supplement status for activated tests
+        let supplementStatus = '';
+        if (test.status === 'activated') {
+            const hasSupplements = this.hasSupplementData(test);
+            if (!hasSupplements) {
+                supplementStatus = `
+                    <div class="supplement-status incomplete">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Supplement info needed</span>
+                    </div>
+                `;
+            } else {
+                supplementStatus = `
+                    <div class="supplement-status complete">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Supplement info complete</span>
+                    </div>
+                `;
+            }
+        }
         
         return `
             <div class="test-item">
                 <div class="test-details">
                     <h4>${test.test_id}</h4>
                     ${dateInfo}
+                    ${supplementStatus}
                 </div>
                 <div class="test-actions">
                     <span class="test-status ${statusClass}">${test.status === 'activated' ? 'In Lab' : test.status}</span>
@@ -586,9 +608,21 @@ window.NADDashboard = {
         
         switch (test.status) {
             case 'activated':
-                buttons = `<button class="btn-secondary" onclick="NADDashboard.viewTestDetails('${test.test_id}')">
-                    <i class="fas fa-eye"></i> View
-                </button>`;
+                const hasSupplements = this.hasSupplementData(test);
+                buttons = `
+                    <button class="btn-secondary" onclick="NADDashboard.viewTestDetails('${test.test_id}')">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                    ${!hasSupplements ? `
+                        <button class="btn-primary" onclick="NADDashboard.showSupplementModal('${test.test_id}')">
+                            <i class="fas fa-pills"></i> Add Supplements
+                        </button>
+                    ` : `
+                        <button class="btn-link" onclick="NADDashboard.showSupplementModal('${test.test_id}')">
+                            <i class="fas fa-edit"></i> Edit Supplements
+                        </button>
+                    `}
+                `;
                 break;
             case 'completed':
                 buttons = `
@@ -2098,6 +2132,352 @@ window.NADDashboard = {
                 faqItem.classList.toggle('active');
             });
         });
+    },
+
+    /**
+     * Check if test has supplement data
+     */
+    hasSupplementData(test) {
+        // Check various fields where supplement data might exist
+        if (test.supplements_with_dose || test.supplement_data || test.supplements) {
+            let supplementsData = test.supplements_with_dose || test.supplement_data || test.supplements;
+            
+            // If it's a string, try to parse it
+            if (typeof supplementsData === 'string') {
+                try {
+                    supplementsData = JSON.parse(supplementsData);
+                } catch (e) {
+                    return false;
+                }
+            }
+            
+            // Check if there's actual supplement content
+            if (supplementsData && typeof supplementsData === 'object') {
+                // Check for selected supplements array
+                if (supplementsData.selected && Array.isArray(supplementsData.selected) && supplementsData.selected.length > 0) {
+                    return true;
+                }
+                // Check for other supplements text
+                if (supplementsData.other && supplementsData.other.trim().length > 0) {
+                    return true;
+                }
+                // Check for health conditions
+                if (supplementsData.health_conditions && supplementsData.health_conditions.trim().length > 0) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    },
+
+    /**
+     * Show supplement collection modal
+     */
+    async showSupplementModal(testId) {
+        try {
+            const test = this.tests.find(t => t.test_id === testId);
+            if (!test) {
+                alert('Test not found');
+                return;
+            }
+
+            // Create modal container if it doesn't exist
+            let modalContainer = document.getElementById('supplement-modal-container');
+            if (!modalContainer) {
+                modalContainer = document.createElement('div');
+                modalContainer.id = 'supplement-modal-container';
+                modalContainer.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0,0,0,0.5);
+                    z-index: 1000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow-y: auto;
+                `;
+                document.body.appendChild(modalContainer);
+            }
+
+            // Load available supplements
+            const supplementsResponse = await NAD.API.request('/api/supplements/active');
+            const availableSupplements = supplementsResponse.success ? supplementsResponse.supplements : [];
+
+            // Get existing supplement data
+            let existingSupplements = null;
+            if (this.hasSupplementData(test)) {
+                let supplementsData = test.supplements_with_dose || test.supplement_data || test.supplements;
+                if (typeof supplementsData === 'string') {
+                    try {
+                        existingSupplements = JSON.parse(supplementsData);
+                    } catch (e) {
+                        existingSupplements = null;
+                    }
+                } else {
+                    existingSupplements = supplementsData;
+                }
+            }
+
+            // Create the modal content
+            modalContainer.innerHTML = this.createSupplementModalHTML(testId, availableSupplements, existingSupplements);
+            modalContainer.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            // Initialize supplement form functionality
+            this.initializeSupplementForm(testId);
+
+        } catch (error) {
+            NAD.logger.error('Failed to show supplement modal:', error);
+            alert('Failed to load supplement form. Please try again.');
+        }
+    },
+
+    /**
+     * Create supplement modal HTML
+     */
+    createSupplementModalHTML(testId, availableSupplements, existingSupplements) {
+        const hasExisting = existingSupplements && (
+            (existingSupplements.selected && existingSupplements.selected.length > 0) ||
+            (existingSupplements.other && existingSupplements.other.trim().length > 0) ||
+            (existingSupplements.health_conditions && existingSupplements.health_conditions.trim().length > 0)
+        );
+
+        return `
+            <div class="modal-content" style="background: white; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+                <div class="modal-header" style="padding: 20px 24px 16px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: #333;">
+                        <i class="fas fa-pills" style="color: #667eea; margin-right: 10px;"></i>
+                        ${hasExisting ? 'Edit' : 'Add'} Supplement Information - ${testId}
+                    </h3>
+                    <button onclick="NADDashboard.closeSupplementModal()" style="background: none; border: none; font-size: 24px; color: #666; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-body" style="padding: 24px;">
+                    <form id="supplement-form-${testId}">
+                        <div class="form-section" style="margin-bottom: 30px;">
+                            <h4 style="margin: 0 0 15px 0; color: #333;">Current Supplements</h4>
+                            <p style="margin: 0 0 20px 0; color: #666;">Please select any supplements you are currently taking on a regular basis:</p>
+                            
+                            <div class="supplement-grid" id="supplement-grid-${testId}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                                ${this.createSupplementGridHTML(availableSupplements, existingSupplements)}
+                            </div>
+                        </div>
+                        
+                        <div class="form-section" style="margin-bottom: 30px;">
+                            <h4 style="margin: 0 0 15px 0; color: #333;">Additional Information</h4>
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="other-supplements-${testId}" style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Other supplements not listed above:</label>
+                                <textarea id="other-supplements-${testId}" name="other-supplements" rows="3" 
+                                          style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; resize: vertical; font-family: inherit;"
+                                          placeholder="Please list any other supplements, vitamins, or medications you take regularly...">${existingSupplements?.other || ''}</textarea>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="health-conditions-${testId}" style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Any relevant health conditions or dietary restrictions:</label>
+                                <textarea id="health-conditions-${testId}" name="health-conditions" rows="3" 
+                                          style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; resize: vertical; font-family: inherit;"
+                                          placeholder="Optional: Any health conditions or dietary restrictions that might affect NAD+ levels...">${existingSupplements?.health_conditions || ''}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions" style="display: flex; justify-content: space-between; gap: 15px; margin-top: 30px;">
+                            <button type="button" onclick="NADDashboard.closeSupplementModal()" 
+                                    style="padding: 12px 24px; border: 1px solid #ddd; border-radius: 6px; background: white; color: #333; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.3s ease;">
+                                Cancel
+                            </button>
+                            <button type="submit" 
+                                    style="padding: 12px 24px; border: none; border-radius: 6px; background: #667eea; color: white; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.3s ease;">
+                                <i class="fas fa-save" style="margin-right: 8px;"></i>
+                                ${hasExisting ? 'Update' : 'Save'} Supplements
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Create supplement grid HTML
+     */
+    createSupplementGridHTML(availableSupplements, existingSupplements) {
+        if (!availableSupplements || availableSupplements.length === 0) {
+            return '<p style="text-align: center; color: #666; grid-column: 1 / -1;">Loading supplements...</p>';
+        }
+
+        return availableSupplements.map(supplement => {
+            const isSelected = existingSupplements?.selected?.some(s => s.id === supplement.id || s.name === supplement.name);
+            const existingSupplement = existingSupplements?.selected?.find(s => s.id === supplement.id || s.name === supplement.name);
+            
+            return `
+                <div class="supplement-item ${isSelected ? 'selected' : ''}" style="background: ${isSelected ? '#667eea' : '#f8f9fa'}; border: 1px solid ${isSelected ? '#667eea' : '#e9ecef'}; border-radius: 8px; padding: 15px; cursor: pointer; transition: all 0.3s ease; color: ${isSelected ? 'white' : '#333'};">
+                    <label class="supplement-label" style="cursor: pointer; display: flex; align-items: flex-start; margin: 0;">
+                        <input type="checkbox" 
+                               data-supplement-id="${supplement.id}" 
+                               data-supplement-name="${supplement.name}"
+                               ${isSelected ? 'checked' : ''}
+                               style="margin-right: 10px; margin-top: 2px;">
+                        <div class="supplement-info" style="flex: 1;">
+                            <div class="supplement-name" style="font-weight: 600; margin-bottom: 5px;">${supplement.name}</div>
+                            <div class="supplement-description" style="font-size: 12px; color: ${isSelected ? '#e9ecef' : '#666'};">${supplement.description || 'Common NAD+ supplement'}</div>
+                            
+                            <div class="supplement-amount-section" style="margin-top: 15px; padding: 10px; background: ${isSelected ? 'rgba(255,255,255,0.1)' : '#f8f9fa'}; border-radius: 4px; border: 1px solid ${isSelected ? 'rgba(255,255,255,0.2)' : '#e9ecef'}; display: ${isSelected ? 'block' : 'none'};">
+                                <label class="amount-label" style="display: block; font-size: 12px; font-weight: 600; color: ${isSelected ? 'white' : '#495057'}; margin-bottom: 5px;">Daily Amount:</label>
+                                <div class="amount-input-group" style="display: flex; align-items: center; gap: 5px;">
+                                    <input type="number" 
+                                           class="amount-input" 
+                                           data-supplement-id="${supplement.id}"
+                                           value="${existingSupplement?.amount || ''}"
+                                           placeholder="0"
+                                           style="width: 80px; padding: 4px 8px; border: 1px solid ${isSelected ? 'rgba(255,255,255,0.3)' : '#ced4da'}; border-radius: 3px; font-size: 12px; background: ${isSelected ? 'rgba(255,255,255,0.9)' : 'white'}; color: #333;">
+                                    <select class="unit-select" 
+                                            data-supplement-id="${supplement.id}"
+                                            style="padding: 4px 8px; border: 1px solid ${isSelected ? 'rgba(255,255,255,0.3)' : '#ced4da'}; border-radius: 3px; font-size: 12px; background: ${isSelected ? 'rgba(255,255,255,0.9)' : 'white'}; color: #333;">
+                                        <option value="mg" ${existingSupplement?.unit === 'mg' ? 'selected' : ''}>mg</option>
+                                        <option value="g" ${existingSupplement?.unit === 'g' ? 'selected' : ''}>g</option>
+                                        <option value="mcg" ${existingSupplement?.unit === 'mcg' ? 'selected' : ''}>mcg</option>
+                                        <option value="IU" ${existingSupplement?.unit === 'IU' ? 'selected' : ''}>IU</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            `;
+        }).join('');
+    },
+
+    /**
+     * Initialize supplement form functionality
+     */
+    initializeSupplementForm(testId) {
+        const form = document.getElementById(`supplement-form-${testId}`);
+        if (!form) return;
+
+        // Handle checkbox changes
+        form.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox' && e.target.dataset.supplementId) {
+                const supplementItem = e.target.closest('.supplement-item');
+                const amountSection = supplementItem.querySelector('.supplement-amount-section');
+                
+                if (e.target.checked) {
+                    supplementItem.classList.add('selected');
+                    supplementItem.style.background = '#667eea';
+                    supplementItem.style.borderColor = '#667eea';
+                    supplementItem.style.color = 'white';
+                    amountSection.style.display = 'block';
+                    
+                    // Update description color
+                    const description = supplementItem.querySelector('.supplement-description');
+                    if (description) description.style.color = '#e9ecef';
+                } else {
+                    supplementItem.classList.remove('selected');
+                    supplementItem.style.background = '#f8f9fa';
+                    supplementItem.style.borderColor = '#e9ecef';
+                    supplementItem.style.color = '#333';
+                    amountSection.style.display = 'none';
+                    
+                    // Update description color
+                    const description = supplementItem.querySelector('.supplement-description');
+                    if (description) description.style.color = '#666';
+                }
+            }
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveSupplementData(testId);
+        });
+    },
+
+    /**
+     * Save supplement data
+     */
+    async saveSupplementData(testId) {
+        try {
+            const form = document.getElementById(`supplement-form-${testId}`);
+            if (!form) return;
+
+            // Collect selected supplements
+            const selectedSupplements = [];
+            const checkboxes = form.querySelectorAll('input[type="checkbox"]:checked');
+            
+            checkboxes.forEach(checkbox => {
+                const supplementId = checkbox.dataset.supplementId;
+                const supplementName = checkbox.dataset.supplementName;
+                const amountInput = form.querySelector(`.amount-input[data-supplement-id="${supplementId}"]`);
+                const unitSelect = form.querySelector(`.unit-select[data-supplement-id="${supplementId}"]`);
+                
+                selectedSupplements.push({
+                    id: parseInt(supplementId),
+                    name: supplementName,
+                    amount: amountInput ? amountInput.value : '',
+                    unit: unitSelect ? unitSelect.value : 'mg'
+                });
+            });
+
+            // Collect other data
+            const otherSupplements = form.querySelector(`#other-supplements-${testId}`).value.trim();
+            const healthConditions = form.querySelector(`#health-conditions-${testId}`).value.trim();
+
+            // Prepare supplement data
+            const supplementData = {
+                selected: selectedSupplements,
+                other: otherSupplements,
+                health_conditions: healthConditions,
+                submitted_at: new Date().toISOString()
+            };
+
+            // Save to backend
+            const response = await NAD.API.request(`/api/customer/tests/${testId}/supplements`, {
+                method: 'POST',
+                data: {
+                    email: this.user.email,
+                    customerId: this.user.customerId,
+                    supplements: supplementData
+                }
+            });
+
+            if (response.success) {
+                // Update local test data
+                const test = this.tests.find(t => t.test_id === testId);
+                if (test) {
+                    test.supplements_with_dose = JSON.stringify(supplementData);
+                }
+
+                // Close modal and refresh display
+                this.closeSupplementModal();
+                this.updateTestsDisplay();
+                
+                // Show success message
+                alert('Supplement information saved successfully!');
+            } else {
+                throw new Error(response.error || 'Failed to save supplement data');
+            }
+
+        } catch (error) {
+            NAD.logger.error('Failed to save supplement data:', error);
+            alert('Failed to save supplement information. Please try again.');
+        }
+    },
+
+    /**
+     * Close supplement modal
+     */
+    closeSupplementModal() {
+        const modalContainer = document.getElementById('supplement-modal-container');
+        if (modalContainer) {
+            modalContainer.style.display = 'none';
+            modalContainer.innerHTML = '';
+            document.body.style.overflow = 'auto';
+        }
     }
 };
 
