@@ -496,11 +496,24 @@ body {
 .recent-test-item {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding: 15px;
     background: var(--light-bg);
     border-radius: var(--border-radius);
     border-left: 4px solid var(--primary-color);
+}
+
+.recent-test-item .test-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.recent-test-item .test-actions .btn-sm {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    min-width: auto;
 }
 
 .test-info h4 {

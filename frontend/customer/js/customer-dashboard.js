@@ -591,13 +591,49 @@ window.NADDashboard = {
         const displayDate = test.activated_date || test.created_date;
         const date = new Date(displayDate).toLocaleDateString();
         
+        // Check supplement status for activated tests
+        let supplementStatus = '';
+        let supplementButton = '';
+        if (test.status === 'activated') {
+            const hasSupplements = this.hasSupplementData(test);
+            if (!hasSupplements) {
+                supplementStatus = `
+                    <div class="supplement-status incomplete">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Supplement info needed</span>
+                    </div>
+                `;
+                supplementButton = `
+                    <button class="btn-primary btn-sm" onclick="NADDashboard.showSupplementModal('${test.test_id}')" title="Add Supplements">
+                        <i class="fas fa-plus"></i> Add Supplements
+                    </button>
+                `;
+            } else {
+                supplementStatus = `
+                    <div class="supplement-status complete">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Supplement info complete</span>
+                    </div>
+                `;
+                supplementButton = `
+                    <button class="btn-secondary btn-sm" onclick="NADDashboard.showSupplementModal('${test.test_id}')" title="Edit Supplements">
+                        <i class="fas fa-edit"></i> Edit Supplements
+                    </button>
+                `;
+            }
+        }
+        
         return `
             <div class="recent-test-item">
                 <div class="test-info">
                     <h4>${test.test_id}</h4>
                     <p>${date}</p>
+                    ${supplementStatus}
                 </div>
-                <span class="test-status ${statusClass}">${test.status}</span>
+                <div class="test-actions">
+                    <span class="test-status ${statusClass}">${test.status === 'activated' ? 'In Lab' : test.status}</span>
+                    ${supplementButton}
+                </div>
             </div>
         `;
     },
