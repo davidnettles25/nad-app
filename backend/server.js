@@ -5037,11 +5037,10 @@ app.post('/api/customer/tests/:testId/supplements', optionalAuthentication, asyn
         // Store/update supplement data in nad_user_supplements table
         const supplementQuery = `
             INSERT INTO nad_user_supplements (
-                test_id, customer_id, supplements_with_dose, created_at, updated_at
-            ) VALUES (?, ?, ?, NOW(), NOW())
+                test_id, customer_id, supplements_with_dose, created_at
+            ) VALUES (?, ?, ?, CURDATE())
             ON DUPLICATE KEY UPDATE
-                supplements_with_dose = VALUES(supplements_with_dose),
-                updated_at = NOW()
+                supplements_with_dose = VALUES(supplements_with_dose)
         `;
         
         // Use the primary customer identifier from the test
@@ -5057,7 +5056,7 @@ app.post('/api/customer/tests/:testId/supplements', optionalAuthentication, asyn
         
         // Verify the data was stored
         const [verifyRows] = await db.execute(`
-            SELECT test_id, customer_id, supplements_with_dose, updated_at
+            SELECT test_id, customer_id, supplements_with_dose, created_at
             FROM nad_user_supplements 
             WHERE UPPER(test_id) = UPPER(?) AND customer_id = ?
         `, [test.test_id, customerIdForSupplements]);
@@ -5068,7 +5067,7 @@ app.post('/api/customer/tests/:testId/supplements', optionalAuthentication, asyn
             data: {
                 test_id: test.test_id,
                 customer_id: customerIdForSupplements,
-                updated_at: verifyRows[0]?.updated_at || new Date(),
+                created_at: verifyRows[0]?.created_at || new Date(),
                 supplements_count: supplements.selected ? supplements.selected.length : 0
             }
         });
