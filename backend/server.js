@@ -4966,8 +4966,16 @@ app.get('/api/deployment-test', (req, res) => {
     });
 });
 
-app.get('/api/deployment-info', async (req, res) => {
+app.get('/api/deployment-info', optionalAuthentication, async (req, res) => {
     try {
+        // Require authentication for deployment info
+        if (!req.customer || !req.customer.authenticated) {
+            return res.status(401).json({
+                success: false,
+                error: 'Authentication required for deployment information'
+            });
+        }
+        
         const { execSync } = require('child_process');
         const path = require('path');
         
