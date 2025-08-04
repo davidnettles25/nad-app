@@ -427,10 +427,10 @@ window.NADDashboard = {
      */
     async loadRecentActivity() {
         try {
-            // Get most recent 3 tests
+            // Get most recent 5 tests
             const recentTests = this.tests
-                .sort((a, b) => new Date(b.updated_date || b.created_date) - new Date(a.updated_date || a.created_date))
-                .slice(0, 3);
+                .sort((a, b) => new Date(b.activated_date || b.updated_date || b.created_date) - new Date(a.activated_date || a.updated_date || a.created_date))
+                .slice(0, 5);
             
             this.updateRecentTestsDisplay(recentTests);
             
@@ -587,7 +587,9 @@ window.NADDashboard = {
      */
     getRecentTestItemHTML(test) {
         const statusClass = `status-${test.status}`;
-        const date = new Date(test.created_date).toLocaleDateString();
+        // Use activated date if available, otherwise fall back to created date
+        const displayDate = test.activated_date || test.created_date;
+        const date = new Date(displayDate).toLocaleDateString();
         
         return `
             <div class="recent-test-item">
