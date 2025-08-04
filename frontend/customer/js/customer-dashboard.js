@@ -1076,10 +1076,6 @@ window.NADDashboard = {
                             <span class="info-label">Test ID:</span>
                             <span class="info-value">${test.test_id}</span>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">Created:</span>
-                            <span class="info-value">${new Date(test.created_date).toLocaleDateString()}</span>
-                        </div>
                         ${test.activated_date ? `
                         <div class="info-row">
                             <span class="info-label">Activated:</span>
