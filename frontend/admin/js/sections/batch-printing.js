@@ -108,6 +108,7 @@ function renderBatchCards() {
             <p style="margin: 5px 0;"><strong>Tests:</strong> ${batch.total_tests}</p>
             <p style="margin: 5px 0;"><strong>Status:</strong> ${batch.print_status}</p>
             <p style="margin: 5px 0;"><strong>Created:</strong> ${new Date(batch.created_date).toLocaleDateString()}</p>
+            ${batch.generated_by ? `<p style="margin: 5px 0;"><strong>Creator:</strong> ${batch.generated_by}</p>` : ''}
             ${batch.batch_notes ? `<p style="margin: 5px 0; color: #666; font-style: italic;"><strong>Note:</strong> ${batch.batch_notes}</p>` : ''}
             <div style="margin-top: 15px;">
                 <button onclick="selectBatchForPrint('${batch.batch_id}')" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
@@ -165,6 +166,12 @@ function createBatchCard(batch) {
                     <span style="font-weight: 500; color: #666;">Created:</span>
                     <span style="color: #495057; font-weight: 500;">${new Date(batch.created_date).toLocaleDateString()}</span>
                 </div>
+                ${batch.generated_by ? `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px;">
+                    <span style="font-weight: 500; color: #666;">Creator:</span>
+                    <span style="color: #495057; font-weight: 500;">${batch.generated_by}</span>
+                </div>
+                ` : ''}
                 <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px;">
                     <span style="font-weight: 500; color: #666;">Last Printed:</span>
                     <span style="color: #495057; font-weight: 500;">${lastPrinted}</span>
@@ -568,6 +575,12 @@ function renderBatchDetails(data, container) {
                         <span style="font-weight: 500; color: #666;">Created:</span>
                         <span>${new Date(data.batch_info.created_date).toLocaleString()}</span>
                     </div>
+                    ${data.batch_info.generated_by ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500; color: #666;">Creator:</span>
+                        <span>${data.batch_info.generated_by}</span>
+                    </div>
+                    ` : ''}
                     ${data.batch_info.last_printed_date ? `
                     <div style="display: flex; justify-content: space-between;">
                         <span style="font-weight: 500; color: #666;">Last Printed:</span>
