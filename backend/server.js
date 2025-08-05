@@ -2485,12 +2485,12 @@ app.get('/api/admin/tests', async (req, res) => {
 
 // Bulk test creation endpoint
 app.post('/api/admin/create-test-batch', optionalAuthentication, async (req, res) => {
-    const { quantity, notes } = req.body;
+    const { quantity, notes, createdBy: requestCreator } = req.body;
     
-    // Capture creator information
-    const createdBy = req.customer && req.customer.authenticated 
-        ? req.customer.customerId || req.customer.email 
-        : null;
+    // Capture creator information - prioritize request body, then authenticated user, then default
+    const createdBy = requestCreator || 
+        (req.customer && req.customer.authenticated ? req.customer.customerId || req.customer.email : null) || 
+        'Admin Dashboard';
     
     // Validation
     if (!quantity || quantity < 1 || quantity > 1000) {

@@ -23,6 +23,7 @@ function initTestManagement() {
                 console.log('📝 Form submitted!');
                 
                 const quantity = parseInt(document.getElementById('test-quantity').value);
+                const createdBy = document.getElementById('batch-creator').value || 'Admin';
                 const notes = document.getElementById('batch-notes').value || '';
                 
                 if (quantity < 1 || quantity > 1000) {
@@ -38,7 +39,7 @@ function initTestManagement() {
                     const response = await fetch('/api/admin/create-test-batch', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ quantity, notes })
+                        body: JSON.stringify({ quantity, notes, createdBy })
                     });
                     
                     const result = await response.json();
