@@ -23,7 +23,7 @@ function initTestManagement() {
                 console.log('📝 Form submitted!');
                 
                 const quantity = parseInt(document.getElementById('test-quantity').value);
-                const createdBy = document.getElementById('batch-creator').value || 'Admin';
+                const createdBy = document.getElementById('batch-creator').value || 'admin@mynadtest.com';
                 const notes = document.getElementById('batch-notes').value || '';
                 
                 if (quantity < 1 || quantity > 1000) {

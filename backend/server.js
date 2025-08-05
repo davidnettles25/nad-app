@@ -2489,8 +2489,8 @@ app.post('/api/admin/create-test-batch', optionalAuthentication, async (req, res
     
     // Capture creator information - prioritize request body, then authenticated user, then default
     const createdBy = requestCreator || 
-        (req.customer && req.customer.authenticated ? req.customer.customerId || req.customer.email : null) || 
-        'Admin Dashboard';
+        (req.customer && req.customer.authenticated ? req.customer.email || req.customer.customerId : null) || 
+        'admin@mynadtest.com';
     
     // Validation
     if (!quantity || quantity < 1 || quantity > 1000) {
