@@ -1,8 +1,22 @@
 // Simple Test Management that works
 console.log('🧪 Loading Test Management...');
 
+function populateCreatorEmail() {
+    const creatorField = document.getElementById('batch-creator');
+    if (creatorField && window.adminUser?.email) {
+        creatorField.value = window.adminUser.email;
+        console.log('Populated creator email:', window.adminUser.email);
+    } else if (creatorField) {
+        creatorField.value = 'admin@mynadtest.com'; // fallback
+        console.log('Using fallback email for creator field');
+    }
+}
+
 function initTestManagement() {
     console.log('🚀 Initializing Test Management...');
+    
+    // Populate creator email first
+    populateCreatorEmail();
     
     // Wait a moment for DOM to be ready
     setTimeout(() => {
@@ -23,7 +37,7 @@ function initTestManagement() {
                 console.log('📝 Form submitted!');
                 
                 const quantity = parseInt(document.getElementById('test-quantity').value);
-                const createdBy = document.getElementById('batch-creator').value || 'admin@mynadtest.com';
+                const createdBy = document.getElementById('batch-creator').value || (window.adminUser?.email || 'admin@mynadtest.com');
                 const notes = document.getElementById('batch-notes').value || '';
                 
                 if (quantity < 1 || quantity > 1000) {
