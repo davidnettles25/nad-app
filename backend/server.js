@@ -2484,8 +2484,13 @@ app.get('/api/admin/tests', async (req, res) => {
 // =====================================================
 
 // Bulk test creation endpoint
-app.post('/api/admin/create-test-batch', async (req, res) => {
+app.post('/api/admin/create-test-batch', optionalAuthentication, async (req, res) => {
     const { quantity, notes } = req.body;
+    
+    // Capture creator information
+    const createdBy = req.customer && req.customer.authenticated 
+        ? req.customer.customerId || req.customer.email 
+        : null;
     
     // Validation
     if (!quantity || quantity < 1 || quantity > 1000) {
@@ -2507,7 +2512,8 @@ app.post('/api/admin/create-test-batch', async (req, res) => {
         req.logger.info('Creating test batch', { 
             quantity, 
             batchId, 
-            notes: notes || 'No notes provided' 
+            notes: notes || 'No notes provided',
+            createdBy: createdBy || 'Unknown'
         });
         
         // Create tests in bulk
@@ -2515,9 +2521,9 @@ app.post('/api/admin/create-test-batch', async (req, res) => {
             // Insert placeholder record to get auto-increment ID
             const [insertResult] = await connection.execute(
                 `INSERT INTO nad_test_ids (
-                    test_id, batch_id, batch_size, notes, created_date
-                ) VALUES (?, ?, ?, ?, NOW())`,
-                ['TEMP', batchId, quantity, notes || null]
+                    test_id, batch_id, batch_size, notes, generated_by, created_date
+                ) VALUES (?, ?, ?, ?, ?, NOW())`,
+                ['TEMP', batchId, quantity, notes || null, createdBy]
             );
             
             const autoIncrementId = insertResult.insertId;
@@ -2551,7 +2557,8 @@ app.post('/api/admin/create-test-batch', async (req, res) => {
                 quantity: quantity,
                 tests_created: createdTests.length,
                 sample_test_ids: createdTests.slice(0, 5).map(t => t.test_id),
-                notes: notes || ''
+                notes: notes || '',
+                created_by: createdBy || 'Unknown'
             }
         });
         
