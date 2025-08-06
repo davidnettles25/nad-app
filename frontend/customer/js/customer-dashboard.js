@@ -1871,7 +1871,7 @@ window.NADDashboard = {
     logout() {
         this.clearAuthentication();
         sessionStorage.clear();
-        window.location.href = '/customer-portal.html';
+        window.location.href = '/customer-dashboard.html';
     },
 
     /**

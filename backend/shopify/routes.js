@@ -639,7 +639,7 @@ router.get('/portal', async (req, res) => {
         logger.info(`Portal session created for ${sessionData.email}`);
         
         // Redirect to customer portal
-        res.redirect('/customer-portal.html');
+        res.redirect('/customer-dashboard.html');
         
     } catch (error) {
         logger.error('Portal entry error:', error);

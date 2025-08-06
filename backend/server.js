@@ -312,9 +312,10 @@ app.get('/admin.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/admin.html'));
 });
 
-app.get('/customer-portal.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/customer-portal.html'));
-});
+// Deprecated - customer-portal.html replaced with customer-dashboard.html
+// app.get('/customer-portal.html', (req, res) => {
+//     res.sendFile(path.join(__dirname, '../frontend/customer-portal.html'));
+// });
 
 app.get('/customer-dashboard.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/customer-dashboard.html'));
@@ -328,7 +329,7 @@ app.get('/admin', (req, res) => {
 
 app.get('/customer', (req, res) => {
     const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-    res.redirect('/customer-portal.html' + queryString);
+    res.redirect('/customer-dashboard.html' + queryString);
 });
 
 // Note: Static files are served by web server (nginx/Apache), not Node.js
@@ -4644,41 +4645,41 @@ app.get('/test/portal/:email', async (req, res) => {
     }
 });
 
-// Mock Shopify portal validation for testing
-app.get('/shopify/portal', async (req, res) => {
-    try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, error: 'No token provided' });
-        }
-        
-        const token = authHeader.substring(7);
-        
-        // For test tokens, decode the email
-        if (token.startsWith('test_')) {
-            const emailB64 = token.substring(5);
-            const email = Buffer.from(emailB64, 'base64').toString();
-            
-            return res.json({
-                success: true,
-                data: {
-                    firstName: 'Test',
-                    lastName: 'Customer',
-                    email: email,
-                    customerId: 'test_' + Date.now(),
-                    type: 'shopify'
-                }
-            });
-        }
-        
-        // For real tokens, this would validate with Shopify
-        res.status(401).json({ success: false, error: 'Invalid token' });
-        
-    } catch (error) {
-        console.error('Error validating portal token:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
+// Mock Shopify portal validation for testing - DISABLED to avoid conflicts with real Shopify routes
+// app.get('/shopify/portal', async (req, res) => {
+//     try {
+//         const authHeader = req.headers.authorization;
+//         if (!authHeader || !authHeader.startsWith('Bearer ')) {
+//             return res.status(401).json({ success: false, error: 'No token provided' });
+//         }
+//         
+//         const token = authHeader.substring(7);
+//         
+//         // For test tokens, decode the email
+//         if (token.startsWith('test_')) {
+//             const emailB64 = token.substring(5);
+//             const email = Buffer.from(emailB64, 'base64').toString();
+//             
+//             return res.json({
+//                 success: true,
+//                 data: {
+//                     firstName: 'Test',
+//                     lastName: 'Customer',
+//                     email: email,
+//                     customerId: 'test_' + Date.now(),
+//                     type: 'shopify'
+//                 }
+//             });
+//         }
+//         
+//         // For real tokens, this would validate with Shopify
+//         res.status(401).json({ success: false, error: 'Invalid token' });
+//         
+//     } catch (error) {
+//         console.error('Error validating portal token:', error);
+//         res.status(500).json({ success: false, error: error.message });
+//     }
+// });
 
 // Test endpoint to verify API is working
 app.get('/api/test', (req, res) => {

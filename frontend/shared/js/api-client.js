@@ -77,7 +77,7 @@ NAD.API = {
                     
                     // Redirect to portal if on customer dashboard
                     if (window.location.pathname.includes('customer-dashboard')) {
-                        window.location.href = '/customer-portal.html?error=session_expired';
+                        window.location.href = '/customer-dashboard.html?error=session_expired';
                     }
                 }
                 
