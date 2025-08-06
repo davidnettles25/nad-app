@@ -6022,6 +6022,24 @@ async function startServer() {
             });
         });
         
+        // ============================================================================
+        // 404 HANDLER - Must be after all other routes
+        // ============================================================================
+        
+        // Handle all unmatched routes with our custom 404 page
+        app.use('*', (req, res) => {
+            // Log the 404 for debugging
+            appLogger.warn('404 - Page not found', { 
+                url: req.originalUrl, 
+                method: req.method,
+                userAgent: req.get('User-Agent'),
+                ip: req.ip
+            });
+            
+            // Serve our custom 404 page
+            res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
+        });
+        
         app.listen(PORT, () => {
             process.stdout.write('✅ NAD Server started successfully with pino-pretty formatting!\n');
             appLogger.info('NAD Test Cycle API Server Started - USER MANAGEMENT REMOVED - PINO-PRETTY ENABLED', {
