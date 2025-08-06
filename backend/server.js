@@ -322,7 +322,14 @@ app.get('/customer-dashboard.html', (req, res) => {
 });
 
 app.get('/404.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/404.html'));
+    // Log that this was called from Apache ErrorDocument
+    appLogger.info('404.html requested', {
+        url: req.originalUrl,
+        referrer: req.get('Referer'),
+        userAgent: req.get('User-Agent'),
+        source: 'apache-error-document'
+    });
+    res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
 });
 
 // Also handle root paths
