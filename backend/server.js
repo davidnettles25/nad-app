@@ -343,6 +343,92 @@ app.get('/customer', (req, res) => {
     res.redirect('/customer-dashboard.html' + queryString);
 });
 
+// ============================================================================
+// COMPREHENSIVE 404 HANDLERS - Catch common patterns before Apache
+// ============================================================================
+
+// Handle common single-word paths that might bypass Apache routing
+const common404Patterns = [
+    'blowfart', 'test', 'blog', 'wp-admin', 'wordpress', 'admin-old', 
+    'backup', 'old', 'new', 'temp', 'dev', 'staging', 'beta', 'demo',
+    'phpmyadmin', 'mysql', 'db', 'database', 'config', 'settings',
+    'login', 'signin', 'signup', 'register', 'logout', 'profile',
+    'dashboard', 'panel', 'control', 'manage', 'manager',
+    'api-old', 'v1', 'v2', 'api_v1', 'rest', 'graphql',
+    'assets-old', 'static', 'public', 'files', 'uploads-old',
+    'images-old', 'css-old', 'js-old', 'fonts-old',
+    'robots.txt', 'sitemap.xml', 'favicon.ico-old'
+];
+
+// Add route handlers for common 404 patterns
+common404Patterns.forEach(pattern => {
+    app.get(`/${pattern}`, (req, res) => {
+        appLogger.warn('404 - Common pattern caught by Node.js', { 
+            pattern: pattern,
+            url: req.originalUrl, 
+            userAgent: req.get('User-Agent'),
+            ip: req.ip
+        });
+        res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
+    });
+    
+    // Also catch with trailing slashes and sub-paths
+    app.get(`/${pattern}/*`, (req, res) => {
+        appLogger.warn('404 - Pattern with sub-path caught', { 
+            pattern: pattern,
+            url: req.originalUrl, 
+            userAgent: req.get('User-Agent'),
+            ip: req.ip
+        });
+        res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
+    });
+});
+
+// Handle common file extensions that might be requested
+const common404Extensions = ['.php', '.asp', '.jsp', '.cgi', '.pl', '.py'];
+common404Extensions.forEach(ext => {
+    app.get(`*${ext}`, (req, res) => {
+        appLogger.warn('404 - File extension pattern caught', { 
+            extension: ext,
+            url: req.originalUrl, 
+            userAgent: req.get('User-Agent'),
+            ip: req.ip
+        });
+        res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
+    });
+});
+
+// Middleware to catch requests that might bypass other handlers
+app.use((req, res, next) => {
+    // If this is a request for a non-existent HTML file, handle it
+    if (req.path.endsWith('.html') && !req.path.includes('/api/')) {
+        appLogger.warn('404 - HTML file request caught by middleware', {
+            url: req.originalUrl,
+            method: req.method,
+            userAgent: req.get('User-Agent'),
+            ip: req.ip
+        });
+        return res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
+    }
+    
+    // If this looks like a page request (no file extension), catch some patterns
+    if (!req.path.includes('.') && !req.path.startsWith('/api/')) {
+        const pathParts = req.path.split('/').filter(p => p.length > 0);
+        if (pathParts.length === 1 && pathParts[0].length > 3) {
+            // Single path segment longer than 3 characters - likely a page request
+            appLogger.warn('404 - Page-like request caught by middleware', {
+                url: req.originalUrl,
+                path: req.path,
+                userAgent: req.get('User-Agent'),
+                ip: req.ip
+            });
+            return res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
+        }
+    }
+    
+    next();
+});
+
 // Note: Static files are served by web server (nginx/Apache), not Node.js
 
 // ============================================================================
@@ -1406,6 +1492,30 @@ app.get('/api/dashboard/stats', async (req, res) => {
 // SHOPIFY WEBHOOK ENDPOINTS
 // ============================================================================
 
+
+// ============================================================================
+// 404 LOGGING ENDPOINT
+// ============================================================================
+
+// Log 404 attempts from client-side
+app.post('/api/log-404', (req, res) => {
+    const { originalUrl, currentUrl, error, userAgent, timestamp } = req.body;
+    
+    appLogger.warn('404 - Client-side report', {
+        originalUrl: originalUrl,
+        currentUrl: currentUrl,
+        error: error,
+        userAgent: userAgent,
+        clientTimestamp: timestamp,
+        ip: req.ip,
+        headers: {
+            referer: req.get('Referer'),
+            'x-forwarded-for': req.get('X-Forwarded-For')
+        }
+    });
+    
+    res.status(200).json({ success: true, logged: true });
+});
 
 // ============================================================================
 // TEST MANAGEMENT ENDPOINTS

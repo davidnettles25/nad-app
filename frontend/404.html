@@ -163,13 +163,47 @@
 
     <script>
         // Log the access attempt for debugging
-        console.log('Direct portal access attempted at:', new Date().toISOString());
+        console.log('404 page loaded at:', new Date().toISOString());
         
-        // Optional: Send analytics or logging data
-        if (window.location.search.includes('error=')) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const error = urlParams.get('error');
-            console.log('Access error:', error);
+        // Handle URL parameters and display original URL if available
+        const urlParams = new URLSearchParams(window.location.search);
+        const originalUrl = urlParams.get('original');
+        const error = urlParams.get('error');
+        
+        if (originalUrl) {
+            console.log('Original URL that caused 404:', originalUrl);
+            
+            // Display the original URL in the error message for debugging
+            const additionalHelp = document.querySelector('.additional-help');
+            if (additionalHelp) {
+                const originalUrlInfo = document.createElement('p');
+                originalUrlInfo.style.fontFamily = 'monospace';
+                originalUrlInfo.style.fontSize = '0.8rem';
+                originalUrlInfo.style.marginTop = '1rem';
+                originalUrlInfo.textContent = 'Requested URL: ' + originalUrl;
+                additionalHelp.appendChild(originalUrlInfo);
+            }
+        }
+        
+        if (error) {
+            console.log('Error type:', error);
+        }
+        
+        // Send analytics data to Node.js for logging
+        if (originalUrl || error) {
+            fetch('/api/log-404', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    originalUrl: originalUrl,
+                    currentUrl: window.location.href,
+                    error: error,
+                    userAgent: navigator.userAgent,
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(err => {
+                console.log('Failed to log 404:', err);
+            });
         }
     </script>
 </body>
