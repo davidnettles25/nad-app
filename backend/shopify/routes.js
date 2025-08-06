@@ -617,7 +617,7 @@ router.get('/portal', async (req, res) => {
     
     if (!token) {
         logger.warn('Portal access attempted without token');
-        return res.redirect(process.env.SHOPIFY_STORE_URL || '/');
+        return res.redirect('/404.html?error=no_token');
     }
     
     try {
@@ -626,7 +626,7 @@ router.get('/portal', async (req, res) => {
         
         if (!sessionData) {
             logger.warn('Invalid or expired portal token');
-            return res.redirect(process.env.SHOPIFY_STORE_URL || '/');
+            return res.redirect('/404.html?error=invalid_token');
         }
         
         // Create express session
@@ -643,7 +643,7 @@ router.get('/portal', async (req, res) => {
         
     } catch (error) {
         logger.error('Portal entry error:', error);
-        res.redirect(process.env.SHOPIFY_STORE_URL || '/');
+        res.redirect('/404.html?error=server_error');
     }
 });
 

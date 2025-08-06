@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Access Required - NAD Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .error-container {
+            background: white;
+            padding: 3rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            margin: 2rem;
+        }
+
+        .warning-icon {
+            font-size: 4rem;
+            color: #f39c12;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .error-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .error-message {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .access-info {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #3498db;
+        }
+
+        .access-info h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .access-info p {
+            color: #5a6c7d;
+            margin-bottom: 0.5rem;
+        }
+
+        .access-info .store-url {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 0.5rem;
+            border-radius: 4px;
+            color: #495057;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: #dc3545;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-primary:hover {
+            background: #c82333;
+        }
+
+        .additional-help {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .additional-help a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .additional-help a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .error-container {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+            }
+            
+            .error-title {
+                font-size: 1.5rem;
+            }
+            
+            .warning-icon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="warning-icon">⚠️</div>
+        
+        <h1 class="error-title">Admin Access Required</h1>
+        
+        <p class="error-message">
+            Please access the admin dashboard through your account at mynadtest.com.
+        </p>
+        
+        <div class="access-info">
+            <h3>How to Access Admin Dashboard:</h3>
+            <p>1. Go to your Shopify store:</p>
+            <div class="store-url">mynadtest.myshopify.com</div>
+            <p>2. Log in with your admin credentials</p>
+            <p>3. Navigate to the NAD Test admin section</p>
+        </div>
+        
+        <a href="https://mynadtest.myshopify.com" class="btn-primary">
+            Go to NAD Test Store
+        </a>
+        
+        <div class="additional-help">
+            <p>Need help? Contact support or check your account permissions.</p>
+            <p>Error: Direct admin portal access not allowed</p>
+        </div>
+    </div>
+
+    <script>
+        // Log the access attempt for debugging
+        console.log('Direct admin portal access attempted at:', new Date().toISOString());
+        
+        // Optional: Send analytics or logging data
+        if (window.location.search.includes('error=')) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            console.log('Access error:', error);
+        }
+    </script>
+</body>
+</html>

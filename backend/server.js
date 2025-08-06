@@ -321,6 +321,10 @@ app.get('/customer-dashboard.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/customer-dashboard.html'));
 });
 
+app.get('/404.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/404.html'));
+});
+
 // Also handle root paths
 app.get('/admin', (req, res) => {
     const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
