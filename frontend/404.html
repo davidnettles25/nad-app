@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Access Required - NAD Test</title>
+    <title>Access Required - NAD Test</title>
     <style>
         * {
             margin: 0;
@@ -137,33 +137,33 @@
     <div class="error-container">
         <div class="warning-icon">⚠️</div>
         
-        <h1 class="error-title">Admin Access Required</h1>
+        <h1 class="error-title">Access Required</h1>
         
         <p class="error-message">
-            Please access the admin dashboard through your account at mynadtest.com.
+            Please access NAD Test services through your account at mynadtest.com.
         </p>
         
         <div class="access-info">
-            <h3>How to Access Admin Dashboard:</h3>
-            <p>1. Go to your Shopify store:</p>
-            <div class="store-url">mynadtest.myshopify.com</div>
-            <p>2. Log in with your admin credentials</p>
-            <p>3. Navigate to the NAD Test admin section</p>
+            <h3>How to Access NAD Test:</h3>
+            <p>1. Go to the NAD Test website:</p>
+            <div class="store-url">mynadtest.com</div>
+            <p>2. Log in with your credentials</p>
+            <p>3. Navigate to the appropriate section (Customer, Lab, or Admin)</p>
         </div>
         
-        <a href="https://mynadtest.myshopify.com" class="btn-primary">
-            Go to NAD Test Store
+        <a href="https://mynadtest.com" class="btn-primary">
+            Go to NAD Test
         </a>
         
         <div class="additional-help">
             <p>Need help? Contact support or check your account permissions.</p>
-            <p>Error: Direct admin portal access not allowed</p>
+            <p>Error: Direct portal access not allowed</p>
         </div>
     </div>
 
     <script>
         // Log the access attempt for debugging
-        console.log('Direct admin portal access attempted at:', new Date().toISOString());
+        console.log('Direct portal access attempted at:', new Date().toISOString());
         
         // Optional: Send analytics or logging data
         if (window.location.search.includes('error=')) {
